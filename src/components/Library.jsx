@@ -2183,6 +2183,31 @@ export default function Library({ data, updateData, onOpenGame, libraryView, set
                     ))}
                   </div>
                 )}
+                {/* IGDB-derived suggested tags */}
+                {selectedResult && (() => {
+                  const suggestions = [
+                    ...(selectedResult.genres || []),
+                    ...(selectedResult.themes || []),
+                  ]
+                    .map(t => t.toLowerCase().replace(/\s+/g, ' ').trim())
+                    .filter(t => t && !newGameTags.includes(t));
+                  if (suggestions.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {suggestions.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => {
+                            if (!newGameTags.includes(tag)) setNewGameTags(prev => [...prev, tag]);
+                          }}
+                          className="px-2 py-1 rounded-full text-[11px] bg-white/5 text-gray-400 hover:bg-purple-600/40 hover:text-purple-200 border border-white/10 transition-colors"
+                        >
+                          + #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
                 <TagInput
                   suggestions={allLibraryTags.filter(t => !newGameTags.includes(t))}
                   onAdd={(val) => {
