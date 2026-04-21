@@ -6,7 +6,7 @@ import {
 import { generateTrackerData } from '../../utils/aiTracker.js';
 
 const MODES = [
-  { id: 'auto',  label: 'Auto (web search)',   icon: Search,   desc: 'Claude searches for guides and wikis' },
+  { id: 'auto',  label: 'Auto (web search)',   icon: Search,   desc: 'Genie searches for guides and wikis' },
   { id: 'url',   label: 'From URL',            icon: Link,     desc: 'Provide a link to a guide' },
   { id: 'paste', label: 'Paste text',          icon: FileText, desc: 'Paste guide or walkthrough text' },
   { id: 'file',  label: 'Upload file',         icon: Upload,   desc: 'Upload a PDF, TXT, or MD file' },
@@ -183,11 +183,15 @@ export default function GenerateTrackerModal({ game, onSave, onClose }) {
   const totalCategories = result?.structuredData?.categories?.length || 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 pb-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm"
         onClick={result ? handleSave : onClose}
       />
+      <div
+        className="flex min-h-full items-center justify-center px-4"
+        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: '1.5rem' }}
+      >
       <div className="relative bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-xl z-10">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
@@ -322,7 +326,7 @@ export default function GenerateTrackerModal({ game, onSave, onClose }) {
 
               {loading && (
                 <p className="text-xs text-gray-500 text-center">
-                  Claude is searching the web and building your tracker data. Hang tight.
+                  Genie is searching the web and building your tracker data. Hang tight.
                 </p>
               )}
             </>
@@ -389,6 +393,7 @@ export default function GenerateTrackerModal({ game, onSave, onClose }) {
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
