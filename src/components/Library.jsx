@@ -1452,7 +1452,7 @@ export default function Library({ data, updateData, onOpenGame, libraryView, set
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 safe-area-bottom">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur border-b border-white/10">
+      <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur border-b border-white/10 safe-area-top">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <button
