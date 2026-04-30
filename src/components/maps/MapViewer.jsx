@@ -116,7 +116,7 @@ export default function MapViewer({
   const lastPointer  = useRef({ x: 0, y: 0 });
   const lastDist     = useRef(null);
 
-  // Refs that keep touch handlers in sync with current state without re-registering
+  // Refs keep event-handler closures in sync without re-registering listeners
   const scaleRef   = useRef(scale);
   const addModeRef = useRef(addMode);
   useEffect(() => { scaleRef.current = scale; },   [scale]);
@@ -171,28 +171,15 @@ export default function MapViewer({
     return { x: Math.max(-maxX, Math.min(maxX, tx)), y: Math.max(-maxY, Math.min(maxY, ty)) };
   }, [fitDims]);
 
-  // ── Zoom ────────────────────────────────────────────────────────────────────
-  const zoom = (delta) => {
+  // ── Toolbar zoom buttons — zoom toward container center ─────────────────────
+  const zoom = useCallback((delta) => {
     setScale(prev => {
       const next = Math.min(5, Math.max(0.5, prev + delta));
       scaleRef.current = next;
       setTranslate(t => clampTranslate(t.x, t.y, next));
       return next;
     });
-  };
-
-  // ── Mouse wheel zoom ────────────────────────────────────────────────────────
-  const handleWheel = (e) => {
-    e.preventDefault();
-    zoom(e.deltaY < 0 ? 0.15 : -0.15);
-  };
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [clampTranslate]);
 
   // ── Mouse drag ──────────────────────────────────────────────────────────────
   const onMouseDown = (e) => {
@@ -209,10 +196,34 @@ export default function MapViewer({
   };
   const onMouseUp = () => { isDragging.current = false; };
 
-  // ── Touch handlers — registered via addEventListener to allow preventDefault ──
+  // ── Wheel + touch — registered with passive:false, focal-point zoom ──────────
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+
+    // Zoom toward a focal point (container-local coords).
+    // Math: keep the image pixel under the focal point stationary.
+    // new_translate = (focal - center) * (1 - ratio) + old_translate * ratio
+    const zoomAt = (prevScale, delta, focalX, focalY) => {
+      const next  = Math.min(5, Math.max(0.5, prevScale + delta));
+      scaleRef.current = next;
+      const ratio = next / prevScale;
+      const { width: cw, height: ch } = el.getBoundingClientRect();
+      setTranslate(t => {
+        const tx = (focalX - cw / 2) * (1 - ratio) + t.x * ratio;
+        const ty = (focalY - ch / 2) * (1 - ratio) + t.y * ratio;
+        return clampTranslate(tx, ty, next);
+      });
+      return next;
+    };
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const rect   = el.getBoundingClientRect();
+      const focalX = e.clientX - rect.left;
+      const focalY = e.clientY - rect.top;
+      setScale(prev => zoomAt(prev, e.deltaY < 0 ? 0.15 : -0.15, focalX, focalY));
+    };
 
     const handleTouchStart = (e) => {
       if (e.touches.length === 1 && !addModeRef.current) {
@@ -236,17 +247,16 @@ export default function MapViewer({
         setTranslate(t => clampTranslate(t.x + dx, t.y + dy, scaleRef.current));
       }
       if (e.touches.length === 2 && lastDist.current !== null) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const dx   = t0.clientX - t1.clientX;
+        const dy   = t0.clientY - t1.clientY;
         const dist = Math.hypot(dx, dy);
         const delta = (dist - lastDist.current) * 0.01;
         lastDist.current = dist;
-        setScale(prev => {
-          const next = Math.min(5, Math.max(0.5, prev + delta));
-          scaleRef.current = next;
-          setTranslate(t => clampTranslate(t.x, t.y, next));
-          return next;
-        });
+        const rect   = el.getBoundingClientRect();
+        const focalX = (t0.clientX + t1.clientX) / 2 - rect.left;
+        const focalY = (t0.clientY + t1.clientY) / 2 - rect.top;
+        setScale(prev => zoomAt(prev, delta, focalX, focalY));
       }
     };
 
@@ -255,10 +265,12 @@ export default function MapViewer({
       lastDist.current = null;
     };
 
+    el.addEventListener('wheel',      handleWheel,      { passive: false });
     el.addEventListener('touchstart', handleTouchStart, { passive: false });
     el.addEventListener('touchmove',  handleTouchMove,  { passive: false });
     el.addEventListener('touchend',   handleTouchEnd);
     return () => {
+      el.removeEventListener('wheel',      handleWheel);
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchmove',  handleTouchMove);
       el.removeEventListener('touchend',   handleTouchEnd);
