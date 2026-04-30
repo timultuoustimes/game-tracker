@@ -193,7 +193,7 @@ export default function App() {
   const currentGame = data.library.find(g => g.id === data.currentGameId);
 
   const SyncBar = () => (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+    <div className="fixed right-4 z-50 flex flex-col items-end gap-2" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       {showSyncPanel && (
         <div className="card p-4 w-80 shadow-2xl border border-purple-500/30 text-sm space-y-4">
           <div className="font-bold text-purple-300">Sync & Devices</div>
@@ -278,6 +278,7 @@ export default function App() {
         <GamePage
           game={currentGame}
           library={data.library}
+          deviceId={getDeviceIdPublic()}
           navSource={navSource}
           onBack={backToLibrary}
           onGoHome={goToHome}
