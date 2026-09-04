@@ -30,8 +30,23 @@ enum CloudKitSchemaSeeder {
     static let marker = "__ls_schema_seed__"
 
     /// Accent written onto a theme row that had none, so CloudKit materializes
-    /// the field. Reverted by purge() unless the user has since changed it.
-    static let seededAccent = "#8A5CF6"
+    /// the field.
+    ///
+    /// ⚠️ **It must never be a color a person could plausibly choose**, and it
+    /// used to be `#8A5CF6` — which is the developer's own accent. The seeder
+    /// only writes this field when it is nil, so it never touched that row;
+    /// but `purge()` nils anything matching this constant whether or not it
+    /// wrote it, and could not tell "the value I seeded" from "the value you
+    /// picked". Seeding on 2026-09-04 therefore destroyed a real accent the
+    /// seeder had never set, and the doc comment here claimed the opposite:
+    /// "reverted unless the user has since changed it" is exactly the case it
+    /// cannot detect.
+    ///
+    /// The marker is not a valid hex, deliberately. `Color(hex:)` requires six
+    /// hex digits and returns nil otherwise, so while the seed is in place the
+    /// app falls back to the default accent instead of rendering nonsense —
+    /// and no user can ever collide with it.
+    static let seededAccent = marker
 
     /// A DELIBERATELY LARGE image, for seeding `GameImage.data`.
     ///
@@ -506,7 +521,7 @@ enum CloudKitSchemaSeeder {
         // happened to `savedSwatchesData` on the first attempt at this deploy.
         } else {
             let theme = ThemeSettings()
-            theme.accentHex = "#8A5CF6"
+            theme.accentHex = seededAccent
             theme.statusColorsData = stamp
             theme.defaultMergeModeRaw = marker           // V2
             theme.overlappingTimerPolicyRaw = marker     // V2
