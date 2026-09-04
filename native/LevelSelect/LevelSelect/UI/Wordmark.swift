@@ -23,28 +23,54 @@ struct Wordmark: View {
     var body: some View {
         HStack(spacing: size * 0.55) {
             if showsIcon {
-                // Clipped to a rounded square. The artwork carries its own
-                // background out to the edges, so unclipped it read as a
-                // square tile pasted onto the card — "a weird cut out" — where
-                // rounding makes it read as what it is, an app icon.
+                // **The app icon itself, in the app icon's shape.**
+                //
+                // `DoorMark` used to be the door art cut out along a ragged
+                // hand-drawn silhouette — notched corners, a wobbly outline —
+                // and the rounded clip over it did nothing, because the art
+                // never reached the corners to be clipped. What you saw was
+                // the ragged edge. Tim: *"it looks terrible currently with the
+                // weird cutout... we just need to use the app icon shape."*
+                //
+                // So `DoorMark` is now the icon tile, square and full-bleed,
+                // and the clip is the real thing: a square frame at iOS's own
+                // corner ratio, which is what makes it read as the app's icon
+                // rather than a picture of a door.
                 Image("DoorMark")
                     .resizable()
-                    .scaledToFit()
-                    .frame(height: size * 2.1)
-                    .clipShape(.rect(cornerRadius: size * 0.45, style: .continuous))
+                    .frame(width: iconSide, height: iconSide)
+                    .clipShape(.rect(cornerRadius: iconSide * Self.iconCornerRatio,
+                                     style: .continuous))
                     .shadow(color: .black.opacity(0.5), radius: size * 0.35, y: size * 0.12)
             }
             Text("LevelSelect")
                 .font(LSTheme.pixel(size))
             .fontDesign(nil)   // never let an app-wide design override the pixel face
                 .foregroundStyle(tint)
-                .shadow(color: shadowTint, radius: 0, y: max(1, size * 0.16))
+                .shadow(color: shadowTint, radius: 0, y: shadowOffset)
                 .shadow(color: tint.opacity(0.3), radius: size * 0.65)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("LevelSelect")
         .accessibilityAddTraits(.isHeader)
     }
+
+    /// iOS's own icon corner ratio — the squircle is ~22.37% of the side.
+    private static let iconCornerRatio = 0.2237
+
+    private var iconSide: CGFloat { (size * 2.1).rounded() }
+
+    /// **A whole point, so the hard shadow stays hard.**
+    ///
+    /// This was `size * 0.16`, which at size 22 is 3.52pt — not a whole point,
+    /// so a `radius: 0` shadow landed across a pixel boundary and antialiased
+    /// into a smeared two-pixel bar sitting away from the letters rather than
+    /// an edge on them. Tim: *"the shadow spacing needs corrected."*
+    ///
+    /// One font-pixel is `size / 8` in Press Start 2P, whose glyphs are drawn
+    /// on an 8×8 grid — the offset the pixel-art convention actually calls for
+    /// — rounded to a whole point so it can never half-land again.
+    private var shadowOffset: CGFloat { max(1, (size / 8).rounded()) }
 
     /// A darkened version of the tint, so a custom accent gets a shadow that
     /// belongs to it rather than a fixed brown.
