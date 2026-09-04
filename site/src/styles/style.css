@@ -61,10 +61,16 @@ a:hover { color: #B78DFF; }
    glow for the torch-lit feel. */
 .wordmark {
   color: var(--torch);
-  /* em, not px — the app scales both shadows with the type size
-     (Wordmark.swift:35-36). Fixed pixels were far too small on the hero and
-     far too heavy in the 11px header. */
-  text-shadow: 0 0.16em 0 var(--torch-deep), 0 0 0.65em rgba(245, 163, 77, 0.3);
+  /* em, not px — the app scales both shadows with the type size, so the
+     recipe holds at any size. Fixed pixels were far too small on the hero and
+     far too heavy in the 11px header.
+
+     0.125em, not 0.16em. Press Start 2P draws its glyphs on an 8x8 grid, so
+     ONE font-pixel is exactly font-size / 8 — the offset the pixel-art
+     convention calls for. 0.16em is 1.28 of them, which is why the shadow read
+     as a detached bar under the type rather than an edge on it. */
+  --wm-offset: 0.125em;
+  text-shadow: 0 var(--wm-offset) 0 var(--torch-deep), 0 0 0.65em rgba(245, 163, 77, 0.3);
 }
 
 /* ── header ─────────────────────────────────────────── */
@@ -79,7 +85,11 @@ a:hover { color: #B78DFF; }
 /* flex: none — without it the icon shrinks horizontally in a cramped header
    and a square image renders squished. */
 .brand img { width: 28px; height: 28px; border-radius: 7px; flex: none; }
-.brand span { font-size: 11px; white-space: nowrap; }
+/* At 11px one font-pixel is 1.375px, and a zero-blur shadow that lands across
+   a device pixel gets antialiased into a soft smear — the same half-landing
+   the app fixed by rounding to a whole point. Pin it to a whole pixel here,
+   since this is the one wordmark on the site with a fixed size. */
+.brand span { font-size: 11px; white-space: nowrap; --wm-offset: 1px; }
 .navlinks { display: flex; gap: 1.25rem; font-size: .9rem; }
 .navlinks a { color: var(--muted); text-decoration: none; }
 .navlinks a:hover, .navlinks a[aria-current="page"] { color: var(--ink); }

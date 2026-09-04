@@ -1156,7 +1156,7 @@ detail is **the first shadow has zero blur** — that is not an approximation, i
   /* 1) hard offset for legibility (blur MUST stay 0)
      2) soft torch glow for atmosphere                  */
   text-shadow:
-    0 0.16em 0        var(--ls-torch-shadow),
+    0 0.125em 0       var(--ls-torch-shadow),
     0 0     0.65em    rgb(245 163 76 / 0.3);
   /* Press Start 2P has no lowercase distinction in width; it is a fixed
      8x8 pixel grid, so let it set its own tracking. */
@@ -1164,9 +1164,18 @@ detail is **the first shadow has zero blur** — that is not an approximation, i
 }
 ```
 
-Both offsets are expressed in `em`, which reproduces the app's `size × 0.16` / `size × 0.65` scaling
-exactly at any font-size. The app's `max(1, size * 0.16)` floor only matters below 6.25px, which no web
-rendering will hit.
+**The offset is one font-pixel — `font-size / 8`, i.e. `0.125em`.** This section used to say `0.16em`
+while the comment two lines below it correctly described an 8×8 grid; 0.16em is 1.28 font-pixels, so
+the hard shadow sat a quarter-block low and read as a detached bar rather than an edge. Corrected in
+both the app and the site on 2026-09-04, after Tim: *"the name LevelSelect needs the shadow spacing
+corrected."*
+
+The glow's `0.65em` is unchanged — blur has no grid to land on.
+
+**Round it to a whole pixel wherever the size is fixed.** A zero-blur shadow only stays hard if it
+lands on a device pixel boundary; at a fractional offset the browser antialiases it into the same
+smear. The app rounds `size / 8` to a whole point; the site pins `--wm-offset: 1px` on the 11px header
+mark and lets the fluid hero keep the em.
 
 At the two real app sizes:
 
