@@ -116,41 +116,89 @@ enum LSTheme {
     /// like torch lands exactly where it does today and nothing moves.
     static let preferredAccentBrightness = (light: 0.60, dark: 0.96)
 
+    /// A derived accent, and whether the app had to compromise to get there.
+    struct DerivedAccent {
+        let color: Color
+        /// The saturation actually used.
+        let saturation: Double
+        /// What the user asked for.
+        let requested: Double
+        /// True when brightness alone could not reach the floor and saturation
+        /// had to come down. The picker says so when this is set — a silent
+        /// compromise is the thing this whole model exists to avoid.
+        var softened: Bool { saturation < requested - 0.005 }
+    }
+
     /// The accent for one appearance, derived from a hue the user picked.
     ///
-    /// **The user sets hue and saturation; only brightness is derived.** Tim,
-    /// 2026-09-04 — one fewer thing moving on its own, which was the objection
-    /// to deriving the whole colour at render time.
+    /// **The user sets hue and saturation; the app derives brightness.** Tim,
+    /// 2026-09-04 — one fewer thing moving on its own.
     ///
-    /// Starts at that appearance's preferred brightness and walks toward more
-    /// contrast only if it has to. Contrast rises as a colour gets brighter on
-    /// a dark ground and darker on a light one, so the walk goes opposite ways
-    /// — which is why this is not a symmetric formula and should not be
-    /// "simplified" into one.
+    /// Brightness alone cannot always get there, and the failure is not
+    /// uniform. Testing every hue found that **light solves everywhere, and
+    /// dark cannot solve saturated blues and violets** — hue 0.61–0.78 at
+    /// saturation ≥ 0.75. Blue contributes 0.0722 to relative luminance
+    /// against green's 0.7152, so a saturated blue at FULL brightness is still
+    /// luminance-dark and nothing reaches 4.5:1 on a dark ground.
     ///
-    /// Reproduces both shipped defaults from torch's own hue and saturation,
-    /// which is the evidence the rule is the right one rather than a fit.
+    /// So saturation is a last resort, not a second dial: it is honoured
+    /// whenever brightness can do the job, and softened only where physics
+    /// forbids otherwise — with `softened` set so the UI can say it happened.
+    /// Tim chose this over hard-restricting the region: *"Go with softening
+    /// saturation and telling me when it happens."*
     static func derivedAccent(hue: Double,
                               saturation: Double,
                               dark: Bool,
                               ground: Color,
-                              floor: Double = 4.5) -> Color {
+                              floor: Double = 4.5) -> DerivedAccent {
+        // Honour the chosen saturation if any brightness works at it.
+        if let color = solveBrightness(hue: hue, saturation: saturation,
+                                       dark: dark, ground: ground, floor: floor) {
+            return DerivedAccent(color: color, saturation: saturation, requested: saturation)
+        }
+        // Otherwise walk saturation down until the hue can be seen at all.
+        var candidate = saturation
+        while candidate > 0 {
+            candidate = max(0, candidate - 0.02)
+            if let color = solveBrightness(hue: hue, saturation: candidate,
+                                           dark: dark, ground: ground, floor: floor) {
+                return DerivedAccent(color: color, saturation: candidate, requested: saturation)
+            }
+        }
+        // Grey at this brightness always clears a themed ground, so this is
+        // unreachable in practice; returning the honest last try beats a crash.
+        let fallback = Color(hue: hue, saturation: 0,
+                             brightness: dark ? 1 : preferredAccentBrightness.light)
+        return DerivedAccent(color: fallback, saturation: 0, requested: saturation)
+    }
+
+    /// The brightness search, at a fixed saturation. Nil when none passes.
+    ///
+    /// Starts at the brightness each appearance prefers — the values the
+    /// shipped defaults already use — and walks toward more contrast only if
+    /// it has to. Contrast rises as a colour brightens on a dark ground and
+    /// darkens on a light one, so the walk goes opposite ways; this is not a
+    /// symmetric formula and should not be "simplified" into one.
+    private static func solveBrightness(hue: Double, saturation: Double,
+                                        dark: Bool, ground: Color,
+                                        floor: Double) -> Color? {
         let start = dark ? preferredAccentBrightness.dark : preferredAccentBrightness.light
         let step = dark ? 0.01 : -0.01
         var brightness = start
-        var best = Color(hue: hue, saturation: saturation, brightness: brightness)
-        for _ in 0..<100 {
+        // From the preferred value toward more contrast.
+        while brightness >= 0, brightness <= 1 {
             let candidate = Color(hue: hue, saturation: saturation, brightness: brightness)
             if LSContrast.ratio(candidate, ground) >= floor { return candidate }
-            best = candidate
             brightness += step
-            if brightness > 1 || brightness < 0 { break }
         }
-        // No brightness of this hue clears the floor. Returning the last
-        // candidate is honest — the caller decides whether to warn — but the
-        // tests assert this never happens for a real ground, which is what
-        // lets the hue wheel stay unrestricted.
-        return best
+        // Then the other way, for a preferred value that overshot.
+        brightness = start
+        while brightness >= 0, brightness <= 1 {
+            let candidate = Color(hue: hue, saturation: saturation, brightness: brightness)
+            if LSContrast.ratio(candidate, ground) >= floor { return candidate }
+            brightness -= step
+        }
+        return nil
     }
 
     /// Hero card gradient (Continue Playing).

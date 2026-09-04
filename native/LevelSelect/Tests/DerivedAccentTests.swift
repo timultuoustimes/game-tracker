@@ -31,9 +31,9 @@ struct DerivedAccentTests {
         let hs = torchHS
 
         let dark = LSTheme.derivedAccent(hue: hs.hue, saturation: hs.saturation,
-                                         dark: true, ground: darkGround)
+                                         dark: true, ground: darkGround).color
         let light = LSTheme.derivedAccent(hue: hs.hue, saturation: hs.saturation,
-                                          dark: false, ground: lightGround)
+                                          dark: false, ground: lightGround).color
 
         // Same hue family as the hand-picked values, and legible on each ground.
         #expect(LSContrast.ratio(dark, darkGround) >= 4.5)
@@ -49,75 +49,103 @@ struct DerivedAccentTests {
         #expect(abs((dark.lsHueSaturation?.hue ?? -1) - hs.hue) < 0.02)
     }
 
-    /// **The claim the model rested on, and what testing it actually found.**
+    /// **Everything solves now, and softening is confined to where it must be.**
     ///
-    /// The hope was that every hue could be solved by brightness alone, so the
-    /// picker would never restrict anything. That is **false**, and the shape
-    /// of the failure matters:
+    /// Before softening, 12 of 144 sampled combinations were unreachable —
+    /// all saturated blues and violets on the dark ground, because blue
+    /// contributes 0.0722 to relative luminance against green's 0.7152, so a
+    /// saturated blue at FULL brightness is still luminance-dark.
     ///
-    /// - **Light ground: every hue and saturation solves.** No restriction ever.
-    /// - **Dark ground: saturated blues and violets cannot be solved** — hue
-    ///   0.61–0.78 at saturation ≥ 0.75, 12 of 144 sampled combinations.
-    ///
-    /// Blue contributes only 0.0722 to relative luminance against green's
-    /// 0.7152, so a saturated blue at FULL brightness is still luminance-dark
-    /// and no brightness reaches 4.5:1 on a dark ground. Dropping saturation
-    /// rescues it — at hue 0.67, saturation 0.55 reaches 4.8:1 — which is why
-    /// the product answer is "honour the chosen saturation unless it is
-    /// impossible, then soften it and say so" rather than "derive brightness
-    /// only, always".
-    ///
-    /// This test pins the region so it cannot silently grow.
-    @Test func lightAlwaysSolvesAndOnlySaturatedBluesFailOnDark() {
+    /// With saturation as a last resort every combination lands. What this
+    /// test guards is that it is a LAST resort: softening must never happen on
+    /// the light ground, and on dark only inside the blue/violet band.
+    @Test func everythingSolvesAndSofteningStaysInItsCorner() {
         ThemePalette.refresh(from: nil)
-        var lightFailures: [String] = []
-        var darkFailures: [(hue: Double, saturation: Double)] = []
+        var unreadable: [String] = []
+        var softenedOnLight: [String] = []
+        var softenedStrays: [String] = []
+        var softenedCount = 0
 
         for hueStep in 0..<36 {
             let hue = Double(hueStep) / 36.0
             for saturation in [0.35, 0.55, 0.75, 0.95] {
                 let light = LSTheme.derivedAccent(hue: hue, saturation: saturation,
                                                   dark: false, ground: lightGround)
-                if LSContrast.ratio(light, lightGround) < 4.5 {
-                    lightFailures.append(String(format: "h=%.2f s=%.2f", hue, saturation))
-                }
                 let dark = LSTheme.derivedAccent(hue: hue, saturation: saturation,
                                                  dark: true, ground: darkGround)
-                if LSContrast.ratio(dark, darkGround) < 4.5 {
-                    darkFailures.append((hue, saturation))
+                if LSContrast.ratio(light.color, lightGround) < 4.5 {
+                    unreadable.append(String(format: "light h=%.2f s=%.2f", hue, saturation))
+                }
+                if LSContrast.ratio(dark.color, darkGround) < 4.5 {
+                    unreadable.append(String(format: "dark h=%.2f s=%.2f", hue, saturation))
+                }
+                if light.softened {
+                    softenedOnLight.append(String(format: "h=%.2f s=%.2f", hue, saturation))
+                }
+                if dark.softened {
+                    softenedCount += 1
+                    if !(hue >= 0.58 && hue <= 0.80 && saturation >= 0.70) {
+                        softenedStrays.append(String(format: "h=%.2f s=%.2f", hue, saturation))
+                    }
                 }
             }
         }
 
-        #expect(lightFailures.isEmpty,
-                Comment(rawValue: "light must never need restricting: \(lightFailures)"))
-
-        // Every dark failure is in the blue/violet band at high saturation.
-        let strays = darkFailures.filter { !($0.hue >= 0.58 && $0.hue <= 0.80 && $0.saturation >= 0.70) }
-        #expect(strays.isEmpty,
-                Comment(rawValue: "unsolvable colours OUTSIDE the known blue/violet corner: \(strays)"))
-        #expect(darkFailures.count <= 14,
-                Comment(rawValue: "the unsolvable region grew to \(darkFailures.count) of 144"))
+        #expect(unreadable.isEmpty,
+                Comment(rawValue: "still unreadable after softening: \(unreadable)"))
+        #expect(softenedOnLight.isEmpty,
+                Comment(rawValue: "light never needs softening: \(softenedOnLight)"))
+        #expect(softenedStrays.isEmpty,
+                Comment(rawValue: "softened OUTSIDE the blue/violet corner: \(softenedStrays)"))
+        #expect(softenedCount <= 14,
+                Comment(rawValue: "softening spread to \(softenedCount) of 144"))
     }
 
-    /// Saturation is the user's, not the app's. Deriving it too was considered
-    /// and rejected — one moving part, not two.
-    @Test func derivationMovesBrightnessOnly() {
+    /// The common case must be untouched: a hue that brightness can solve
+    /// keeps exactly the saturation the user asked for.
+    @Test func aSolvableHueIsNeverSoftened() {
         ThemePalette.refresh(from: nil)
-        for saturation in [0.4, 0.7, 0.9] {
-            let c = LSTheme.derivedAccent(hue: 0.6, saturation: saturation,
-                                          dark: true, ground: darkGround)
-            let got = c.lsHueSaturation?.saturation ?? -1
-            #expect(abs(got - saturation) < 0.02,
-                    Comment(rawValue: "saturation drifted from \(saturation) to \(got)"))
+        let hs = torchHS
+        for dark in [false, true] {
+            let ground = dark ? darkGround : lightGround
+            let d = LSTheme.derivedAccent(hue: hs.hue, saturation: hs.saturation,
+                                          dark: dark, ground: ground)
+            #expect(!d.softened, "torch should never need softening")
+            #expect(abs(d.saturation - hs.saturation) < 0.005)
+        }
+    }
+
+    /// Saturation is the user's, and the app reports it whenever it is not.
+    ///
+    /// This asserted that saturation never moves. It now can — hue 0.6 at
+    /// saturation 0.9 is inside the blue corner and softens to 0.86 — so the
+    /// property worth holding is the honest one: the value the struct reports
+    /// is the value actually used, and `softened` is set exactly when they
+    /// differ. A silent compromise is what this model exists to avoid.
+    @Test func reportedSaturationIsAlwaysTheSaturationUsed() {
+        ThemePalette.refresh(from: nil)
+        for hue in [0.08, 0.33, 0.6, 0.72, 0.95] {
+            for saturation in [0.4, 0.7, 0.9] {
+                let d = LSTheme.derivedAccent(hue: hue, saturation: saturation,
+                                              dark: true, ground: darkGround)
+                let actual = d.color.lsHueSaturation?.saturation ?? -1
+                #expect(abs(actual - d.saturation) < 0.02,
+                        Comment(rawValue: "reported \(d.saturation) but the colour is \(actual)"))
+                #expect(d.softened == (d.saturation < saturation - 0.005),
+                        Comment(rawValue: "softened flag disagrees at h=\(hue) s=\(saturation)"))
+                if !d.softened {
+                    #expect(abs(actual - saturation) < 0.02,
+                            Comment(rawValue: "unsoftened but saturation moved at h=\(hue)"))
+                }
+            }
         }
     }
 
     /// A grey pick has no hue to preserve, and must still be legible.
     @Test func agreyPickStillLands() {
         ThemePalette.refresh(from: nil)
-        let light = LSTheme.derivedAccent(hue: 0, saturation: 0, dark: false, ground: lightGround)
-        let dark = LSTheme.derivedAccent(hue: 0, saturation: 0, dark: true, ground: darkGround)
+        let light = LSTheme.derivedAccent(hue: 0, saturation: 0, dark: false, ground: lightGround).color
+        let dark = LSTheme.derivedAccent(hue: 0, saturation: 0, dark: true, ground: darkGround).color
         #expect(LSContrast.ratio(light, lightGround) >= 4.5)
         #expect(LSContrast.ratio(dark, darkGround) >= 4.5)
     }
