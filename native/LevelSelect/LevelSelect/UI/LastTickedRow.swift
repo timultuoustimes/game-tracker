@@ -56,12 +56,22 @@ struct LastTickedRow: View {
         return nil
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         if let recent, compact {
+            // **The user's own words, so they wrap rather than truncate.**
+            //
+            // One line kept the hero card compact, and at accessibility sizes
+            // it cut a tracker item the user named themselves down to
+            // "Left off: Grubs…". A shelf card can afford a second line; a
+            // sentence someone typed cannot afford to lose its end. Two lines
+            // below accessibility sizes, unlimited above.
             Label("Left off: \(recent.name)", systemImage: "arrow.uturn.left.circle.fill")
                 .font(.caption2)
                 .foregroundStyle(LSTheme.accent.opacity(0.9))
-                .lineLimit(1)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel("Left off at \(recent.name)")
         } else if let recent {
             VStack(alignment: .leading, spacing: 4) {

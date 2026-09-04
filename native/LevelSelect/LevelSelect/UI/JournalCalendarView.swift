@@ -297,9 +297,28 @@ private struct MiniMonth: View {
                             .id("trail\(index)")
                     }
                 }
+                // Forty-two unlabeled squares are noise to a screen reader, and
+                // the month link announced only "Sep" — how much is in it was
+                // visible and unspoken. Same treatment `StatsView` gives its
+                // 182-square heatmap: the grid speaks once, as a summary.
+                .accessibilityElement(children: .ignore)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(monthSummary)
+        .accessibilityHint("Opens the month")
+    }
+
+    /// What a month holds, in a sentence.
+    private var monthSummary: String {
+        let name = month.formatted(.dateTime.month(.wide).year())
+        let active = days.compactMap { load[$0] }.filter { $0.entries > 0 }
+        guard !active.isEmpty else { return "\(name), nothing recorded" }
+        let seconds = active.reduce(0) { $0 + $1.seconds }
+        let dayWord = active.count == 1 ? "day" : "days"
+        guard seconds > 0 else { return "\(name), \(active.count) \(dayWord)" }
+        return "\(name), \(active.count) \(dayWord), \(Format.duration(seconds))"
     }
 
     /// Accent at a strength, rather than a second colour ramp.
@@ -467,6 +486,9 @@ private struct MonthGrid: View {
             HStack(spacing: 4) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
+                        // "M", "T", "W" are a visual convention; spoken they
+                        // are seven ambiguous letters ahead of the grid.
+                        .accessibilityHidden(true)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity)
@@ -558,11 +580,47 @@ private struct DayCell: View {
                     // A day that has not happened cannot be written about.
                     .disabled(isFuture)
                     .opacity(isFuture ? 0.35 : 1)
+                    // A populated cell was announced as "1, 2" — a day number
+                    // and a count, with no month, no game, no duration, and no
+                    // hint that "dimmed" meant "in the future".
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(spokenDate))
+                    .accessibilityValue(Text(isFuture ? "Hasn't happened yet" : "Nothing recorded"))
+                    .accessibilityHint(isFuture ? "" : "Adds a memory")
             } else if let first = entries.first {
                 NavigationLink(value: JournalRoute(entry: first)) { filled }
                     .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(spokenDate))
+                    .accessibilityValue(Text(spokenSummary))
+                    .accessibilityHint("Opens the day")
             }
         }
+    }
+
+    /// The full date, because a day number alone says nothing about which
+    /// month a cell belongs to.
+    private var spokenDate: String {
+        day.formatted(.dateTime.weekday(.wide).day().month(.wide).year())
+    }
+
+    /// What is on the day, and whether the app is sure it belongs here.
+    private var spokenSummary: String {
+        var parts: [String] = []
+        var games: [String] = []
+        for entry in entries {
+            if let name = entry.game?.name, !games.contains(name) { games.append(name) }
+        }
+        if !games.isEmpty { parts.append(games.prefix(3).joined(separator: ", ")) }
+        let seconds = entries.reduce(0) { $0 + $1.duration }
+        if seconds > 0 { parts.append(Format.duration(seconds)) }
+        let memories = entries.filter { $0.kind == .memory }.count
+        if memories > 0 {
+            parts.append(memories == 1 ? "1 memory" : "\(memories) memories")
+        }
+        // The mark on screen says the placement is a guess; so should this.
+        if isUncertain { parts.append("date is uncertain") }
+        return parts.isEmpty ? "Recorded" : parts.joined(separator: ", ")
     }
 
     private var empty: some View {
