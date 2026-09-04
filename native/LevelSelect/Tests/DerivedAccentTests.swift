@@ -150,3 +150,33 @@ struct DerivedAccentTests {
         #expect(LSContrast.ratio(dark, darkGround) >= 4.5)
     }
 }
+
+/// `LSTheme.legible` — the guarantee that lets the accent stay ink.
+@MainActor
+struct LegibleAccentTests {
+    private var lightGround: Color { ThemePalette.groundBase(dark: false) }
+    private var darkGround: Color { ThemePalette.groundBase(dark: true) }
+
+    /// A colour that already reads must come back untouched. Anything else
+    /// would move the accent of every user whose choice was already fine.
+    @Test func aPassingColourIsReturnedUnchanged() {
+        ThemePalette.refresh(from: nil)
+        let torch = LSTheme.torch
+        #expect(LSTheme.legible(torch, on: darkGround) == torch)
+        #expect(LSTheme.legible(LSTheme.torchInk, on: lightGround) == LSTheme.torchInk)
+    }
+
+    /// The developer's own accent, stored long before anything checked it.
+    @Test func aLegacyAccentThatFailsIsCorrectedAndKeepsItsHue() throws {
+        ThemePalette.refresh(from: nil)
+        let purple = try #require(Color(hex: "#8A5CF6"))
+        #expect(ThemePalette.contrast(purple, darkGround) < 4.5, "the premise: it fails today")
+
+        let fixed = LSTheme.legible(purple, on: darkGround)
+        #expect(ThemePalette.contrast(fixed, darkGround) >= 4.5, "still unreadable after correction")
+
+        let before = purple.lsHueSaturation?.hue ?? -1
+        let after = fixed.lsHueSaturation?.hue ?? -2
+        #expect(abs(before - after) < 0.03, "correction must keep the colour recognisably theirs")
+    }
+}

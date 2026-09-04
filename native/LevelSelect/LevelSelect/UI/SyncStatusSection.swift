@@ -18,12 +18,16 @@ struct SyncStatusSection: View {
 
     private var repo: Repository { Repository(context) }
 
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 28
+
     var body: some View {
         Section {
             HStack(spacing: 12) {
                 statusIcon
                     .font(.title3)
-                    .frame(width: 28)
+                    // Was a fixed 28: at AX XXXL the iCloud-off symbol
+                    // overlapped "Changes are saved…". Scales with the row.
+                    .frame(width: iconWidth)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.body.weight(.medium))

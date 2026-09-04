@@ -1240,14 +1240,27 @@ struct GameDetailView: View {
 
     func heroFacts(alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: game.status.systemImage)
-                    .foregroundStyle(game.status.color)
-                Text(game.status.label)
+            // Two facts, and at accessibility sizes they are two lines.
+            // Wrapping them inside one row hyphenated "Now Play-ing" and
+            // pushed the platform past the edge; the separator dot also stops
+            // making sense once the pair is stacked.
+            let statusLayout: AnyLayout = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: alignment, spacing: 4))
+                : AnyLayout(HStackLayout(spacing: 6))
+            statusLayout {
+                HStack(spacing: 6) {
+                    Image(systemName: game.status.systemImage)
+                        .foregroundStyle(game.status.color)
+                    Text(game.status.label)
+                }
                 if let platform = game.primaryOwnedPlatform {
-                    Text("·").foregroundStyle(.tertiary)
-                    PlatformIconView(platform: platform, size: 20)
-                    Text(PlatformShort.name(platform)).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        if !typeSize.isAccessibilitySize {
+                            Text("·").foregroundStyle(.tertiary)
+                        }
+                        PlatformIconView(platform: platform, size: 20)
+                        Text(PlatformShort.name(platform)).foregroundStyle(.secondary)
+                    }
                 }
             }
             .font(.subheadline)
@@ -1264,8 +1277,17 @@ struct GameDetailView: View {
             // than the screen — every section divider below ran off the right
             // edge. Scaling is the give of last resort, for the rare platform
             // `PlatformShort` has no abbreviation for.
-            .lineLimit(1)
-            .minimumScaleFactor(0.85)
+            // …but only below accessibility sizes. All of the above is about
+            // the panel proposing an honest width; at AX sizes the same rule
+            // rendered the status as "Now…" instead of "Now Playing", and a
+            // panel measured correctly around a truncated word is the wrong
+            // trade. Wrapping is what accessibility sizes are for.
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            .minimumScaleFactor(typeSize.isAccessibilitySize ? 1 : 0.85)
+            .fixedSize(horizontal: false, vertical: typeSize.isAccessibilitySize)
+            // The glyphs repeat what the words already say, and were being
+            // announced as separate elements ahead of them.
+            .accessibilityElement(children: .combine)
 
             RatingControl(rating: $game.rating)
 
@@ -1315,9 +1337,21 @@ struct GameDetailView: View {
                 .accessibilityLabel(game.name)
         } else {
             Text(game.name)
-                .font(.largeTitle.bold())
+                // `.largeTitle` at AX XXXL is around 55pt, and "Hollow Knight"
+                // does not fit a phone at that size however it wraps — it ran
+                // off the right edge. `.title` still scales with Dynamic Type,
+                // so this is not a cap; it is a smaller starting point for the
+                // one piece of type on the page that is large for effect
+                // rather than for reading. The name is also in the navigation
+                // bar and read first by VoiceOver, so nothing is lost.
+                .font((typeSize.isAccessibilitySize ? Font.title : .largeTitle).bold())
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
+                // Infinite width with no instruction to grow taller instead:
+                // at AX XXXL "Hollow Knight" ran off the right edge. This is
+                // the app's own accessibility pattern, used here for the first
+                // time on the hero.
+                .fixedSize(horizontal: false, vertical: true)
                 // Unlike the panel's copy, this sits directly on the art. It
                 // survives there because it's large and heavy — but a bright
                 // screenshot can still swallow white text, so it carries its

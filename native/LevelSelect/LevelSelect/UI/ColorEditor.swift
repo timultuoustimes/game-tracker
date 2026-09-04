@@ -282,23 +282,14 @@ struct ColorEditor: View {
 
                     preview
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("LevelSelect")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                    LazyVGrid(columns: columns, spacing: 10) {
-                        ForEach(Self.brandSwatches, id: \.self) { hex in
-                            swatch(hex)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Self.swatches, id: \.self) { hex in
-                        swatch(hex)
-                    }
-                }
+                swatchGroup("LevelSelect", Self.brandSwatches.filter(usable))
+                swatchGroup(nil, Self.swatches.filter(usable))
+                // Kept and grouped rather than scattered through the grid.
+                // Tim: *"Can we group the dark tints and group the light
+                // tints?"* Strikethroughs mixed into one list read as damage;
+                // a named group reads as an explanation.
+                swatchGroup("Not readable on this ground",
+                            (Self.brandSwatches + Self.swatches).filter { !usable($0) })
 
                 if !saved.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
@@ -588,6 +579,28 @@ struct ColorEditor: View {
         let a = ColorEditor.hsb(current), b = ColorEditor.hsb(other)
         let dh = min(abs(a.h - b.h), 1 - abs(a.h - b.h))
         return dh * 4 + abs(a.s - b.s) + abs(a.b - b.b)
+    }
+
+    private func usable(_ hex: String) -> Bool {
+        guard let c = Color(hex: hex) else { return false }
+        return passes(c)
+    }
+
+    @ViewBuilder
+    private func swatchGroup(_ title: String?, _ hexes: [String]) -> some View {
+        if !hexes.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                if let title {
+                    Text(title)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(hexes, id: \.self) { swatch($0) }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func swatch(_ hex: String, removable: Bool = false) -> some View {

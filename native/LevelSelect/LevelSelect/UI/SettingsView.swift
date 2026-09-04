@@ -271,23 +271,31 @@ struct SettingsView: View {
         return "Add your " + ListFormatter.localizedString(byJoining: missing)
     }
 
+    /// The avatar box, scaled with the text it sits beside.
+    ///
+    /// A fixed 34×34 holding a `.headline`/`.title2` symbol: at AX XXXL the
+    /// glyph grew straight out of its box and touched "Add your name…".
+    /// `@ScaledMetric` ties the box to the type size so it grows with it
+    /// instead of being overrun by it.
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 34
+
     @ViewBuilder
     private var profileAvatar: some View {
         if let data = profile?.avatarData {
             LocalArtworkThumb(data: data, contentMode: .fit)
-                .frame(width: 34, height: 34)
+                .frame(width: avatarSize, height: avatarSize)
         } else if let initial = profile?.displayName?
             .trimmingCharacters(in: .whitespaces).first {
             Text(String(initial).uppercased())
                 .font(.headline)
                 .foregroundStyle(LSTheme.accent)
-                .frame(width: 34, height: 34)
+                .frame(width: avatarSize, height: avatarSize)
                 .background(LSTheme.accent.opacity(0.16), in: .circle)
         } else {
             Image(systemName: "person.crop.circle")
                 .font(.title2)
                 .foregroundStyle(.secondary)
-                .frame(width: 34, height: 34)
+                .frame(width: avatarSize, height: avatarSize)
         }
     }
 

@@ -231,8 +231,13 @@ enum ThemePalette {
             ?? settings?.accentHex(dark: false).flatMap { Color(hex: $0) }
         let darkCustom = linkedDark
             ?? settings?.accentHex(dark: true).flatMap { Color(hex: $0) }
-        let lightAccent = lightCustom ?? LSTheme.torchInk
-        let darkAccent = darkCustom ?? LSTheme.torch
+        // Corrected only if it fails. A colour picked through the build 37
+        // picker already clears the floor; this catches the ones stored before
+        // it existed, which were never checked against anything.
+        let lightAccent = LSTheme.legible(lightCustom ?? LSTheme.torchInk,
+                                          on: groundBase(dark: false))
+        let darkAccent = LSTheme.legible(darkCustom ?? LSTheme.torch,
+                                         on: groundBase(dark: true))
         accent = .lsDynamic(light: lightAccent, dark: darkAccent)
         accentIsCustom = lightCustom != nil || darkCustom != nil
         backgroundOverrideLight = settings?.backgroundHex(dark: false).flatMap(Color.init(hex:))

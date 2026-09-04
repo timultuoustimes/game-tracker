@@ -116,6 +116,28 @@ enum LSTheme {
     /// like torch lands exactly where it does today and nothing moves.
     static let preferredAccentBrightness = (light: 0.60, dark: 0.96)
 
+    /// A stored colour, made legible on the ground it will be read on.
+    ///
+    /// **This is what makes accent-as-ink safe everywhere**, and it is why the
+    /// 59 sites that use the accent as a foreground did not have to be swept
+    /// to semantic colours. A colour chosen through the picker already clears
+    /// the floor — the picker refuses anything that does not. What this catches
+    /// is the LEGACY value: an accent stored before build 37 was never checked
+    /// against anything, and the developer's own `#8A5CF6` sits at 4.22:1 on
+    /// the dark ground.
+    ///
+    /// A passing colour is returned untouched, so nothing moves for anyone
+    /// whose accent was already fine. A failing one is re-derived from its own
+    /// hue and saturation, which keeps the colour recognisably theirs rather
+    /// than replacing it with a default.
+    static func legible(_ color: Color, on ground: Color, floor: Double = 4.5) -> Color {
+        if LSContrast.ratio(color, ground) >= floor { return color }
+        guard let hs = color.lsHueSaturation else { return color }
+        return derivedAccent(hue: hs.hue, saturation: hs.saturation,
+                             dark: LSContrast.luminance(of: ground) < 0.18,
+                             ground: ground, floor: floor).color
+    }
+
     /// A derived accent, and whether the app had to compromise to get there.
     struct DerivedAccent {
         let color: Color
