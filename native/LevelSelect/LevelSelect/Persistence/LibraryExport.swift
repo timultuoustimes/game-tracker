@@ -498,6 +498,9 @@ enum LibraryExport {
                 "backgroundHex": theme.backgroundHex as Any,
                 // build 37: a palette per appearance. The legacy pair above is
                 // still written so an older build can still read this file.
+                "accentHue": theme.accentHue as Any,
+                "accentSaturation": theme.accentSaturation as Any,
+                "paletteLinked": theme.paletteLinked,
                 "accentHexLight": theme.accentHexLight as Any,
                 "accentHexDark": theme.accentHexDark as Any,
                 "backgroundHexLight": theme.backgroundHexLight as Any,

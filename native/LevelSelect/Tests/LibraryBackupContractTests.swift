@@ -100,6 +100,9 @@ struct LibraryBackupContractTests {
 
         let theme = ThemePalette.fetchOrCreate(in: context)
         theme.accentHex = S.accentHex
+        theme.accentHue = 0.42
+        theme.accentSaturation = 0.66
+        theme.paletteLinked = false
         theme.accentHexLight = S.accentLight
         theme.accentHexDark = S.accentDark
         theme.backgroundHexLight = S.groundLight
@@ -175,6 +178,9 @@ struct LibraryBackupContractTests {
         #expect(theme.backgroundHex == S.backgroundHex)
         // build 37: the per-appearance palette must round trip as two pairs,
         // not collapse back to the single legacy value.
+        #expect(theme.accentHue == 0.42)
+        #expect(theme.accentSaturation == 0.66)
+        #expect(theme.paletteLinked == false)
         #expect(theme.accentHexLight == S.accentLight)
         #expect(theme.accentHexDark == S.accentDark)
         #expect(theme.backgroundHexLight == S.groundLight)

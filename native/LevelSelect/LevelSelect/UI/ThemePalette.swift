@@ -212,8 +212,25 @@ enum ThemePalette {
         // option and was worse — the same label would be orange in dark and
         // near-black in light, changing character at sunset with "Follow
         // system" on. Two chosen values mean nothing shifts on its own.
-        let lightCustom = settings?.accentHex(dark: false).flatMap { Color(hex: $0) }
-        let darkCustom = settings?.accentHex(dark: true).flatMap { Color(hex: $0) }
+        // Linked wins when a hue has been picked; otherwise the per-appearance
+        // values, then the legacy single value, then the default. Gated on the
+        // hue being set so switching the flag alone can never silently discard
+        // an accent someone already chose.
+        var linkedLight: Color?
+        var linkedDark: Color?
+        if let s = settings, s.paletteLinked, let hue = s.accentHue {
+            let saturation = s.accentSaturation ?? 0.7
+            linkedLight = LSTheme.derivedAccent(hue: hue, saturation: saturation,
+                                                dark: false,
+                                                ground: groundBase(dark: false)).color
+            linkedDark = LSTheme.derivedAccent(hue: hue, saturation: saturation,
+                                               dark: true,
+                                               ground: groundBase(dark: true)).color
+        }
+        let lightCustom = linkedLight
+            ?? settings?.accentHex(dark: false).flatMap { Color(hex: $0) }
+        let darkCustom = linkedDark
+            ?? settings?.accentHex(dark: true).flatMap { Color(hex: $0) }
         let lightAccent = lightCustom ?? LSTheme.torchInk
         let darkAccent = darkCustom ?? LSTheme.torch
         accent = .lsDynamic(light: lightAccent, dark: darkAccent)

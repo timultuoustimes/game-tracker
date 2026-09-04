@@ -48,6 +48,11 @@ enum CloudKitSchemaSeeder {
     /// and no user can ever collide with it.
     static let seededAccent = marker
 
+    /// A hue no picker offers, for the same reason `seededAccent` is not a
+    /// colour: purge must be able to tell what it wrote from what you chose.
+    /// The wheel is 0…1, so this is out of range and unreachable by hand.
+    static let seededHue: Double = -1
+
     /// A DELIBERATELY LARGE image, for seeding `GameImage.data`.
     ///
     /// Size is the entire point, and getting it wrong cost a promote.
@@ -512,6 +517,10 @@ enum CloudKitSchemaSeeder {
             if existingTheme.accentHexDark == nil { existingTheme.accentHexDark = marker }
             if existingTheme.backgroundHexLight == nil { existingTheme.backgroundHexLight = marker }
             if existingTheme.backgroundHexDark == nil { existingTheme.backgroundHexDark = marker }
+            // build 37 — the linked palette. Seeded only when absent, and
+            // reverted by purge, like every other real preference here.
+            if existingTheme.accentHue == nil { existingTheme.accentHue = seededHue }
+            if existingTheme.accentSaturation == nil { existingTheme.accentSaturation = seededHue }
         // ⚠️ A NEW ThemeSettings FIELD MUST BE ADDED TO BOTH BRANCHES.
         //
         // The app creates a ThemeSettings on launch, so a seed run almost
@@ -538,6 +547,9 @@ enum CloudKitSchemaSeeder {
             theme.accentHexDark = marker                  // build 37
             theme.backgroundHexLight = marker             // build 37
             theme.backgroundHexDark = marker              // build 37
+            theme.accentHue = seededHue                   // build 37
+            theme.accentSaturation = seededHue            // build 37
+            theme.paletteLinked = true                    // build 37, non-optional
             context.insert(theme)
         }
 
@@ -595,6 +607,8 @@ enum CloudKitSchemaSeeder {
             if theme.starNamesData == Data("{}".utf8) { theme.starNamesData = nil }
             if theme.statusNamesData == Data("{}".utf8) { theme.statusNamesData = nil }
             if theme.appearanceRaw == marker { theme.appearanceRaw = nil }
+            if theme.accentHue == seededHue { theme.accentHue = nil }
+            if theme.accentSaturation == seededHue { theme.accentSaturation = nil }
             if theme.accentHexLight == marker { theme.accentHexLight = nil }
             if theme.accentHexDark == marker { theme.accentHexDark = nil }
             if theme.backgroundHexLight == marker { theme.backgroundHexLight = nil }

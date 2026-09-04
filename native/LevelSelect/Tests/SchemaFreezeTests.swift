@@ -214,7 +214,7 @@ struct SchemaFreezeTests {
             // uses them: an unused optional costs nothing and a schema version
             // costs a promote cycle, so a field whose feature is a build away
             // still belongs in the batch deploying today.
-            "ThemeSettings: accentHex,accentHexDark,accentHexLight,appearanceRaw,backdropIntensityRaw,backgroundHex,backgroundHexDark,backgroundHexLight,createdAt,defaultMergeModeRaw,defaultTrackerDisplayRaw,dekuWishlistURLString,gamePageLayoutRaw,overlappingTimerPolicyRaw,pageBackgroundRaw,platformIconVariantsData,savedSwatchesData,showGameLogos,showItemHints,starNamesData,statusColorsData,statusNamesData,updatedAt",
+            "ThemeSettings: accentHex,accentHexDark,accentHexLight,accentHue,accentSaturation,appearanceRaw,backdropIntensityRaw,backgroundHex,backgroundHexDark,backgroundHexLight,createdAt,defaultMergeModeRaw,defaultTrackerDisplayRaw,dekuWishlistURLString,gamePageLayoutRaw,overlappingTimerPolicyRaw,pageBackgroundRaw,paletteLinked,platformIconVariantsData,savedSwatchesData,showGameLogos,showItemHints,starNamesData,statusColorsData,statusNamesData,updatedAt",
             "TrackerItemDetail: chosenName,createdAt,deletedAt,game,id,itemID,legacyID,note,revision,sourceName,updatedAt,userID",
             "TrackerSchemaRecord: createdAt,deletedAt,engine,game,generatedAt,generatedBy,id,jsonData,legacyID,revision,schemaVersion,source,sourcesJSON,updatedAt,userID",
             "TrackerStateRecord: completed,completedAt,count,createdAt,deletedAt,id,itemID,legacyID,notes,playthrough,rank,revealed,revision,selectedVariant,selectedVariantUpdatedAt,updatedAt,userID",

@@ -18,6 +18,24 @@ final class ThemeSettings {
     /// treated as the DARK value, which is the appearance it was legible in.
     var accentHex: String?
 
+    /// **The linked palette: one hue, both appearances derived.** Build 37.
+    ///
+    /// The user picks a hue and a saturation; the app solves brightness against
+    /// each appearance's own ground, because no single value serves both —
+    /// torch is 8.74:1 on dark and 1.90:1 on light. See
+    /// `LSTheme.derivedAccent`, which also softens saturation in the one place
+    /// brightness cannot reach the floor: saturated blues and violets on a dark
+    /// ground, where blue's 0.0722 luminance coefficient means even full
+    /// brightness stays dark.
+    ///
+    /// Only consulted when `accentHue` is set, so an existing library with a
+    /// per-appearance accent is untouched until its owner opts in.
+    var accentHue: Double?
+    var accentSaturation: Double?
+    /// One hue for both appearances, or two independent choices. Defaults true
+    /// so a new library gets the simpler model; inert while `accentHue` is nil.
+    var paletteLinked: Bool = true
+
     /// The accent for light appearance. Build 37.
     var accentHexLight: String?
     /// The accent for dark appearance. Build 37. Falls back to `accentHex`.

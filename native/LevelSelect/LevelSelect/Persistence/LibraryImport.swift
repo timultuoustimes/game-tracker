@@ -525,6 +525,9 @@ enum LibraryImport {
         let theme = ThemePalette.fetchOrCreate(in: context)
         if let v = d["accentHex"] as? String { theme.accentHex = v }
         if let v = d["backgroundHex"] as? String { theme.backgroundHex = v }
+        if let v = d["accentHue"] as? Double { theme.accentHue = v }
+        if let v = d["accentSaturation"] as? Double { theme.accentSaturation = v }
+        if let v = d["paletteLinked"] as? Bool { theme.paletteLinked = v }
         if let v = d["accentHexLight"] as? String { theme.accentHexLight = v }
         if let v = d["accentHexDark"] as? String { theme.accentHexDark = v }
         if let v = d["backgroundHexLight"] as? String { theme.backgroundHexLight = v }
