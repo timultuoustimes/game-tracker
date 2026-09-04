@@ -335,7 +335,7 @@ extension CompletionEvent {
         case .completed:      "Completed"
         case .hundredPercent: "100%"
         case .newGamePlus:    "New Game+"
-        case .custom:         customLabel?.journalText ?? "Finished"
+        case .custom:         customLabel?.journalText ?? "Beaten"
         }
     }
 }

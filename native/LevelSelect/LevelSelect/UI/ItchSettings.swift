@@ -107,7 +107,10 @@ struct ItchSettings: View {
         } catch is CancellationError {
             // Backing out of a permission screen is an answer, not an error.
         } catch {
-            message = "Connection cancelled."
+            // Cancellation is caught above, so anything reaching here is a
+            // real failure — network, callback, or the auth session. Saying
+            // "cancelled" blamed the user for something they did not do.
+            message = "Couldn't connect to itch.io. Try again."
         }
     }
     #else

@@ -167,7 +167,7 @@ struct MarkCompletionSheet: View {
                     }
                 }
 
-                Section("Finished") {
+                Section("Beaten") {
                     Picker("How precisely do you know?", selection: $precision) {
                         Text("Exact day").tag("day")
                         Text("Month").tag("month")

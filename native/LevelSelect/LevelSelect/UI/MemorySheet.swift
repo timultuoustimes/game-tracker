@@ -269,7 +269,9 @@ struct MemorySheet: View {
     /// picker — and it should say so before you wonder where they went.
     private var footerText: String {
         switch howKnown {
-        case .day:    "Stored and shown as an exact day."
+        // The segment above already says "Exact day"; repeating it told
+        // nobody anything.
+        case .day:    ""
         case .month:  "Only the month and year are kept."
         case .year:   "Only the year is kept."
         case .unsure: dayKnown

@@ -50,12 +50,12 @@ struct DetachedSessionsView: View {
                                 Button(role: .destructive) {
                                     confirmingDelete = session
                                 } label: {
-                                    Label("Remove", systemImage: "trash")
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
                         }
                     } footer: {
-                        Text("Tap a session to put it back under a game — its time then counts toward that game's total again. Swipe to remove one that isn't worth keeping.")
+                        Text("Tap a session to put it back under a game — its time then counts toward that game's total again. Swipe to delete one that isn't worth keeping.")
                     }
                 }
             }
@@ -70,11 +70,11 @@ struct DetachedSessionsView: View {
         .sheet(item: $assigning) { session in
             gamePicker(for: session)
         }
-        .confirmationDialog("Remove this session?",
+        .confirmationDialog("Delete this session?",
                             isPresented: Binding(get: { confirmingDelete != nil },
                                                  set: { if !$0 { confirmingDelete = nil } }),
                             titleVisibility: .visible) {
-            Button("Remove", role: .destructive) {
+            Button("Delete", role: .destructive) {
                 if let session = confirmingDelete { repo.deleteSession(session) }
                 confirmingDelete = nil
             }

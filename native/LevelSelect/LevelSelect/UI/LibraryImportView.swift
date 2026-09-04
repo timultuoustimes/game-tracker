@@ -43,7 +43,7 @@ struct LibraryImportView: View {
                     }
                 }
             }
-            .navigationTitle("Import Export")
+            .navigationTitle("Import Library")
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

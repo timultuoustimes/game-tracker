@@ -95,7 +95,7 @@ struct BetaQuestionCard: View {
     }
 
     private func answerButton(_ question: Question) -> some View {
-        Button("Answer on the web") {
+        Button("Answer in Safari") {
             // **/feedback, not /invite.** The invite form asks for an email
             // address, which devices you own and how you track games today —
             // onboarding questions for somebody who does not have the app.

@@ -88,10 +88,17 @@ struct JournalCalendarView: View {
 
     /// The entries a grid cannot hold.
     ///
-    /// "Christmas 1995 or 1996" has no square, and dropping it would be the
-    /// calendar quietly editing someone's history. Kept below the year the way
-    /// the release calendar keeps its "no date yet" group rather than
-    /// pretending it is empty.
+    /// **"Christmas 1995 or 1996" DOES get a square** — on the first candidate
+    /// Christmas, since 2026-09-03. Tim: *"I'd rather it pick one of the days
+    /// and tell me it might be a different year, than pick just January 1."*
+    /// This comment still claimed it had none.
+    ///
+    /// What lands here is what genuinely has no day: "sometime in 1998", a
+    /// season, a decade. Dropping those would be the calendar quietly editing
+    /// someone's history, so they are kept below the year the way the release
+    /// calendar keeps its "no date yet" group rather than pretending it is
+    /// empty. Note those currently also land on 1 January in the grid — an
+    /// open defect needing a grain field, not something this section fixes.
     private func undatedSection(_ undated: [JournalPeriod]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No single day")

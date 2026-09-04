@@ -247,7 +247,7 @@ struct WishlistTab: View {
                          : "Nothing on your wishlist matches “\(searchText)”.")
                 } actions: {
                     if searchText.isEmpty {
-                        Button("Add a Game") { sheet = .addGame("") }
+                        Button("Add to Wishlist") { sheet = .addGame("") }
                             .buttonStyle(.borderedProminent)
                     }
                 }

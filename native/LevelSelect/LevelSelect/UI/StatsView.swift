@@ -284,7 +284,7 @@ struct StatsCards: View {
             GridRow {
                 statTile("timer", "\(sessions.count)", "Sessions")
                 // Completed share of the library — the web's headline number.
-                statTile("flag.checkered", "\(Int((completionRate * 100).rounded()))%", "Finished")
+                statTile("flag.checkered", "\(Int((completionRate * 100).rounded()))%", "Beaten")
             }
         }
         .frame(maxWidth: .infinity)
@@ -1160,7 +1160,7 @@ struct CompletionYearView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .lsBackground()
-        .navigationTitle("Finished in \(String(year))")
+        .navigationTitle("Beaten in \(String(year))")
     }
 }
 

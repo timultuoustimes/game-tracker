@@ -2274,10 +2274,17 @@ struct Repository {
         persist()
     }
 
-    /// Remove an image. Soft, like everything else, so Recently Deleted can
-    /// bring it back — and any role pointing at it is cleared, because a role
-    /// aimed at a deleted picture would render its fallback while still
-    /// claiming to be set.
+    /// Remove an image. Soft, like everything else — and any role pointing at
+    /// it is cleared, because a role aimed at a deleted picture would render
+    /// its fallback while still claiming to be set.
+    ///
+    /// ⚠️ **Not recoverable by a person today.** This said "so Recently Deleted
+    /// can bring it back", and Recently Deleted lists games, playthroughs and
+    /// collections — not images. `restore(_ image:)` exists and nothing calls
+    /// it from the UI, so a removed photo is invisible, still occupying its
+    /// external-storage bytes, with no way back. Found in the build 37 data
+    /// assessment. The comment is corrected here rather than left describing an
+    /// affordance that does not exist; the recovery surface is still owed.
     func softDelete(_ image: GameImage, at date: Date = .now) {
         image.deletedAt = date
         image.updatedAt = date

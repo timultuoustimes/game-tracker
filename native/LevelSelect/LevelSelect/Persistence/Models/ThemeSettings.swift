@@ -108,7 +108,13 @@ final class ThemeSettings {
 
     // MARK: Build 36 — appearance (fields ahead of the feature, on purpose)
 
-    /// `system` | `light` | `dark`; nil = system. Schema V5.
+    /// `system` | `light` | `dark`. Schema V5.
+    ///
+    /// **nil means DARK, not system** — see `LSAppearance.init(raw:)`, which
+    /// falls back deliberately: every library from before this shipped has nil
+    /// here, and reading that as "follow the system" would have turned the app
+    /// light overnight for everyone whose phone is in light mode. This said
+    /// "nil = system", which is the opposite of what the code does.
     ///
     /// **Shipped ahead of the light theme that will use it.** An unused
     /// optional costs nothing and a schema version costs a promote cycle, so a
