@@ -27,7 +27,7 @@ enum LibraryExport {
     /// number, so a build that predates memories now refuses the file and says
     /// why, instead of restoring a library with every memory silently missing
     /// — which is the failure this version exists to fix.
-    static let formatVersion = 2
+    static let formatVersion = 3
 
     struct Manifest: Codable {
         var formatVersion: Int
@@ -45,6 +45,9 @@ enum LibraryExport {
         var markers: Int
         var collections: Int
         var memories: Int
+        /// The user's own notes and renames on tracker items. Absent from the
+        /// file until v3, which is the whole reason v3 exists.
+        var trackerItemDetails: Int
         /// User-added images, and what they weigh. The byte figure is
         /// reported so someone reading the manifest can see why the file is
         /// the size it is, without decoding anything.
@@ -71,7 +74,8 @@ enum LibraryExport {
 
         var counts = (playthroughs: 0, sessions: 0, runs: 0,
                       states: 0, schemas: 0, completions: 0, videos: 0,
-                      maps: 0, markers: 0, images: 0, imageBytes: 0)
+                      maps: 0, markers: 0, images: 0, imageBytes: 0,
+                      trackerItemDetails: 0)
 
         var gameObjects: [[String: Any]] = []
         for game in games {
@@ -112,6 +116,39 @@ enum LibraryExport {
             dict["gameModes"] = game.gameModes
             dict["playerPerspectives"] = game.playerPerspectives
             dict["trackerDisplay"] = game.trackerDisplayRaw
+            // The systems the user OWNS it on, which `platforms` (availability)
+            // cannot reconstruct. Absent until v3: after a restore,
+            // `ownedPlatformNames` read nil as pre-V3 data and fell back to
+            // `platforms.first`, so a Switch+PC purchase came back as one
+            // arbitrary platform.
+            dict["ownedPlatforms"] = game.ownedPlatforms
+            dict["platformReleases"] = game.platformReleasesData?.base64EncodedString()
+            dict["showItemHintsOverride"] = game.showItemHintsOverride
+
+            // The user's own notes and renames on tracker items.
+            //
+            // `TrackerItemDetail` exists precisely because a typed sentence
+            // must not be lost to a whole-blob overwrite — and then the backup
+            // omitted the model entirely. Game-scoped, so it rides with its
+            // game rather than in a root array.
+            let details = (game.trackerItemDetails ?? []).filter { $0.deletedAt == nil }
+            if !details.isEmpty {
+                counts.trackerItemDetails += details.count
+                dict["trackerItemDetails"] = details
+                    .sorted { $0.itemID < $1.itemID }
+                    .map { d -> [String: Any] in
+                        var t: [String: Any] = [
+                            "id": d.id.uuidString,
+                            "itemID": d.itemID,
+                            "createdAt": iso(d.createdAt),
+                            "updatedAt": iso(d.updatedAt),
+                        ]
+                        t["note"] = d.note
+                        t["chosenName"] = d.chosenName
+                        t["sourceName"] = d.sourceName
+                        return t
+                    }
+            }
 
             // Tracker schema (the structure), separate from progress.
             if let schema = game.trackerSchema, schema.deletedAt == nil {
@@ -189,6 +226,13 @@ enum LibraryExport {
                         t["count"] = state.count
                         t["rank"] = state.rank
                         t["notes"] = state.notes
+                        // The chosen form is a user decision, and `completedAt`
+                        // is what "where you left off" reads — `updatedAt` is
+                        // only a legacy fallback. Both were dropped before v3,
+                        // so a restored tracker showed the wrong variant and
+                        // the wrong last-ticked item.
+                        t["completedAt"] = state.completedAt.map(iso)
+                        t["selectedVariant"] = state.selectedVariant
                         return t
                     }
 
@@ -393,7 +437,7 @@ enum LibraryExport {
         let total = games.count + counts.playthroughs + counts.sessions + counts.runs
             + counts.states + counts.schemas + counts.completions + counts.videos
             + counts.maps + counts.markers + counts.images + collectionObjects.count
-            + memoryObjects.count
+            + memoryObjects.count + counts.trackerItemDetails
 
         let manifest = Manifest(
             formatVersion: formatVersion,
@@ -411,6 +455,7 @@ enum LibraryExport {
             markers: counts.markers,
             collections: collectionObjects.count,
             memories: memoryObjects.count,
+            trackerItemDetails: counts.trackerItemDetails,
             images: counts.images,
             imageBytes: counts.imageBytes,
             totalRecords: total
@@ -422,17 +467,49 @@ enum LibraryExport {
             "collections": collectionObjects,
             "memories": memoryObjects,
         ]
+        // The player's own identity. NOT the obsolete `Profile` bookkeeping
+        // row this file's comment excludes — this is the name, the handles and
+        // the avatar, and the avatar is the one thing here that cannot be
+        // retyped from memory. Added in v3.
+        if let profile = try? context.fetch(FetchDescriptor<PlayerProfile>()).first {
+            root["profile"] = ([
+                "id": profile.id.uuidString,
+                "createdAt": iso(profile.createdAt),
+                "updatedAt": iso(profile.updatedAt),
+                "displayName": profile.displayName as Any,
+                "avatar": profile.avatarData?.base64EncodedString() as Any,
+                "nameColor": profile.nameColorRaw as Any,
+                "useHandleAsName": profile.useHandleAsName,
+                "handles": profile.handles.isEmpty ? nil : profile.handles as Any,
+            ] as [String: Any?]).compactMapValues { $0 }
+        }
         // Synced appearance choices are user data too — a custom accent and
         // per-status colors are exactly the kind of thing that's annoying to
         // rebuild by memory after a reinstall.
+        //
+        // Through v2 this wrote six of eighteen fields and the importer never
+        // read the block at all, so it was decorative JSON rather than a
+        // restore point. Every stored choice is written now, and
+        // `LibraryImport.applyAppearance` reads it.
         if let theme = try? context.fetch(FetchDescriptor<ThemeSettings>()).first {
             root["appearance"] = ([
                 "accentHex": theme.accentHex as Any,
+                "backgroundHex": theme.backgroundHex as Any,
+                "appearance": theme.appearanceRaw as Any,
                 "statusColors": theme.statusColors,
+                "statusNames": theme.statusNames.isEmpty ? nil : theme.statusNames as Any,
                 "pageBackground": theme.pageBackgroundRaw,
+                "gamePageLayout": theme.gamePageLayoutRaw as Any,
                 "defaultTrackerDisplay": theme.defaultTrackerDisplayRaw,
+                "defaultMergeMode": theme.defaultMergeModeRaw as Any,
+                "overlappingTimerPolicy": theme.overlappingTimerPolicyRaw as Any,
                 "starNames": theme.starNames.isEmpty ? nil : theme.starNames as Any,
                 "backdropIntensity": theme.backdropIntensityRaw as Any,
+                "showItemHints": theme.showItemHints,
+                "showGameLogos": theme.showGameLogos,
+                "dekuWishlistURL": theme.dekuWishlistURLString as Any,
+                "platformIconVariants": theme.platformIconVariantsData?.base64EncodedString() as Any,
+                "savedSwatches": theme.savedSwatchesData?.base64EncodedString() as Any,
             ] as [String: Any?]).compactMapValues { $0 }
         }
         return try JSONSerialization.data(

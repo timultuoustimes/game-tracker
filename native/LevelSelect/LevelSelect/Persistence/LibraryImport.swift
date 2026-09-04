@@ -27,7 +27,7 @@ enum LibraryImport {
     /// use it; a test pins that the two never drift.
     /// The newest format this build understands. **Older files are read, not
     /// refused** — see the gate in `root(of:)`.
-    nonisolated static let supportedVersion = 2
+    nonisolated static let supportedVersion = 3
 
     enum ImportError: LocalizedError {
         case notAnExport
@@ -135,6 +135,7 @@ enum LibraryImport {
         var markers = Set<UUID>(), collections = Set<UUID>()
         var images = Set<UUID>()
         var memories = Set<UUID>()
+        var trackerItemDetails = Set<UUID>()
 
         init(context: ModelContext) throws {
             games = Set(try context.fetch(FetchDescriptor<Game>()).map(\.id))
@@ -150,6 +151,7 @@ enum LibraryImport {
             collections = Set(try context.fetch(FetchDescriptor<GameCollection>()).map(\.id))
             images = Set(try context.fetch(FetchDescriptor<GameImage>()).map(\.id))
             memories = Set(try context.fetch(FetchDescriptor<Memory>()).map(\.id))
+            trackerItemDetails = Set(try context.fetch(FetchDescriptor<TrackerItemDetail>()).map(\.id))
         }
     }
 
@@ -218,6 +220,16 @@ enum LibraryImport {
         for game in try context.fetch(FetchDescriptor<Game>()) { gamesByID[game.id] = game }
         var ptsByID: [UUID: Playthrough] = [:]
         for pt in try context.fetch(FetchDescriptor<Playthrough>()) { ptsByID[pt.id] = pt }
+        // Maps and memories need the OBJECT, not just the id.
+        //
+        // A partial restore is precisely the case where the parent survived
+        // and a child under it did not, so a present parent has to be usable
+        // as the relationship target — the same thing the game and playthrough
+        // paths above already do.
+        var mapsByID: [UUID: GameMap] = [:]
+        for map in try context.fetch(FetchDescriptor<GameMap>()) { mapsByID[map.id] = map }
+        var memoriesByID: [UUID: Memory] = [:]
+        for m in try context.fetch(FetchDescriptor<Memory>()) { memoriesByID[m.id] = m }
 
         for gameDict in (root["games"] as? [[String: Any]]) ?? [] {
             guard let gameID = uuid(gameDict["id"]) else { continue }
@@ -245,6 +257,28 @@ enum LibraryImport {
                     schema.game = game
                     outcome.created["tracker schemas", default: 0] += 1
                 }
+            }
+
+            // The user's own notes and renames on tracker items.
+            //
+            // Game-scoped, and restored whether or not the game already
+            // existed — a present game with a lost note is exactly the partial
+            // disaster the importer promises to repair.
+            for dDict in (gameDict["trackerItemDetails"] as? [[String: Any]]) ?? [] {
+                guard let dID = uuid(dDict["id"]) else { continue }
+                if existing.trackerItemDetails.contains(dID) {
+                    outcome.skipped["tracker notes", default: 0] += 1; continue
+                }
+                let detail = TrackerItemDetail(itemID: (dDict["itemID"] as? String) ?? "")
+                detail.id = dID
+                detail.note = dDict["note"] as? String
+                detail.chosenName = dDict["chosenName"] as? String
+                detail.sourceName = dDict["sourceName"] as? String
+                detail.createdAt = date(dDict["createdAt"]) ?? .now
+                detail.updatedAt = date(dDict["updatedAt"]) ?? .now
+                context.insert(detail)
+                detail.game = game
+                outcome.created["tracker notes", default: 0] += 1
             }
 
             var restoredActive: UUID?
@@ -345,7 +379,11 @@ enum LibraryImport {
                 let map: GameMap?
                 if existing.maps.contains(mID) {
                     outcome.skipped["maps", default: 0] += 1
-                    map = nil   // markers under a present map still checked below
+                    // The comment below was true of the intent and false of the
+                    // code: `map = nil` meant the `if let` skipped every marker
+                    // under a map that already existed, which is the one case a
+                    // partial restore is for.
+                    map = mapsByID[mID]   // markers under a present map still checked below
                 } else {
                     let made = makeMap(mDict, id: mID)
                     context.insert(made)
@@ -386,30 +424,41 @@ enum LibraryImport {
 
         for mDict in (root["memories"] as? [[String: Any]]) ?? [] {
             guard let mID = uuid(mDict["id"]) else { continue }
-            if existing.memories.contains(mID) {
-                outcome.skipped["memories", default: 0] += 1; continue
+            // A present memory is still the parent for its photos.
+            //
+            // This used to `continue`, so a memory that survived with one
+            // picture missing could never get that picture back — while
+            // Preview, which walks nested images whether or not the parent
+            // exists, promised the user it would.
+            let memory: Memory
+            if let present = memoriesByID[mID] {
+                outcome.skipped["memories", default: 0] += 1
+                memory = present
+            } else {
+                let made = Memory()
+                made.id = mID
+                made.title = (mDict["title"] as? String) ?? ""
+                made.body = mDict["body"] as? String
+                // Taken from the file, never rebuilt from `precision`: the words
+                // are the memory's own answer to "when", and the interval is what
+                // places it. Deriving either would restore a guess.
+                made.whenText = mDict["whenText"] as? String
+                made.precision = mDict["precision"] as? String
+                made.earliest = date(mDict["earliest"]) ?? .now
+                made.latest = date(mDict["latest"]) ?? made.earliest
+                made.kind = (mDict["kind"] as? String) ?? "memory"
+                made.place = mDict["place"] as? String
+                made.platform = mDict["platform"] as? String
+                made.createdAt = date(mDict["createdAt"]) ?? .now
+                made.companions = companions(mDict["playedWith"])
+                // A memory whose game is not in this file stays standalone rather
+                // than being dropped — it is the user's writing either way.
+                if let gID = uuid(mDict["gameID"]) { made.game = gamesByID[gID] }
+                context.insert(made)
+                memoriesByID[mID] = made
+                outcome.created["memories", default: 0] += 1
+                memory = made
             }
-            let memory = Memory()
-            memory.id = mID
-            memory.title = (mDict["title"] as? String) ?? ""
-            memory.body = mDict["body"] as? String
-            // Taken from the file, never rebuilt from `precision`: the words
-            // are the memory's own answer to "when", and the interval is what
-            // places it. Deriving either would restore a guess.
-            memory.whenText = mDict["whenText"] as? String
-            memory.precision = mDict["precision"] as? String
-            memory.earliest = date(mDict["earliest"]) ?? .now
-            memory.latest = date(mDict["latest"]) ?? memory.earliest
-            memory.kind = (mDict["kind"] as? String) ?? "memory"
-            memory.place = mDict["place"] as? String
-            memory.platform = mDict["platform"] as? String
-            memory.createdAt = date(mDict["createdAt"]) ?? .now
-            memory.companions = companions(mDict["playedWith"])
-            // A memory whose game is not in this file stays standalone rather
-            // than being dropped — it is the user's writing either way.
-            if let gID = uuid(mDict["gameID"]) { memory.game = gamesByID[gID] }
-            context.insert(memory)
-            outcome.created["memories", default: 0] += 1
 
             for iDict in (mDict["images"] as? [[String: Any]]) ?? [] {
                 guard let iID = uuid(iDict["id"]) else { continue }
@@ -425,11 +474,81 @@ enum LibraryImport {
             }
         }
 
+        applyProfile(root["profile"] as? [String: Any], context: context, outcome: &outcome)
+        applyAppearance(root["appearance"] as? [String: Any], context: context, outcome: &outcome)
+
         // Reappearing data deserves true rings.
         let repo = Repository(context)
         for game in gamesByID.values { repo.recomputeProgress(game) }
         try context.save()
         return outcome
+    }
+
+    /// Restore the player's identity — but never over one that already exists.
+    ///
+    /// A present profile is the user's current identity; a restore fills a
+    /// blank, it does not overwrite a name and avatar someone is using. Same
+    /// rule the tracker schema follows above.
+    private static func applyProfile(
+        _ d: [String: Any]?, context: ModelContext, outcome: inout Outcome
+    ) {
+        guard let d else { return }
+        let present = (try? context.fetch(FetchDescriptor<PlayerProfile>()))?.first
+        if present != nil {
+            outcome.skipped["profile", default: 0] += 1
+            return
+        }
+        let profile = PlayerProfile()
+        if let id = uuid(d["id"]) { profile.id = id }
+        profile.createdAt = date(d["createdAt"]) ?? .now
+        profile.updatedAt = date(d["updatedAt"]) ?? .now
+        profile.displayName = d["displayName"] as? String
+        profile.avatarData = (d["avatar"] as? String).flatMap { Data(base64Encoded: $0) }
+        profile.nameColorRaw = d["nameColor"] as? String
+        profile.useHandleAsName = (d["useHandleAsName"] as? Bool) ?? false
+        if let handles = d["handles"] as? [String: String] { profile.handles = handles }
+        context.insert(profile)
+        outcome.created["profile", default: 0] += 1
+    }
+
+    /// Restore appearance choices.
+    ///
+    /// Through v2 the exporter wrote this block and NOTHING read it — the
+    /// importer ended after memories, so every accent, status color and custom
+    /// word in the file was decorative. Unlike the profile this fills the
+    /// existing settings row, because there is always exactly one and a blank
+    /// default is not an identity worth protecting.
+    private static func applyAppearance(
+        _ d: [String: Any]?, context: ModelContext, outcome: inout Outcome
+    ) {
+        guard let d else { return }
+        let theme = ThemePalette.fetchOrCreate(in: context)
+        if let v = d["accentHex"] as? String { theme.accentHex = v }
+        if let v = d["backgroundHex"] as? String { theme.backgroundHex = v }
+        if let v = d["appearance"] as? String { theme.appearanceRaw = v }
+        if let v = d["statusColors"] as? [String: String] { theme.statusColors = v }
+        if let v = d["statusNames"] as? [String: String] { theme.statusNames = v }
+        if let v = d["pageBackground"] as? String { theme.pageBackgroundRaw = v }
+        if let v = d["gamePageLayout"] as? String { theme.gamePageLayoutRaw = v }
+        if let v = d["defaultTrackerDisplay"] as? String { theme.defaultTrackerDisplayRaw = v }
+        if let v = d["defaultMergeMode"] as? String { theme.defaultMergeModeRaw = v }
+        if let v = d["overlappingTimerPolicy"] as? String { theme.overlappingTimerPolicyRaw = v }
+        if let v = d["starNames"] as? [String] { theme.starNames = v }
+        if let v = d["backdropIntensity"] as? String { theme.backdropIntensityRaw = v }
+        if let v = d["showItemHints"] as? Bool { theme.showItemHints = v }
+        if let v = d["showGameLogos"] as? Bool { theme.showGameLogos = v }
+        if let v = d["dekuWishlistURL"] as? String { theme.dekuWishlistURLString = v }
+        if let v = d["platformIconVariants"] as? String {
+            theme.platformIconVariantsData = Data(base64Encoded: v)
+        }
+        if let v = d["savedSwatches"] as? String {
+            theme.savedSwatchesData = Data(base64Encoded: v)
+        }
+        theme.updatedAt = .now
+        // Push it into the live palette, so a restore repaints the app instead
+        // of waiting for the next launch.
+        ThemePalette.refresh(from: theme)
+        outcome.created["appearance", default: 0] += 1
     }
 
     // MARK: Record builders
@@ -443,6 +562,12 @@ enum LibraryImport {
         game.notes = (d["notes"] as? String) ?? ""
         game.platforms = (d["platforms"] as? [String]) ?? []
         game.ownership = (d["ownership"] as? [String]) ?? []
+        // v3. Nil here is not "owned nowhere" — `ownedPlatformNames` reads nil
+        // as pre-V3 data and falls back to `platforms.first`, so restoring a
+        // v1/v2 file must leave it nil rather than write an empty array.
+        game.ownedPlatforms = d["ownedPlatforms"] as? [String]
+        game.platformReleasesData = (d["platformReleases"] as? String).flatMap { Data(base64Encoded: $0) }
+        game.showItemHintsOverride = d["showItemHintsOverride"] as? Bool
         game.userTags = (d["userTags"] as? [String]) ?? []
         game.summary = d["summary"] as? String
         game.rating = d["rating"] as? Int
@@ -528,6 +653,9 @@ enum LibraryImport {
         state.count = d["count"] as? Int
         state.rank = d["rank"] as? Int
         state.notes = d["notes"] as? String
+        // v3: the chosen form, and the timestamp "where you left off" reads.
+        state.completedAt = date(d["completedAt"])
+        state.selectedVariant = d["selectedVariant"] as? String
         return state
     }
 
