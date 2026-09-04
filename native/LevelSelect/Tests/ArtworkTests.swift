@@ -432,9 +432,22 @@ struct AccentContrastTests {
     /// Brand purple lands at L~=0.21, just above the crossover, so it takes
     /// BLACK lettering — 5.2:1 against white's 4.1:1. Worth knowing, because
     /// it is a visible change to the default look and it is the correct one.
+    /// Checked in BOTH appearances explicitly.
+    ///
+    /// Build 37 made `accent` and `onAccent` dynamic colours, so sampling them
+    /// tests whichever trait the test process happens to resolve under — which
+    /// is not a property worth asserting. `knockoutPreview(on:ground:)` takes
+    /// both sides, so the pair being asked about is the pair that will actually
+    /// be on screen.
     @Test func theDefaultAccentGetsTheHigherContrastOption() {
         ThemePalette.refresh(from: nil)
-        #expect(ThemePalette.contrast(ThemePalette.onAccent, LSTheme.accent) >= 4.5)
+        for dark in [false, true] {
+            let accent = dark ? LSTheme.torch : LSTheme.torchInk
+            let ink = ThemePalette.knockoutPreview(on: accent,
+                                                   ground: ThemePalette.groundBase(dark: dark))
+            #expect(ThemePalette.contrast(ink, accent) >= 4.5,
+                    "default accent unreadable in \(dark ? "dark" : "light")")
+        }
     }
 
     /// Tim's own accent — torch orange, and the case that drove the whole
@@ -447,10 +460,21 @@ struct AccentContrastTests {
     /// why it darkens the ground rather than reaching for black. Whatever it
     /// resolves to, it has to be readable.
     @Test func torchOrangeStaysLegibleInEitherTheme() {
+        // Someone who picked bright torch for BOTH appearances. Build 37's
+        // constrained picker steers away from that in light mode, but the
+        // knockout still has to cope — existing libraries carry the value, and
+        // ink on an accent-filled surface needs it whatever the accent is.
         let settings = ThemeSettings()
-        settings.accentHex = "#F5A34D"
+        settings.accentHexLight = "#F5A34D"
+        settings.accentHexDark = "#F5A34D"
         ThemePalette.refresh(from: settings)
-        #expect(ThemePalette.contrast(ThemePalette.onAccent, LSTheme.accent) >= 4.5)
+        let torch = try! #require(Color(hex: "#F5A34D"))
+        for dark in [false, true] {
+            let ink = ThemePalette.knockoutPreview(on: torch,
+                                                   ground: ThemePalette.groundBase(dark: dark))
+            #expect(ThemePalette.contrast(ink, torch) >= 4.5,
+                    "torch unreadable in \(dark ? "dark" : "light")")
+        }
     }
 
     /// The fallback must not quietly become black. Losing the ground's hue
@@ -459,9 +483,12 @@ struct AccentContrastTests {
     @Test func theFallbackKeepsTheGroundsHue() {
         let paleGround = Color(red: 0.97, green: 0.96, blue: 1.00)
         let settings = ThemeSettings()
-        settings.accentHex = "#F5A34D"
+        // The light accent specifically: this is the darkening path, and it
+        // only triggers when the accent is too close to the ground behind it.
+        settings.accentHexLight = "#F5A34D"
         ThemePalette.refresh(from: settings)
-        let ink = ThemePalette.onAccent
+        let ink = ThemePalette.knockoutPreview(
+            on: try! #require(Color(hex: "#F5A34D")), ground: paleGround)
         // Not pure black, and not pure grey: it still carries a hue.
         #expect(ThemePalette.luminance(of: ink) > 0)
         if let inkHS = ink.lsHueSaturation, let groundHS = paleGround.lsHueSaturation {

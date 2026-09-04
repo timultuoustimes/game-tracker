@@ -20,7 +20,12 @@ enum ThemePalette {
     /// Light, dark, or the system's choice. Schema V5.
     private(set) static var appearance: LSAppearance = .dark
     /// A custom page background, overriding the appearance's own. Schema V5.
-    private(set) static var backgroundOverride: Color?
+    /// The chosen ground tint per appearance (nil = the built-in ground).
+    private(set) static var backgroundOverrideLight: Color?
+    private(set) static var backgroundOverrideDark: Color?
+    /// The dark value, for the single-tint paths that cannot express two —
+    /// the widget snapshot and the hero gradient.
+    static var backgroundOverride: Color? { backgroundOverrideDark }
     /// How hard the game-page backdrop reads.
     private(set) static var backdropIntensity: BackdropIntensity = .standard
     /// How game pages arrange their header.
@@ -188,6 +193,24 @@ enum ThemePalette {
 
     /// A solid stand-in for the background gradient — its top stop, which is
     /// what sits behind the controls that use a knockout.
+    /// The ground a piece of ink will actually sit on, resolved concretely.
+    ///
+    /// Concrete, not dynamic, on purpose: every contrast decision below is
+    /// arithmetic on colour components, and a dynamic colour resolves against
+    /// whatever trait happens to be current when it is sampled — which is how
+    /// you get a light-mode answer applied to a dark-mode screen.
+    static func groundBase(dark: Bool) -> Color {
+        let tint = dark ? backgroundOverrideDark : backgroundOverrideLight
+        if let tint {
+            let hs = tint.lsHueSaturation
+            return Color(hue: hs?.hue ?? 0,
+                         saturation: (hs?.saturation ?? 0) < 0.05 ? 0 : 0.06,
+                         brightness: dark ? 0.16 : 0.97)
+        }
+        return dark ? Color(red: 0.10, green: 0.07, blue: 0.18)
+                    : Color(red: 0.97, green: 0.96, blue: 1.00)
+    }
+
     static var groundBase: Color {
         backgroundOverride.map { tint in
             let hs = tint.lsHueSaturation
@@ -199,13 +222,30 @@ enum ThemePalette {
     }
 
     static func refresh(from settings: ThemeSettings?) {
-        let custom = settings?.accentHex.flatMap { Color(hex: $0) }
-        accent = custom ?? LSTheme.defaultAccent
-        accentIsCustom = custom != nil
+        // **One accent per appearance, both chosen by the user.**
+        //
+        // No single colour serves both grounds: torch is 8.74:1 on dark and
+        // 1.90:1 on light. Deriving a fallback at render time was the other
+        // option and was worse — the same label would be orange in dark and
+        // near-black in light, changing character at sunset with "Follow
+        // system" on. Two chosen values mean nothing shifts on its own.
+        let lightCustom = settings?.accentHex(dark: false).flatMap { Color(hex: $0) }
+        let darkCustom = settings?.accentHex(dark: true).flatMap { Color(hex: $0) }
+        let lightAccent = lightCustom ?? LSTheme.torchInk
+        let darkAccent = darkCustom ?? LSTheme.torch
+        accent = .lsDynamic(light: lightAccent, dark: darkAccent)
+        accentIsCustom = lightCustom != nil || darkCustom != nil
+        backgroundOverrideLight = settings?.backgroundHex(dark: false).flatMap(Color.init(hex:))
+        backgroundOverrideDark = settings?.backgroundHex(dark: true).flatMap(Color.init(hex:))
         // A knockout, not simply a contrasting ink — see `knockout(on:)`.
-        // Falls back to black/white on its own when the ground is too close
-        // to the accent to be seen through it.
-        onAccent = knockout(on: accent)
+        //
+        // Computed per appearance against that appearance's ACTUAL ground,
+        // rather than letting a dynamic colour resolve itself: the arithmetic
+        // needs real components, and sampling a dynamic colour picks whichever
+        // trait is current when it is read.
+        onAccent = .lsDynamic(
+            light: knockoutPreview(on: lightAccent, ground: groundBase(dark: false)),
+            dark: knockoutPreview(on: darkAccent, ground: groundBase(dark: true)))
         pageBackground = settings.flatMap { ThemePageBackground(rawValue: $0.pageBackgroundRaw) } ?? .cover
         defaultTrackerDisplay = settings.flatMap { TrackerDisplay(rawValue: $0.defaultTrackerDisplayRaw) } ?? .inline
         var overrides: [GameStatus: Color] = [:]
@@ -218,7 +258,6 @@ enum ThemePalette {
         starNames = settings?.starNames ?? []
         statusNameOverrides = settings?.statusNames ?? [:]
         appearance = LSAppearance(raw: settings?.appearanceRaw)
-        backgroundOverride = settings?.backgroundHex.flatMap(Color.init(hex:))
         backdropIntensity = settings?.backdropIntensityRaw
             .flatMap(BackdropIntensity.init(rawValue:)) ?? .standard
         gamePageLayout = settings?.gamePageLayoutRaw

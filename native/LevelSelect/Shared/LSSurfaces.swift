@@ -56,8 +56,22 @@ enum LSTheme {
     ///   `.environment(\.colorScheme,)` override and resolves against the
     ///   system instead. That produced the exact bug it looks like — a Light
     ///   app on a Dark phone drawing dark-mode ground under light-mode text.
+    /// One tint for both appearances — the widget and preview path, where only
+    /// a single stored colour is available.
     static func ground(tintedBy tint: Color?, scheme: ColorScheme? = nil) -> LinearGradient {
-        let hue = tint?.lsHueSaturation
+        ground(lightTint: tint, darkTint: tint, scheme: scheme)
+    }
+
+    /// A tint per appearance. Build 37.
+    ///
+    /// The app stores light and dark grounds separately, because a colour that
+    /// reads on one is rarely the colour you want on the other — the same
+    /// reason the accent is now a pair. Each branch shades from its OWN hue,
+    /// so a warm light ground and a cool dark one do not have to compromise.
+    static func ground(lightTint: Color?, darkTint: Color?,
+                       scheme: ColorScheme? = nil) -> LinearGradient {
+        let lightHue = lightTint?.lsHueSaturation
+        let darkHue = darkTint?.lsHueSaturation
         func pick(_ light: Color, _ dark: Color) -> Color {
             switch scheme {
             case .light: light
@@ -67,13 +81,13 @@ enum LSTheme {
         }
         return LinearGradient(
             colors: [
-                pick(shade(hue, brightness: 0.97, saturation: 0.06,
+                pick(shade(lightHue, brightness: 0.97, saturation: 0.06,
                            fallback: Color(red: 0.97, green: 0.96, blue: 1.00)),
-                     shade(hue, brightness: 0.16, saturation: 0.55,
+                     shade(darkHue, brightness: 0.16, saturation: 0.55,
                            fallback: Color(red: 0.10, green: 0.07, blue: 0.18))),
-                pick(shade(hue, brightness: 0.88, saturation: 0.10,
+                pick(shade(lightHue, brightness: 0.88, saturation: 0.10,
                            fallback: Color(red: 0.88, green: 0.86, blue: 0.94)),
-                     shade(hue, brightness: 0.07, saturation: 0.60,
+                     shade(darkHue, brightness: 0.07, saturation: 0.60,
                            fallback: Color(red: 0.05, green: 0.04, blue: 0.09))),
             ],
             startPoint: .top, endPoint: .bottom

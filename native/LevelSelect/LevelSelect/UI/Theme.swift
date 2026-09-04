@@ -31,7 +31,16 @@ extension LSTheme {
     /// complement rather than its neighbour, it separates from it at every
     /// size. Anyone who has chosen an accent keeps theirs; this is only what
     /// the app reaches for when nobody has said otherwise.
-    static let defaultAccent = torch
+    /// Torch, dropped in value until it clears 4.5:1 on the light ground.
+    ///
+    /// Same hue and saturation, so light mode still reads as LevelSelect
+    /// rather than a different product. Bright torch is 1.90:1 there — it
+    /// misses even the 3:1 floor for glyphs — while this is 4.53:1.
+    static let torchInk = Color(red: 0.60, green: 0.40, blue: 0.188)   // #996630
+
+    /// The default accent, per appearance. Bright torch on dark, torch ink on
+    /// light. There is no single value that works on both.
+    static let defaultAccent: Color = .lsDynamic(light: torchInk, dark: torch)
 
     /// Darker torch, used as the hard drop shadow under pixel type.
     static let torchShadow = Color(red: 0.54, green: 0.29, blue: 0.07)
@@ -72,7 +81,9 @@ extension View {
         // A picked colour tints the ground rather than replacing it — see
         // LSTheme.ground(tintedBy:). Either way it is one gradient, so nothing
         // downstream has to ask which theme is on or whether one was chosen.
-        background(LSTheme.ground(tintedBy: ThemePalette.backgroundOverride).ignoresSafeArea())
+        background(LSTheme.ground(lightTint: ThemePalette.backgroundOverrideLight,
+                                  darkTint: ThemePalette.backgroundOverrideDark)
+            .ignoresSafeArea())
     }
 
     /// Card surface used across Stats/Home.
