@@ -62,8 +62,17 @@ struct ColorEditor: View {
 
     /// The two colours the preview needs, live — whichever one is being
     /// edited comes from the sliders, the other from its stored binding.
-    private func live(_ id: String) -> Color {
-        id == selectedID ? current : (targets.first { $0.id == id }?.binding.wrappedValue ?? .clear)
+    ///
+    /// Resolved for the appearance being edited. Build 37 split each colour in
+    /// two, so the ids became `accent-light`/`accent-dark` and this matched
+    /// neither: every lookup fell through to `.clear` and the preview stopped
+    /// responding to the picker entirely. Editing the light accent must
+    /// preview the light accent on the LIGHT ground, not a mix of the two.
+    private func live(_ kind: String) -> Color {
+        let appearance = selectedID.hasSuffix("-dark") ? "dark" : "light"
+        let id = "\(kind)-\(appearance)"
+        if id == selectedID { return current }
+        return targets.first { $0.id == id }?.binding.wrappedValue ?? .clear
     }
 
     /// What the theme looked like when the sheet opened, for Cancel — one

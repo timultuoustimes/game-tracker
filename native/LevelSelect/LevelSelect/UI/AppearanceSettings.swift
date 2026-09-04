@@ -418,8 +418,12 @@ struct AppearanceSettingsSection: View {
     private func backgroundBinding(dark: Bool) -> Binding<Color> {
         Binding(
             get: {
+                // Unset means the built-in ground for THIS appearance, not a
+                // fixed purple — the preview renders the accent on whatever
+                // this returns, so a light accent was being shown against a
+                // dark purple and the contrast it implied was fiction.
                 settings?.backgroundHex(dark: dark).flatMap { Color(hex: $0) }
-                    ?? LSTheme.purpleDeep
+                    ?? ThemePalette.groundBase(dark: dark)
             },
             set: { color in
                 let s = ensureSettings()
