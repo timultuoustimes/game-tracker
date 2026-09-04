@@ -47,36 +47,6 @@ struct StatusCarousel: View {
     var onToggleCollapse: () -> Void = {}
     var onHide: (() -> Void)?
 
-    private var collapseChevron: some View {
-        Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) { onToggleCollapse() }
-        } label: {
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .rotationEffect(.degrees(collapsed ? 0 : 90))
-        }
-        .buttonStyle(.plain)
-        .lsTapTarget()
-        // A rotated chevron is a picture of state, and VoiceOver read the
-        // symbol's own name: "Forward".
-        .accessibilityLabel(collapsed ? "Expand \(status.sectionTitle)"
-                                      : "Collapse \(status.sectionTitle)")
-        .accessibilityValue(collapsed ? "Collapsed" : "Expanded")
-    }
-
-    private var statusIcon: some View {
-        Image(systemName: status.systemImage)
-            .foregroundStyle(status == .playing ? AnyShapeStyle(LSTheme.accent) : AnyShapeStyle(.secondary))
-    }
-
-    private var seeAllButton: some View {
-        Button("See all") { onSeeAll() }
-            .font(.subheadline)
-            .foregroundStyle(LSTheme.accent)
-            .buttonStyle(.plain)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // The one shelf header, shared with Library and Wishlist. It
@@ -86,7 +56,7 @@ struct StatusCarousel: View {
                 title: status.sectionTitle,
                 count: games.count,
                 systemImage: status.systemImage,
-                tint: status == .playing ? LSTheme.accent : .secondary,
+                tint: status.color,
                 collapsed: collapsed,
                 onToggleCollapse: onToggleCollapse,
                 onSeeAll: onSeeAll)
@@ -135,6 +105,28 @@ struct StatusCarousel: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned)
+            // **The shelf's colour, on the shelf.**
+            //
+            // The status glyph has carried its colour in the header for a
+            // while, but a title is a line of text — the shelf itself stayed
+            // neutral, so Home below the hero read as generic rows. Fable's
+            // 5.3: carry it onto the row "so a Paused shelf is orange as a
+            // block, not just in its title."
+            //
+            // A rule rather than a tint on the first cover: the art is the
+            // game's, and the one thing this app does not do is paint over it.
+            // Sitting in the gutter left of the covers, it also lines the
+            // shelves up with each other down the page.
+            .overlay(alignment: .leading) {
+                Capsule()
+                    .fill(status.color)
+                    .frame(width: 3)
+                    .padding(.leading, 6)
+                    .padding(.vertical, 4)
+                    // Decorative twice over — the header names the shelf, and
+                    // the colour repeats what the glyph beside it already says.
+                    .accessibilityHidden(true)
+            }
             }
         }
     }
