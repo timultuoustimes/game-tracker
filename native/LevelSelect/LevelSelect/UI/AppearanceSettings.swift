@@ -80,7 +80,7 @@ struct AppearanceSettingsSection: View {
             // against a ground and a ground against an accent; two sheets
             // turned a comparison into a memory test.
             colorRow("Colors", swatch: LSTheme.accent,
-                     isCustom: settings?.accentHex != nil || settings?.backgroundHex != nil) {
+                     isCustom: anyAccentChosen || anyBackgroundChosen) {
                 ColorEditor(title: "Colors", targets: themeColorTargets)
             }
 
@@ -229,15 +229,22 @@ struct AppearanceSettingsSection: View {
                         Button("Reset all colors", role: .destructive) {
                             let s = ensureSettings()
                             s.accentHex = nil
+                            s.accentHexLight = nil
+                            s.accentHexDark = nil
                             s.statusColorsData = nil
                             save(s)
                         }
                     }
                     if backgroundIsCustomised {
-                        Button("Reset background", role: .destructive) {
+                        // Named for everything it clears. It always claimed
+                        // "background" and reset only the art settings.
+                        Button("Reset background color and art", role: .destructive) {
                             let s = ensureSettings()
                             s.pageBackgroundRaw = ThemePageBackground.cover.rawValue
                             s.backdropIntensityRaw = nil
+                            s.backgroundHex = nil
+                            s.backgroundHexLight = nil
+                            s.backgroundHexDark = nil
                             save(s)
                         }
                     }
@@ -347,8 +354,25 @@ struct AppearanceSettingsSection: View {
         )
     }
 
+    /// Any accent at all, in either appearance, plus the legacy single value.
+    ///
+    /// Build 37 split accent and background per appearance, and these checks
+    /// still asked only about the legacy fields — so choosing a light accent
+    /// left "Reset" hidden and the row reading as untouched.
+    private var anyAccentChosen: Bool {
+        settings?.accentHex != nil
+            || settings?.accentHexLight != nil
+            || settings?.accentHexDark != nil
+    }
+
+    private var anyBackgroundChosen: Bool {
+        settings?.backgroundHex != nil
+            || settings?.backgroundHexLight != nil
+            || settings?.backgroundHexDark != nil
+    }
+
     private var colorsAreCustomised: Bool {
-        settings?.accentHex != nil || settings?.statusColorsData != nil
+        anyAccentChosen || settings?.statusColorsData != nil
     }
 
     /// `backdropIntensityRaw` counts even though the strength picker is hidden
@@ -358,16 +382,49 @@ struct AppearanceSettingsSection: View {
         (settings?.pageBackgroundRaw ?? ThemePageBackground.cover.rawValue)
             != ThemePageBackground.cover.rawValue
             || settings?.backdropIntensityRaw != nil
+            // The ground tint counts. It did not, and "Reset background" left
+            // it in place — a chosen ground survived every reset the UI
+            // offered, with no way back to the default short of matching the
+            // original purple by eye. Found in the build 37 UX assessment,
+            // whose entire walkthrough ran on a grey ground because of it.
+            || anyBackgroundChosen
     }
 
     // MARK: Bindings
 
-    private var accentBinding: Binding<Color> {
+    /// One binding per appearance, for both the accent and the ground.
+    ///
+    /// Build 37: a single accent could not serve both grounds — torch is
+    /// 8.74:1 on dark and 1.90:1 on light — so the palette became a pair the
+    /// user chooses, rather than one value the app second-guesses at render
+    /// time. `accentHex(dark:)` reads whichever belongs to the appearance on
+    /// screen; the legacy `accentHex` is still read as the dark value so
+    /// existing libraries keep the colour they had.
+    private func accentBinding(dark: Bool) -> Binding<Color> {
         Binding(
-            get: { settings?.accentHex.flatMap { Color(hex: $0) } ?? LSTheme.defaultAccent },
+            get: {
+                settings?.accentHex(dark: dark).flatMap { Color(hex: $0) }
+                    ?? (dark ? LSTheme.torch : LSTheme.torchInk)
+            },
             set: { color in
                 let s = ensureSettings()
-                s.accentHex = color.hexString()
+                if dark { s.accentHexDark = color.hexString() }
+                else { s.accentHexLight = color.hexString() }
+                scheduleSave(s)
+            }
+        )
+    }
+
+    private func backgroundBinding(dark: Bool) -> Binding<Color> {
+        Binding(
+            get: {
+                settings?.backgroundHex(dark: dark).flatMap { Color(hex: $0) }
+                    ?? LSTheme.purpleDeep
+            },
+            set: { color in
+                let s = ensureSettings()
+                if dark { s.backgroundHexDark = color.hexString() }
+                else { s.backgroundHexLight = color.hexString() }
                 scheduleSave(s)
             }
         )
@@ -377,42 +434,45 @@ struct AppearanceSettingsSection: View {
     /// appear in the picker, and accent leads because it is the one people
     /// come here to change.
     private var themeColorTargets: [ColorTarget] {
-        [
-            ColorTarget(id: "accent", label: "Accent",
-                        defaultColor: LSTheme.defaultAccent,
-                        isCustomised: settings?.accentHex != nil,
-                        binding: accentBinding,
-                        onReset: {
-                            let s = ensureSettings()
-                            s.accentHex = nil
-                            save(s)
-                        }),
-            ColorTarget(id: "background", label: "Background",
-                        defaultColor: LSTheme.purpleDeep,
-                        isCustomised: settings?.backgroundHex != nil,
-                        binding: backgroundBinding,
-                        onReset: {
-                            let s = ensureSettings()
-                            s.backgroundHex = nil
-                            save(s)
-                        }),
-        ]
+        func accent(_ dark: Bool) -> ColorTarget {
+            let word = dark ? "Dark" : "Light"
+            return ColorTarget(
+                id: "accent-\(word.lowercased())",
+                label: dark ? "☾ Accent" : "☀ Accent",
+                defaultColor: dark ? LSTheme.torch : LSTheme.torchInk,
+                isCustomised: (dark ? settings?.accentHexDark : settings?.accentHexLight) != nil,
+                binding: accentBinding(dark: dark),
+                onReset: {
+                    let s = ensureSettings()
+                    if dark { s.accentHexDark = nil } else { s.accentHexLight = nil }
+                    save(s)
+                },
+                // Judged against the ground it will actually be read on.
+                contrastGround: ThemePalette.groundBase(dark: dark),
+                appearanceLabel: word.lowercased())
+        }
+        func background(_ dark: Bool) -> ColorTarget {
+            let word = dark ? "Dark" : "Light"
+            return ColorTarget(
+                id: "background-\(word.lowercased())",
+                label: dark ? "☾ Ground" : "☀ Ground",
+                defaultColor: LSTheme.purpleDeep,
+                isCustomised: (dark ? settings?.backgroundHexDark : settings?.backgroundHexLight) != nil,
+                binding: backgroundBinding(dark: dark),
+                onReset: {
+                    let s = ensureSettings()
+                    if dark { s.backgroundHexDark = nil } else { s.backgroundHexLight = nil }
+                    save(s)
+                })
+        }
+        // Accent first, because it is what people come here to change, and the
+        // two appearances adjacent so a pair can be judged together.
+        return [accent(false), accent(true), background(false), background(true)]
     }
 
     /// The ground's tint. Only its hue and saturation are used — the theme
     /// keeps the luminance, so no pick can make text unreadable. See
     /// `LSTheme.ground(tintedBy:)`.
-    private var backgroundBinding: Binding<Color> {
-        Binding(
-            get: { settings?.backgroundHex.flatMap { Color(hex: $0) } ?? LSTheme.purpleDeep },
-            set: { color in
-                let s = ensureSettings()
-                s.backgroundHex = color.hexString()
-                scheduleSave(s)
-            }
-        )
-    }
-
     private var trackerDisplayBinding: Binding<TrackerDisplay> {
         Binding(
             get: {

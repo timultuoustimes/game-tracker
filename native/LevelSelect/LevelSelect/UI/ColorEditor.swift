@@ -25,6 +25,15 @@ struct ColorTarget: Identifiable {
     let isCustomised: Bool
     let binding: Binding<Color>
     let onReset: () -> Void
+    /// The ground this colour will be read ON, when it has to stay legible.
+    ///
+    /// Set for accents, which are ink. Nil for backgrounds, which are not:
+    /// `LSTheme.ground` takes only hue and saturation from a picked colour and
+    /// fixes brightness per appearance (0.97 light, 0.16 dark), so a ground
+    /// cannot be dialled into illegibility no matter what is picked.
+    var contrastGround: Color? = nil
+    /// Which appearance this value belongs to, for the readout's wording.
+    var appearanceLabel: String? = nil
 }
 
 struct ColorEditor: View {
@@ -168,6 +177,7 @@ struct ColorEditor: View {
                         slider("Hue", value: $hue, track: hueTrack)
                         slider("Saturation", value: $saturation, track: satTrack)
                         slider("Brightness", value: $brightness, track: brightTrack)
+                        contrastReadout
                         Spacer(minLength: 0)
                     }
                     .padding(.bottom, 28)
@@ -358,6 +368,8 @@ struct ColorEditor: View {
         let raw = hexDraft.trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: "#", with: "")
         guard let c = Color(hex: "#" + raw) else { hexBad = true; return }
+        // Same floor as everything else here — a typed value is still a choice.
+        guard passes(c) else { hexBad = true; return }
         hexBad = false
         setFromColor(c)
         push()
@@ -432,6 +444,10 @@ struct ColorEditor: View {
     private func swatch(_ hex: String, removable: Bool = false) -> some View {
         let c = Color(hex: hex) ?? .gray
         let selected = (hex == selectedSwatch)
+        // Shown and struck through rather than hidden: "this colour exists and
+        // will not work here" is more use than a palette that silently differs
+        // between the light and dark tabs.
+        let usable = passes(c)
         return Button {
             setFromColor(c)
             push()
@@ -439,13 +455,22 @@ struct ColorEditor: View {
             Circle()
                 .fill(c)
                 .frame(height: 46)
+                .opacity(usable ? 1 : 0.22)
                 .overlay {
                     Circle().strokeBorder(.white.opacity(selected ? 0.9 : 0.12),
                                           lineWidth: selected ? 2.5 : 1)
                 }
+                .overlay {
+                    if !usable {
+                        Capsule().fill(.primary)
+                            .frame(width: 30, height: 2)
+                            .rotationEffect(.degrees(-45))
+                    }
+                }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(hex)
+        .disabled(!usable)
+        .accessibilityLabel(usable ? hex : "\(hex), not readable on this ground")
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .contextMenu {
             if removable {
@@ -494,9 +519,54 @@ struct ColorEditor: View {
     /// Guards the write while a target switch is loading values in.
     @State private var loading = false
 
+    /// WCAG contrast of a candidate against the ground it will sit on.
+    /// Nil when this target is not ink and has nothing to fail against.
+    private func ratio(_ candidate: Color) -> Double? {
+        guard let ground = target.contrastGround else { return nil }
+        return ThemePalette.contrast(candidate, ground)
+    }
+
+    /// 4.5:1 — the floor for normal text. Not 3:1: the accent is used at
+    /// caption and subheadline sizes all over the app, so the graphical
+    /// threshold would still leave "See all" and "Left off" unreadable.
+    private static let floor = 4.5
+
+    private func passes(_ candidate: Color) -> Bool {
+        guard let r = ratio(candidate) else { return true }
+        return r >= Self.floor
+    }
+
     private func push() {
         guard !loading else { return }
+        // **A failing colour is never committed.**
+        //
+        // Build 37: an accent has to be legible on the ground of the
+        // appearance it belongs to, and no single colour manages both — torch
+        // is 8.74:1 on dark and 1.90:1 on light. Rather than let someone pick
+        // an unreadable app and fix it at render time, the choice itself is
+        // constrained. Dragging into a failing region shows the readout and
+        // leaves the last good value in place, so this narrows the choice
+        // without trapping anyone mid-gesture.
+        guard passes(current) else { return }
         target.binding.wrappedValue = current
+    }
+
+    /// Live contrast readout, shown only where a value can actually fail.
+    @ViewBuilder
+    private var contrastReadout: some View {
+        if let r = ratio(current) {
+            let ok = r >= Self.floor
+            HStack(spacing: 7) {
+                Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                Text(ok
+                     ? "Readable on the \(target.appearanceLabel ?? "") ground — \(r, specifier: "%.2f"):1"
+                     : "Too close to the \(target.appearanceLabel ?? "") ground — \(r, specifier: "%.2f"):1, needs 4.5")
+                .font(.caption)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(ok ? Color.secondary : Color.orange)
+            .accessibilityElement(children: .combine)
+        }
     }
 
     private func setFromColor(_ c: Color) {
