@@ -360,6 +360,17 @@ private struct MiniMonth: View {
 }
 
 /// One month, pushed from the year view.
+/// One day, when it holds more than one thing.
+///
+/// The calendar linked straight to a single `JournalEntry`, so a day with two
+/// games opened one of them and the other was unreachable — 2026-03-01 showed
+/// Dead Cells and Sayonara Wild Hearts on the Timeline and only Dead Cells
+/// through the Calendar. A day is the unit the Timeline groups by; the
+/// Calendar now navigates to the same unit.
+struct CalendarDay: Hashable {
+    let day: Date
+}
+
 struct CalendarMonth: Hashable {
     let start: Date
 }
@@ -600,16 +611,24 @@ private struct DayCell: View {
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(isFuture ? "Hasn't happened yet" : "Nothing recorded"))
                     .accessibilityHint(isFuture ? "" : "Adds a memory")
+            } else if entries.count > 1 {
+                // More than one thing happened. Open the DAY, not whichever of
+                // them the cell happened to wear — the other was unreachable
+                // from here entirely.
+                NavigationLink(value: CalendarDay(day: day)) { filled }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(spokenDate))
+                    .accessibilityValue(Text(spokenSummary))
+                    .accessibilityHint("Opens the day")
             } else if let subject {
+                // One thing, so go straight to it rather than through a list
+                // of one.
                 NavigationLink(value: JournalRoute(entry: subject)) { filled }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(spokenSummary))
-                    // Names what actually opens. The value above describes the
-                    // whole day, which is true and is what the cell stands for
-                    // — but a day can hold two games and the tap reaches one,
-                    // so "Opens the day" was promising more than it delivers.
                     .accessibilityHint(subject.game.map { "Opens \($0.name)" } ?? "Opens the day")
             }
         }
