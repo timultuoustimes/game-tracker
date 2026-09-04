@@ -494,6 +494,8 @@ struct HomeTab: View {
                         .fixedSize()
                         .accessibilityHidden(true)
                 }
+                // Not a control, so not a glass capsule. See `lsWordmarkHeader`.
+                .sharedBackgroundVisibility(.hidden)
                 #endif
                 // Tinted per item rather than relying on an inherited tint:
                 // the window toolbar sits outside the TabView on macOS, so

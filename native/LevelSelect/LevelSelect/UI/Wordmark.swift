@@ -93,6 +93,13 @@ extension View {
                     .fixedSize()
                     .accessibilityHidden(true)
             }
+            // **No glass capsule.** iOS 26 gives every toolbar item its own
+            // glass background; `.principal` items are exempt, which is why the
+            // wordmark had none while it sat centred on Home and grew one the
+            // moment it moved to the leading edge. It is a wordmark, not a
+            // control — a capsule around it says "tap me" about the one thing
+            // in the bar that does nothing.
+            .sharedBackgroundVisibility(.hidden)
         }
         #endif
     }
