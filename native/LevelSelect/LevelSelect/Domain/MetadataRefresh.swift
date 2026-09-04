@@ -452,8 +452,8 @@ enum MetadataRefresh {
         } else if awaitsAnnouncedDate(game.firstReleaseDate),
                   let date = igdb.storableReleaseDate(on: game.chosenPlatform),
                   !isYearOnly(date),
-                  Calendar.current.component(.year, from: date)
-                    == Calendar.current.component(.year, from: game.firstReleaseDate!) {
+                  ReleaseCountdown.utc.component(.year, from: date)
+                    == ReleaseCountdown.utc.component(.year, from: game.firstReleaseDate!) {
             // The day got announced. Same year only, so a fuzzy answer can
             // never quietly move a game into a different one.
             game.firstReleaseDate = date

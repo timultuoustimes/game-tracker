@@ -34,8 +34,14 @@ struct MemorySheet: View {
     @State private var howKnown: HowKnown = .day
     @State private var date = Date.now
     @State private var words = ""
-    @State private var fromYear = 1995
-    @State private var toYear = 1996
+    /// Default to *this* year, not a hard-coded 1995.
+    ///
+    /// Tapping "+" on a day in March 2024 and choosing "Not sure" offered
+    /// 1995–1996, saved the memory into 1995, and it vanished from the month
+    /// the user was standing in — thirty years back up the year strip. See
+    /// `load()`, which seeds these from the tapped day when there is one.
+    @State private var fromYear = Memory.calendar.component(.year, from: .now)
+    @State private var toYear = Memory.calendar.component(.year, from: .now)
     /// **"Christmas 1995 or 1996" knows the day perfectly well.** Only the
     /// year is in doubt. Storing the span as 1 January → 31 December threw the
     /// day away and put a Christmas on a square nearer the *previous*
@@ -330,7 +336,15 @@ struct MemorySheet: View {
 
     private func load() {
         guard let existing else {
-            if let initialDate { date = initialDate }
+            if let initialDate {
+                date = initialDate
+                // The uncertain years follow the tapped day too, so switching
+                // to "Not sure" cannot file the memory in a different decade
+                // from the one the user was looking at.
+                let year = Memory.calendar.component(.year, from: initialDate)
+                fromYear = year
+                toYear = year
+            }
             return
         }
         title = existing.title

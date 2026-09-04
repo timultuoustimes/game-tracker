@@ -113,19 +113,33 @@ struct JournalPeriod: Identifiable {
 
     var id: String { "\(grain.rawValue)@\(start.timeIntervalSince1970)@\(headingOverride ?? "")" }
 
+    /// The period's own calendar, applied to a format style.
+    ///
+    /// `Date.formatted` uses the CURRENT calendar and time zone unless told
+    /// otherwise, which quietly undid the care taken above: a UTC-midnight
+    /// 25 December was bucketed correctly by `calendar` and then titled
+    /// "24 December" west of Greenwich, because only the bucketing honored it.
+    /// Locale is left alone — the user's language is not the period's business.
+    private func styled(_ style: Date.FormatStyle) -> Date.FormatStyle {
+        var s = style
+        s.calendar = calendar
+        s.timeZone = calendar.timeZone
+        return s
+    }
+
     func title(now: Date = .now) -> String {
         if let headingOverride { return headingOverride }
         switch grain {
         case .year:  return String(calendar.component(.year, from: start))
-        case .month: return start.formatted(.dateTime.month(.wide).year())
+        case .month: return start.formatted(styled(.dateTime.month(.wide).year()))
         case .day:
             if calendar.isDateInToday(start)     { return "Today" }
             if calendar.isDateInYesterday(start) { return "Yesterday" }
             let sameYear = calendar.component(.year, from: start)
                         == calendar.component(.year, from: now)
             return sameYear
-                ? start.formatted(.dateTime.weekday(.wide).day().month(.wide))
-                : start.formatted(.dateTime.weekday(.abbreviated).day().month(.wide).year())
+                ? start.formatted(styled(.dateTime.weekday(.wide).day().month(.wide)))
+                : start.formatted(styled(.dateTime.weekday(.abbreviated).day().month(.wide).year()))
         }
     }
 }

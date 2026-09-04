@@ -522,6 +522,18 @@ struct Repository {
     }
 
     func softDelete(_ game: Game, at date: Date = .now) {
+        // A hidden game must not keep timing.
+        //
+        // This only tombstoned the game, so a running session stayed running —
+        // still accruing time, still holding its stale reminder and its Live
+        // Activity — on a game the user believes is gone. Stop them first, at
+        // the same instant, and BEFORE the tombstone so the lookup still
+        // resolves. `stopSession` is the ordinary path, so the crediting, the
+        // reminder and the Live Activity are all handled the way they always
+        // are rather than restated here.
+        for session in runningSessions(in: game) {
+            stopSession(session, at: date)
+        }
         game.deletedAt = date
         touch(game, at: date)
         persist()
@@ -918,6 +930,9 @@ struct Repository {
         session.state = .stopped
         session.deletedAt = date
         touch(session, at: date)
+        // Same as `deleteSession`: a discarded session is tombstoned, so the
+        // playthrough's "last played" can still be pointing at it.
+        if let pt = session.playthrough { refreshLastPlayed(pt) }
         NotificationManager.cancelStaleReminder(sessionID: session.id)
         LiveActivityManager.sessionChanged(session, gameName: session.playthrough?.game?.name ?? "A game")
         persist()

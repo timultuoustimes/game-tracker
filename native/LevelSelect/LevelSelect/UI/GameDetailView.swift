@@ -1464,13 +1464,16 @@ struct GameDetailView: View {
                 labeledField("Released", text: Binding(
                     get: {
                         game.firstReleaseDate.map {
-                            String(Calendar.current.component(.year, from: $0))
+                            String(ReleaseCountdown.utc.component(.year, from: $0))
                         } ?? ""
                     },
                     set: { text in
                         if let year = Int(text), (1950..<3000).contains(year) {
+                            // UTC, matching the getter above and every other
+                            // release fact: a local-midnight 1 January is the
+                            // previous year east of UTC.
                             game.firstReleaseDate = DateComponents(
-                                calendar: .current, year: year, month: 1, day: 1).date
+                                calendar: ReleaseCountdown.utc, year: year, month: 1, day: 1).date
                         } else if text.isEmpty {
                             game.firstReleaseDate = nil
                         }

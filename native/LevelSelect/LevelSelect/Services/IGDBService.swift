@@ -453,7 +453,7 @@ enum IGDBService {
                 coverImageID: cover?.image_id,
                 franchise: franchises?.first?.name ?? collection?.name,
                 releaseYear: first_release_date.map {
-                    Calendar.current.component(.year, from: Date(timeIntervalSince1970: $0))
+                    ReleaseCountdown.utc.component(.year, from: Date(timeIntervalSince1970: $0))
                 },
                 summary: summary,
                 gameType: game_type,

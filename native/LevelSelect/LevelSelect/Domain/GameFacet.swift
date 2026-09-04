@@ -64,7 +64,7 @@ struct GameFacet: Hashable, Codable, Sendable {
         case .tag:         return game.userTags.contains(value)
         case .year:
             guard let date = game.firstReleaseDate else { return false }
-            return String(Calendar.current.component(.year, from: date)) == value
+            return String(ReleaseCountdown.utc.component(.year, from: date)) == value
         }
     }
 
