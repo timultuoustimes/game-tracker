@@ -318,7 +318,7 @@ private struct MiniMonth: View {
         let seconds = active.reduce(0) { $0 + $1.seconds }
         let dayWord = active.count == 1 ? "day" : "days"
         guard seconds > 0 else { return "\(name), \(active.count) \(dayWord)" }
-        return "\(name), \(active.count) \(dayWord), \(Format.duration(seconds))"
+        return "\(name), \(active.count) \(dayWord), \(Format.spokenDuration(seconds))"
     }
 
     /// Accent at a strength, rather than a second colour ramp.
@@ -550,15 +550,28 @@ private struct DayCell: View {
     let entries: [JournalEntry]
     let onCreate: (Date) -> Void
 
-    /// What the cell wears. A memory's own photo first — someone chose to
-    /// attach that — then the cover of whatever was played longest.
-    private var art: (data: Data?, url: String?)? {
-        if let photo = entries.compactMap({ $0.images.first }).first, let data = photo.data {
-            return (data, nil)
+    /// **The one entry this cell is about** — what it wears, and what it opens.
+    ///
+    /// These were chosen separately: the art came from the longest play, the
+    /// tap went to `entries.first`. On a day holding two games they can be
+    /// different games, so tapping a cell could open something other than the
+    /// cover you tapped. Found on 2026-03-01 (Dead Cells and Sayonara Wild
+    /// Hearts) while checking the spoken labels. One property now, so they
+    /// cannot drift apart again.
+    private var subject: JournalEntry? {
+        // A memory's own photo first — someone chose to attach that.
+        if let withPhoto = entries.first(where: { $0.images.first?.data != nil }) {
+            return withPhoto
         }
-        let longest = entries.filter { $0.kind == .play }
-            .max { $0.duration < $1.duration }
-        if let url = longest?.game?.displayCoverURLString { return (nil, url) }
+        return entries.filter { $0.kind == .play }.max { $0.duration < $1.duration }
+            ?? entries.first
+    }
+
+    /// What the cell wears, taken from `subject`.
+    private var art: (data: Data?, url: String?)? {
+        guard let subject else { return nil }
+        if let data = subject.images.first?.data { return (data, nil) }
+        if let url = subject.game?.displayCoverURLString { return (nil, url) }
         return nil
     }
 
@@ -587,13 +600,17 @@ private struct DayCell: View {
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(isFuture ? "Hasn't happened yet" : "Nothing recorded"))
                     .accessibilityHint(isFuture ? "" : "Adds a memory")
-            } else if let first = entries.first {
-                NavigationLink(value: JournalRoute(entry: first)) { filled }
+            } else if let subject {
+                NavigationLink(value: JournalRoute(entry: subject)) { filled }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(spokenSummary))
-                    .accessibilityHint("Opens the day")
+                    // Names what actually opens. The value above describes the
+                    // whole day, which is true and is what the cell stands for
+                    // — but a day can hold two games and the tap reaches one,
+                    // so "Opens the day" was promising more than it delivers.
+                    .accessibilityHint(subject.game.map { "Opens \($0.name)" } ?? "Opens the day")
             }
         }
     }
@@ -607,13 +624,16 @@ private struct DayCell: View {
     /// What is on the day, and whether the app is sure it belongs here.
     private var spokenSummary: String {
         var parts: [String] = []
+        // Led by the game the tap opens, so the first thing heard is the
+        // thing that happens.
         var games: [String] = []
+        if let name = subject?.game?.name { games.append(name) }
         for entry in entries {
             if let name = entry.game?.name, !games.contains(name) { games.append(name) }
         }
         if !games.isEmpty { parts.append(games.prefix(3).joined(separator: ", ")) }
         let seconds = entries.reduce(0) { $0 + $1.duration }
-        if seconds > 0 { parts.append(Format.duration(seconds)) }
+        if seconds > 0 { parts.append(Format.spokenDuration(seconds)) }
         let memories = entries.filter { $0.kind == .memory }.count
         if memories > 0 {
             parts.append(memories == 1 ? "1 memory" : "\(memories) memories")

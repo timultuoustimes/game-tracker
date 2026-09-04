@@ -18,6 +18,24 @@ enum Format {
         return "\(sec)s"
     }
 
+    /// The same duration, said out loud.
+    ///
+    /// `duration` is written for a label, and VoiceOver reads its units as
+    /// units: a 50-minute session was announced as **"50 meters 0 S"**. Found
+    /// by Tim testing the Journal calendar with VoiceOver on 2026-09-04.
+    ///
+    /// Also drops a zero component — "50m 0s" has a trailing "0s" that is
+    /// noise on screen and nonsense spoken.
+    static func spokenDuration(_ t: TimeInterval) -> String {
+        let s = max(0, Int(t))
+        let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
+        var parts: [String] = []
+        if h > 0 { parts.append("\(h) hour\(h == 1 ? "" : "s")") }
+        if m > 0 { parts.append("\(m) minute\(m == 1 ? "" : "s")") }
+        if parts.isEmpty { parts.append("\(sec) second\(sec == 1 ? "" : "s")") }
+        return parts.joined(separator: " ")
+    }
+
     /// Video timestamp, e.g. "4:02" or "1:12:41".
     static func timestamp(_ t: TimeInterval) -> String {
         let s = max(0, Int(t))
