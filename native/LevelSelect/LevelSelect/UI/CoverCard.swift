@@ -79,45 +79,17 @@ struct StatusCarousel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Five things in one row — chevron, icon, title, count, See all —
-            // works until the title is 50pt, at which point "Now Playing"
-            // truncates to "Now" and the action is pushed off the edge. At
-            // accessibility sizes the row splits: the shelf identifies itself
-            // on one line, and See all becomes its own control underneath
-            // rather than competing for the same horizontal space.
-            Group {
-                if typeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            collapseChevron
-                            statusIcon
-                            // Title and count as ONE string here. Kept apart
-                            // they became two stacked lines, because at this
-                            // size each is wide enough to claim a row of its
-                            // own — "Now Playing" then "(2)" then "See all",
-                            // three lines to say one thing.
-                            Text("\(status.sectionTitle) (\(games.count))")
-                                .font(.title3.bold())
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        if !collapsed { seeAllButton }
-                    }
-                } else {
-                    HStack(spacing: 6) {
-                        collapseChevron
-                        statusIcon
-                        Text(status.sectionTitle)
-                            .font(.title3.bold())
-                        Text("(\(games.count))")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        if !collapsed { seeAllButton }
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .contentShape(.rect)
+            // The one shelf header, shared with Library and Wishlist. It
+            // lived here first and every other tab invented its own; see
+            // `ShelfHeader` for what that cost.
+            ShelfHeader(
+                title: status.sectionTitle,
+                count: games.count,
+                systemImage: status.systemImage,
+                tint: status == .playing ? LSTheme.accent : .secondary,
+                collapsed: collapsed,
+                onToggleCollapse: onToggleCollapse,
+                onSeeAll: onSeeAll)
             .contextMenu {
                 Button {
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) { onToggleCollapse() }

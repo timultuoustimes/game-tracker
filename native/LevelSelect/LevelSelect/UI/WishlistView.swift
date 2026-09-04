@@ -301,17 +301,12 @@ struct WishlistTab: View {
     private func section(_ title: String, _ games: [Game],
                          showsDate: Bool, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.subheadline)
-                    .foregroundStyle(LSTheme.accent)
-                    .frame(width: 22)
-                Text(title).font(.headline)
-                Text("(\(games.count))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal)
+            // These three already carried the glyph that means the block —
+            // a calendar for dated, a bag for out now. What they did not carry
+            // was Home's heading, so the same kind of row read a size smaller
+            // here than one tab over.
+            ShelfHeader(title: title, count: games.count,
+                        systemImage: icon, tint: LSTheme.accent)
             grid(games, showsDate: showsDate)
         }
     }

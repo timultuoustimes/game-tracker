@@ -66,40 +66,17 @@ struct SystemsRow: View {
     let groups: [(platform: String, count: Int)]
     var onOpen: (String) -> Void
 
-    /// The shelf heading, on one line or two.
-    @ViewBuilder
-    private func systemsHeader(stacked: Bool) -> some View {
-        let layout = stacked
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
-            : AnyLayout(HStackLayout(spacing: 6))
-        layout {
-            HStack(spacing: 6) {
-                Image(systemName: "square.stack.3d.up.fill")
-                    .foregroundStyle(LSTheme.accent)
-                    // Decorative — the heading and count say it, and the tree
-                    // announced this as "Hdr" ahead of them.
-                    .accessibilityHidden(true)
-                Text("Systems").font(.title3.bold())
-            }
-            Text("(\(groups.count))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // The tiles below already widen at accessibility sizes; the
-            // header did not, so "Systems" hyphenated to "Sys-tems" while its
-            // count floated beside it. `ViewThatFits` keeps one line whenever
-            // one line fits and stacks when it does not — no size branch to
-            // keep in step with the tiles' own.
-            ViewThatFits(in: .horizontal) {
-                systemsHeader(stacked: false)
-                systemsHeader(stacked: true)
-            }
-            .padding(.horizontal)
+            // `ShelfHeader` owns the accessibility-size split now, so the
+            // local `ViewThatFits` that kept "Systems" from hyphenating to
+            // "Sys-tems" went with it. The glyph is a console rather than the
+            // generic layered stack — a shelf of hardware should not wear the
+            // same symbol as a shelf of games.
+            ShelfHeader(title: "Systems",
+                        count: groups.count,
+                        systemImage: "arcade.stick.console.fill",
+                        tint: LSTheme.accent)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 12) {

@@ -91,13 +91,14 @@ struct CollectionShelf: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "square.stack.3d.up.fill")
-                    .foregroundStyle(LSTheme.accent)
-                Text("Collections").font(.title3.bold())
-                Text("(\(collections.count))")
-                    .font(.subheadline).foregroundStyle(.secondary)
-                Spacer()
+            // The shared shelf header, with the "+" as its trailing item.
+            // The glyph is a group of tiles rather than the layered stack the
+            // Systems shelf also wore — two different shelves cannot both be
+            // "a stack of something".
+            ShelfHeader(title: "Collections",
+                        count: collections.count,
+                        systemImage: "rectangle.3.group.fill",
+                        tint: LSTheme.accent) {
                 // Both routes, because this "+" was the only one and it went
                 // straight to a name field — which asks you to have already
                 // had the idea, and hides the half of the feature that
@@ -118,6 +119,7 @@ struct CollectionShelf: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(LSTheme.accent)
+                    .lsTapTargetInline()
                     .accessibilityLabel("Add collection")
                 } else {
                     Button { onNew() } label: {
@@ -125,10 +127,10 @@ struct CollectionShelf: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(LSTheme.accent)
+                    .lsTapTargetInline()
                     .accessibilityLabel("Add collection")
                 }
             }
-            .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 14) {
