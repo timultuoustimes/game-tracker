@@ -233,6 +233,7 @@ enum LibraryExport {
                         // the wrong last-ticked item.
                         t["completedAt"] = state.completedAt.map(iso)
                         t["selectedVariant"] = state.selectedVariant
+                        t["selectedVariantUpdatedAt"] = state.selectedVariantUpdatedAt.map(iso)
                         return t
                     }
 
@@ -495,6 +496,12 @@ enum LibraryExport {
             root["appearance"] = ([
                 "accentHex": theme.accentHex as Any,
                 "backgroundHex": theme.backgroundHex as Any,
+                // build 37: a palette per appearance. The legacy pair above is
+                // still written so an older build can still read this file.
+                "accentHexLight": theme.accentHexLight as Any,
+                "accentHexDark": theme.accentHexDark as Any,
+                "backgroundHexLight": theme.backgroundHexLight as Any,
+                "backgroundHexDark": theme.backgroundHexDark as Any,
                 "appearance": theme.appearanceRaw as Any,
                 "statusColors": theme.statusColors,
                 "statusNames": theme.statusNames.isEmpty ? nil : theme.statusNames as Any,

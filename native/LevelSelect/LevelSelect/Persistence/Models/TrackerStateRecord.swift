@@ -32,6 +32,17 @@ final class TrackerStateRecord {
     /// and overloading `count`/`notes` was rejected as the kind of thing that
     /// bites later.
     var selectedVariant: String?
+    /// When `selectedVariant` was last set — including being set back to nil.
+    ///
+    /// **Storage only in build 37; the reconciler does not read it yet.**
+    /// Scaffolded now because it needs a CloudKit deploy and the appearance
+    /// palette needed one anyway. Two offline devices can each create a state
+    /// row for the same item, and `mergeDuplicateStates` keeps one and
+    /// tombstones the rest without ever looking at `selectedVariant` — so a
+    /// chosen Mirror talent disappears. Copying a nonnil loser is not the fix
+    /// either: nil can mean "I deliberately switched back to default", and
+    /// without a timestamp the merge cannot tell that from never-set.
+    var selectedVariantUpdatedAt: Date?
 
     var playthrough: Playthrough?
 

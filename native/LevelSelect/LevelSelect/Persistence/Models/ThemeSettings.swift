@@ -9,7 +9,19 @@ final class ThemeSettings {
     var updatedAt: Date = Date.now
 
     /// Global accent (hex, e.g. "#9455FA"); nil = default purple.
+    ///
+    /// **Legacy since build 37 — read through `accentHex(dark:)`.** One accent
+    /// had to serve both appearances, and no single color can: torch is 8.74:1
+    /// on the dark ground and 1.90:1 on the light one, so the shipped default
+    /// was unreadable in light mode before anyone customized anything. Kept
+    /// and still written so older builds and older backups keep working;
+    /// treated as the DARK value, which is the appearance it was legible in.
     var accentHex: String?
+
+    /// The accent for light appearance. Build 37.
+    var accentHexLight: String?
+    /// The accent for dark appearance. Build 37. Falls back to `accentHex`.
+    var accentHexDark: String?
     /// Per-status overrides: JSON [statusRawValue: hex].
     var statusColorsData: Data?
     /// Game-page backdrop: "cover" (ambient art) or "status" (status color).
@@ -114,7 +126,29 @@ final class ThemeSettings {
     /// Separate from `accentHex` because they fail differently: a bad accent
     /// is ugly, a bad background makes text unreadable. Keeping them apart
     /// lets the background be validated for contrast on its own terms.
+    /// **Legacy since build 37 — read through `backgroundHex(dark:)`**, for
+    /// the same reason as `accentHex`. Treated as the dark value.
     var backgroundHex: String?
+
+    /// The ground tint for light appearance. Build 37.
+    var backgroundHexLight: String?
+    /// The ground tint for dark appearance. Build 37. Falls back to `backgroundHex`.
+    var backgroundHexDark: String?
+
+    /// The accent for the appearance actually on screen.
+    ///
+    /// Resolution is explicit rather than derived at render time on purpose:
+    /// both values are the user's own choice, so switching appearance shows a
+    /// palette they picked rather than a fallback the app computed. Nothing
+    /// changes color on its own.
+    func accentHex(dark: Bool) -> String? {
+        dark ? (accentHexDark ?? accentHex) : accentHexLight
+    }
+
+    /// The ground tint for the appearance actually on screen.
+    func backgroundHex(dark: Bool) -> String? {
+        dark ? (backgroundHexDark ?? backgroundHex) : backgroundHexLight
+    }
 
     init() {}
 

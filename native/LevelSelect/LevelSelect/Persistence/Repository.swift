@@ -1078,6 +1078,12 @@ struct Repository {
     func setTrackerVariant(_ pt: Playthrough, itemID: String, variant: String?) {
         let record = ensureTrackerState(pt, itemID: itemID)
         record.selectedVariant = variant
+        // Stamped even when `variant` is nil — clearing the choice IS the
+        // choice, and it is the case the reconciler will not be able to
+        // recognize without a time. See `selectedVariantUpdatedAt`; nothing
+        // reads it yet, but it has to be accumulating from the build that
+        // deploys the field or the merge fix lands with no history to use.
+        record.selectedVariantUpdatedAt = .now
         touch(record)
         touch(pt)
         persist()

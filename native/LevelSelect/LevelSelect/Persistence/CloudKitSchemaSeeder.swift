@@ -242,6 +242,7 @@ enum CloudKitSchemaSeeder {
         state.revealed = true
         state.notes = marker
         state.selectedVariant = marker         // V2
+        state.selectedVariantUpdatedAt = .now  // build 37
         context.insert(state)
         state.playthrough = pt
 
@@ -491,6 +492,11 @@ enum CloudKitSchemaSeeder {
             if existingTheme.statusNamesData == nil { existingTheme.statusNamesData = stamp }   // V5
             if existingTheme.appearanceRaw == nil { existingTheme.appearanceRaw = marker }        // V5
             if existingTheme.backgroundHex == nil { existingTheme.backgroundHex = marker }        // V5
+            // build 37 — a palette per appearance.
+            if existingTheme.accentHexLight == nil { existingTheme.accentHexLight = marker }
+            if existingTheme.accentHexDark == nil { existingTheme.accentHexDark = marker }
+            if existingTheme.backgroundHexLight == nil { existingTheme.backgroundHexLight = marker }
+            if existingTheme.backgroundHexDark == nil { existingTheme.backgroundHexDark = marker }
         // ⚠️ A NEW ThemeSettings FIELD MUST BE ADDED TO BOTH BRANCHES.
         //
         // The app creates a ThemeSettings on launch, so a seed run almost
@@ -513,6 +519,10 @@ enum CloudKitSchemaSeeder {
             theme.statusNamesData = stamp                 // build 36 (V5)
             theme.appearanceRaw = marker                  // build 36 (V5)
             theme.backgroundHex = marker                  // build 36 (V5)
+            theme.accentHexLight = marker                 // build 37
+            theme.accentHexDark = marker                  // build 37
+            theme.backgroundHexLight = marker             // build 37
+            theme.backgroundHexDark = marker              // build 37
             context.insert(theme)
         }
 
@@ -570,6 +580,10 @@ enum CloudKitSchemaSeeder {
             if theme.starNamesData == Data("{}".utf8) { theme.starNamesData = nil }
             if theme.statusNamesData == Data("{}".utf8) { theme.statusNamesData = nil }
             if theme.appearanceRaw == marker { theme.appearanceRaw = nil }
+            if theme.accentHexLight == marker { theme.accentHexLight = nil }
+            if theme.accentHexDark == marker { theme.accentHexDark = nil }
+            if theme.backgroundHexLight == marker { theme.backgroundHexLight = nil }
+            if theme.backgroundHexDark == marker { theme.backgroundHexDark = nil }
             if theme.backgroundHex == marker { theme.backgroundHex = nil }
             if theme.backdropIntensityRaw == marker { theme.backdropIntensityRaw = nil }
             if theme.gamePageLayoutRaw == marker { theme.gamePageLayoutRaw = nil }

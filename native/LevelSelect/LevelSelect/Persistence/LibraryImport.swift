@@ -525,6 +525,10 @@ enum LibraryImport {
         let theme = ThemePalette.fetchOrCreate(in: context)
         if let v = d["accentHex"] as? String { theme.accentHex = v }
         if let v = d["backgroundHex"] as? String { theme.backgroundHex = v }
+        if let v = d["accentHexLight"] as? String { theme.accentHexLight = v }
+        if let v = d["accentHexDark"] as? String { theme.accentHexDark = v }
+        if let v = d["backgroundHexLight"] as? String { theme.backgroundHexLight = v }
+        if let v = d["backgroundHexDark"] as? String { theme.backgroundHexDark = v }
         if let v = d["appearance"] as? String { theme.appearanceRaw = v }
         if let v = d["statusColors"] as? [String: String] { theme.statusColors = v }
         if let v = d["statusNames"] as? [String: String] { theme.statusNames = v }
@@ -656,6 +660,7 @@ enum LibraryImport {
         // v3: the chosen form, and the timestamp "where you left off" reads.
         state.completedAt = date(d["completedAt"])
         state.selectedVariant = d["selectedVariant"] as? String
+        state.selectedVariantUpdatedAt = date(d["selectedVariantUpdatedAt"])
         return state
     }
 

@@ -49,6 +49,11 @@ struct LibraryBackupContractTests {
         /// backup that cannot be retyped from memory.
         static let avatar          = Data([0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03, 0x04])
         static let completedAt     = Date(timeIntervalSince1970: 1_700_000_000)
+        static let variantSetAt    = Date(timeIntervalSince1970: 1_710_000_000)
+        static let accentLight     = "#996630"
+        static let accentDark      = "#F5A34D"
+        static let groundLight     = "#EFEAFB"
+        static let groundDark      = "#241A3A"
     }
 
     private func emptyStore() -> ModelContext {
@@ -74,6 +79,7 @@ struct LibraryBackupContractTests {
         if let state = (pt.trackerStates ?? []).first(where: { $0.itemID == S.itemID }) {
             state.completedAt = S.completedAt
             state.selectedVariant = S.variant
+            state.selectedVariantUpdatedAt = S.variantSetAt
             state.notes = "Per-run scribble"
         }
 
@@ -94,6 +100,10 @@ struct LibraryBackupContractTests {
 
         let theme = ThemePalette.fetchOrCreate(in: context)
         theme.accentHex = S.accentHex
+        theme.accentHexLight = S.accentLight
+        theme.accentHexDark = S.accentDark
+        theme.backgroundHexLight = S.groundLight
+        theme.backgroundHexDark = S.groundDark
         theme.backgroundHex = S.backgroundHex
         theme.appearanceRaw = "light"
         theme.gamePageLayoutRaw = "classic"
@@ -145,6 +155,7 @@ struct LibraryBackupContractTests {
         let state = try #require(states.first { $0.itemID == S.itemID })
         #expect(state.selectedVariant == S.variant)
         #expect(state.completedAt == S.completedAt)
+        #expect(state.selectedVariantUpdatedAt == S.variantSetAt)
     }
 
     @Test func profileAndAvatarSurvive() throws {
@@ -162,6 +173,12 @@ struct LibraryBackupContractTests {
         let theme = try #require(try restored.fetch(FetchDescriptor<ThemeSettings>()).first)
         #expect(theme.accentHex == S.accentHex)
         #expect(theme.backgroundHex == S.backgroundHex)
+        // build 37: the per-appearance palette must round trip as two pairs,
+        // not collapse back to the single legacy value.
+        #expect(theme.accentHexLight == S.accentLight)
+        #expect(theme.accentHexDark == S.accentDark)
+        #expect(theme.backgroundHexLight == S.groundLight)
+        #expect(theme.backgroundHexDark == S.groundDark)
         #expect(theme.appearanceRaw == "light")
         #expect(theme.gamePageLayoutRaw == "classic")
         #expect(theme.pageBackgroundRaw == "screenshot")
