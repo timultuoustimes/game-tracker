@@ -308,6 +308,21 @@ enum LSTheme {
     /// theme is on. Flipping this to white in light mode would wash out the
     /// very thing it exists to make legible.
     static var artScrim: Color { .black.opacity(0.45) }
+
+    /// `artScrim`, carrying a hint of a tint — same weight, different hue.
+    ///
+    /// The Journal's month page uses this with the accent, so the year strip's
+    /// pill fill and the month grid's day cells share a colour and the zoom
+    /// between them reads as one idea (Fable 5.4).
+    ///
+    /// **The mix happens before the alpha, not after.** `Color.mix` interpolates
+    /// opacity along with everything else, so mixing the already-translucent
+    /// `artScrim` toward an opaque tint would have taken it from 45% to 59%
+    /// — a heavier scrim, which is the opposite of a hue change and would
+    /// quietly undo the legibility work this token exists for.
+    static func artScrim(tintedBy tint: Color, amount: Double = 0.25) -> Color {
+        .black.mix(with: tint, by: amount).opacity(0.45)
+    }
 }
 
 extension Color {

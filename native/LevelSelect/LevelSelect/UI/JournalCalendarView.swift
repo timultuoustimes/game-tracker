@@ -704,8 +704,19 @@ private struct DayCell: View {
                 // laying it on anyway made a photo-less memory a murky grey
                 // box — darker than an empty day, which read as *less* there
                 // rather than more.
+                //
+                // **Tinted toward the accent, which is the year strip's own
+                // fill.** Fable's 5.4 asks the two zooms to carry one element
+                // between them so the year → month move reads as one idea
+                // rather than two screens. The scrim is the right carrier: it
+                // is already there, on every day that has art.
+                //
+                // Tinted, not replaced — the scrim keeps its 45% weight, so a
+                // pale accent cannot put white day numbers on a pale wash.
+                // See `LSTheme.artScrim(tintedBy:)` for why the mix has to
+                // happen before the alpha.
                 if art != nil {
-                    LinearGradient(colors: [LSTheme.artScrim, .clear],
+                    LinearGradient(colors: [LSTheme.artScrim(tintedBy: LSTheme.accent), .clear],
                                    startPoint: .top, endPoint: .center)
                 }
             }

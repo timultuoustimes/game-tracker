@@ -82,13 +82,19 @@ struct JournalTab: View {
             // timeline's own toolbar, so switching to Calendar took the plus
             // away — the same journal, no way to add to it. Tim: *"Journal
             // should have a plus in the top corner for both timeline and
-            // calendar view."* Charts has nothing to add to.
+            // calendar view."*
+            //
+            // Charts gets it too now. This used to read `if lens != .charts`,
+            // on the reasoning that "Charts has nothing to add to" — which
+            // confuses what a lens SHOWS with what the journal HOLDS. All
+            // three are views of one notebook, and Fable's 5.4 is that the bar
+            // should not change as you move between them: the corner button
+            // moving or vanishing is part of why the lenses read as one
+            // screen's filter rather than three ways of looking.
             .toolbar {
-                if lens != .charts {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button { addingMemory = true } label: {
-                            Label("Add a memory", systemImage: "plus")
-                        }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { addingMemory = true } label: {
+                        Label("Add a memory", systemImage: "plus")
                     }
                 }
             }
