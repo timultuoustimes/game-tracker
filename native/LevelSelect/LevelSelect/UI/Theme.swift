@@ -86,6 +86,32 @@ extension View {
             .ignoresSafeArea())
     }
 
+    /// A 44-point tap target, for a control with room to be one.
+    ///
+    /// **The glyph is not the target.** `PlatformEditor` said exactly that —
+    /// "An 8pt glyph is a caption, not a target" — and then gave it a 22×22
+    /// frame on the next line. The build 37 audit found at least 17 component
+    /// families under 44 points.
+    ///
+    /// This grows the LAYOUT, which is right for a standalone control: a close
+    /// button or a chevron should occupy 44 points. Use `lsTapTargetInline`
+    /// where neighbours are close enough that growing would overlap them.
+    func lsTapTarget(_ side: CGFloat = 44) -> some View {
+        frame(minWidth: side, minHeight: side).contentShape(.rect)
+    }
+
+    /// A bigger hit area that does NOT change layout, for a control in a
+    /// crowded row.
+    ///
+    /// Padding out and back in leaves the frame where it was. Kept modest on
+    /// purpose: `grow` is added on every side, so a 22-point control reaches
+    /// 44 and a 30-point one reaches 52. Going further would make adjacent
+    /// targets overlap, and a tap landing on the wrong control is worse than a
+    /// small one — which is what a naive `side / 2` would have produced here.
+    func lsTapTargetInline(_ grow: CGFloat = 11) -> some View {
+        padding(grow).contentShape(.rect).padding(-grow)
+    }
+
     /// Card surface used across Stats/Home.
     func lsCard() -> some View {
         padding(14)

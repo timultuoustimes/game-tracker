@@ -474,6 +474,8 @@ private struct ConfirmAddView: View {
                                     .foregroundStyle(.white)
                             }
                             .buttonStyle(.plain)
+                            .lsTapTarget()
+                            .accessibilityLabel("Close video")
                             .padding(8)
                         }
                         .listRowInsets(EdgeInsets())

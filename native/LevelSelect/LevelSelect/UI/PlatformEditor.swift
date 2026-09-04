@@ -120,11 +120,13 @@ struct PlatformEditor: View {
                 owned.removeAll { $0 == platform }
             } label: {
                 Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
-                    // An 8pt glyph is a caption, not a target.
+                    // An 8pt glyph is a caption, not a target — and then this
+                    // gave it a 22-point one, which is half the minimum. The
+                    // glyph stays 8; the target is 44 and costs no layout.
                     .frame(width: 22, height: 22)
-                    .contentShape(.rect)
             }
             .buttonStyle(.borderless)
+            .lsTapTargetInline()
             .accessibilityLabel("Remove \(PlatformShort.name(platform))")
         }
         .padding(.horizontal, 9).padding(.vertical, 5)

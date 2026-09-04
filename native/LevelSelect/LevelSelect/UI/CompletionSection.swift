@@ -37,6 +37,9 @@ struct CompletionSection: View {
                 .accessibilityLabel("\(event.labelText), \(event.spanText)"
                                     + (event.companions.isEmpty ? "" : ", with \(event.companions.sentence)"))
                 .accessibilityHint("Opens this record to edit")
+                // The row carries a label and a hint but never said it was a
+                // control, so VoiceOver announced content and no way to act.
+                .accessibilityAddTraits(.isButton)
                 .contentShape(.rect)
                 .onTapGesture { editing = event }
                 .contextMenu {

@@ -45,6 +45,8 @@ struct VideoPlayerDock: View {
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
+            .lsTapTarget()
+            .accessibilityLabel("Close video")
             .padding(8)
         }
     }

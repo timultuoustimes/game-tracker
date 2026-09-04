@@ -8,6 +8,7 @@ import SwiftUI
 /// a rating that says "comfort game" instead of "Liked it" reads like the
 /// notebook's owner wrote it. Defaults below.
 struct RatingControl: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var rating: Int?
     var showLabel = true
 
@@ -29,7 +30,8 @@ struct RatingControl: View {
                     // accessibility sizes. A scaled fixed height was still a
                     // one-line cap — a larger box that revealed no more text.
                     .frame(minHeight: labelHeight, alignment: .leading)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: rating)
+                    .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7),
+                               value: rating)
             }
         }
         // One adjustable control rather than five unlabelled images plus a
@@ -63,9 +65,12 @@ struct RatingControl: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(labelColor(r))
                 .id(r)   // new identity per rating → the transition re-fires
-                .transition(.asymmetric(
-                    insertion: .push(from: .bottom).combined(with: .opacity),
-                    removal: .opacity))
+                // A push travels; a fade does not. Reduce Motion keeps the
+                // label change, drops the movement.
+                .transition(reduceMotion
+                            ? .opacity
+                            : .asymmetric(insertion: .push(from: .bottom).combined(with: .opacity),
+                                          removal: .opacity))
         } else {
             Text("Rate it")
                 .font(.caption)
@@ -83,9 +88,16 @@ struct RatingControl: View {
         return Image(systemName: filled ? "star.fill" : "star")
             .font(.title3)
             .foregroundStyle(filled ? Color.yellow : Color.secondary.opacity(0.5))
-            .symbolEffect(.bounce, value: filled)      // pops as it fills
-            .scaleEffect(filled ? 1 : 0.9)
-            .overlay { if i == 5 && value == 5 { SparkleBurst(trigger: burst) } }
+            .symbolEffect(.bounce, value: reduceMotion ? false : filled)  // pops as it fills
+            .scaleEffect(reduceMotion ? 1 : (filled ? 1 : 0.9))
+            .overlay {
+                if i == 5 && value == 5 && !reduceMotion { SparkleBurst(trigger: burst) }
+            }
+            // Vertical only. Five stars sit side by side, so a 44-point
+            // square around each would overlap its neighbours and the wrong
+            // star would win the tap — worse than a small target. Height is
+            // free here because nothing sits above or below.
+            .frame(minHeight: 44)
             .contentShape(.rect)
             .onTapGesture { set(i) }
     }

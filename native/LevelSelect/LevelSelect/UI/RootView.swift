@@ -330,6 +330,8 @@ private struct ShuffleToast: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .lsTapTarget()
+            .accessibilityLabel("Dismiss")
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

@@ -57,6 +57,12 @@ struct StatusCarousel: View {
                 .rotationEffect(.degrees(collapsed ? 0 : 90))
         }
         .buttonStyle(.plain)
+        .lsTapTarget()
+        // A rotated chevron is a picture of state, and VoiceOver read the
+        // symbol's own name: "Forward".
+        .accessibilityLabel(collapsed ? "Expand \(status.sectionTitle)"
+                                      : "Collapse \(status.sectionTitle)")
+        .accessibilityValue(collapsed ? "Collapsed" : "Expanded")
     }
 
     private var statusIcon: some View {
@@ -284,8 +290,12 @@ struct ContinueHeroCard: View {
             HStack(spacing: 8) {
                 Button(action: onStop) {
                     Image(systemName: "stop.fill")
+                        // 56 tall already; only the width was short. Inline so
+                        // the hero's Play button beside it does not move.
                         .frame(width: 34, height: 56)
+                        .lsTapTargetInline(5)
                 }
+                .accessibilityLabel("Stop session")
                 .buttonStyle(.plain)
                 .background(.red.opacity(0.14), in: .rect(cornerRadius: 10))
                 .foregroundStyle(.red.opacity(0.9))

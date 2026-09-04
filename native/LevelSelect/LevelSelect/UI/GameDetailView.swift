@@ -747,7 +747,10 @@ struct GameDetailView: View {
         // The ZStack must span the FULL stage, not shrink to its widest child
         // — otherwise offset panels land outside the clip and vanish.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: stage)
+        // The title handoff above already branches on Reduce Motion; this
+        // full-pane horizontal slide is a much larger movement and did not.
+        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.85),
+                   value: stage)
         // Clips HORIZONTALLY only. The panes slide in and out sideways and
         // must not leak past the trailing edge — but the header art
         // deliberately draws ABOVE this container, pulled up by the safe-area
@@ -790,6 +793,8 @@ struct GameDetailView: View {
                         .background(LSTheme.cardFill, in: .circle)
                 }
                 .buttonStyle(.plain)
+                .lsTapTarget()
+                .accessibilityLabel("Close")
             }
             .padding(12)
             Divider()
@@ -849,6 +854,8 @@ struct GameDetailView: View {
                     .background(LSTheme.cardFill, in: .circle)
             }
             .buttonStyle(.plain)
+            .lsTapTarget()
+            .accessibilityLabel(active.state == .running ? "Pause session" : "Resume session")
             Button {
                 repo.stopSession(active)
             } label: {
@@ -858,6 +865,8 @@ struct GameDetailView: View {
                     .background(LSTheme.cardFill, in: .circle)
             }
             .buttonStyle(.plain)
+            .lsTapTarget()
+            .accessibilityLabel("Stop session")
         } else {
             Button {
                 let pt = repo.ensureDefaultPlaythrough(for: game)
@@ -886,6 +895,8 @@ struct GameDetailView: View {
                         .background(LSTheme.cardFill, in: .circle)
                 }
                 .buttonStyle(.plain)
+                .lsTapTarget()
+                .accessibilityLabel("Close")
             }
             .padding(12)
             Divider()

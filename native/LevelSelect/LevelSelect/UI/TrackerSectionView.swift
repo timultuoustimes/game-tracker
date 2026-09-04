@@ -824,7 +824,12 @@ struct TrackerSectionView: View {
                             .font(.subheadline)
                     }
                     .buttonStyle(.borderless)
-                    .help("Hide completed")
+                    .lsTapTargetInline()
+                    // The icon changed with the state and the help did not, so
+                    // it read "Hide completed" while showing them. The planned
+                    // control beside it already did this correctly.
+                    .help(hideCompleted ? "Show completed" : "Hide completed")
+                    .accessibilityLabel(hideCompleted ? "Show completed" : "Hide completed")
                 }
                 if cats.contains(where: \.pending) {
                     Button {
@@ -834,7 +839,9 @@ struct TrackerSectionView: View {
                             .font(.subheadline)
                     }
                     .buttonStyle(.borderless)
+                    .lsTapTargetInline()
                     .help(hidePlanned ? "Show planned categories" : "Hide planned categories")
+                    .accessibilityLabel(hidePlanned ? "Show planned categories" : "Hide planned categories")
                 }
             }
             if !allItems.isEmpty {
@@ -1321,6 +1328,10 @@ struct TrackerSectionView: View {
                 Image(systemName: "minus")
                     .font(.caption.weight(.bold))
                     .frame(width: 30, height: 30)
+                    // Inline: minus and plus are separated by the count, and
+                    // the comment above says a mis-tap should cost one — not
+                    // land on the opposite button.
+                    .lsTapTargetInline(7)
                     .contentShape(.rect)
             }
             .buttonStyle(.borderless)
@@ -1344,6 +1355,7 @@ struct TrackerSectionView: View {
                 Image(systemName: "plus")
                     .font(.caption.weight(.bold))
                     .frame(width: 30, height: 30)
+                    .lsTapTargetInline(7)
                     .contentShape(.rect)
             }
             .buttonStyle(.borderless)

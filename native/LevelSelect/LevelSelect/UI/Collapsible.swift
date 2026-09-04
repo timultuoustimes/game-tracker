@@ -145,9 +145,16 @@ struct Chip: View {
             if let onRemove {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
+                        // Stays 8pt — a chip's cross is a caption. The TARGET
+                        // around it is 44. See `lsTapTarget`.
                         .font(.system(size: 8, weight: .bold))
                 }
                 .buttonStyle(.borderless)
+                .lsTapTargetInline()
+                // "Remove" alone, repeated down a row of chips, tells a screen
+                // reader nothing about which one. `MemorySheet` already names
+                // its subject; this now matches.
+                .accessibilityLabel("Remove \(text)")
             }
         }
         .font(.caption)

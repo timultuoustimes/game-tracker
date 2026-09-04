@@ -25,7 +25,9 @@ struct CoverShowcase: View {
             cover
                 .rotation3DEffect(.degrees(yaw), axis: (x: 0, y: 1, z: 0), perspective: 0.55)
                 .rotation3DEffect(.degrees(pitch), axis: (x: 1, y: 0, z: 0), perspective: 0.55)
-                .scaleEffect(appear ? 1 : 0.35)
+                // Fades rather than grows. A card that still travels from 35%
+                // to full size is the motion, whatever the animation curve.
+                .scaleEffect(reduceMotion ? 1 : (appear ? 1 : 0.35))
                 .opacity(appear ? 1 : 0)
                 .shadow(color: .black.opacity(0.55), radius: 26, x: CGFloat(-yaw) * 0.7, y: 24)
                 .gesture(
@@ -49,7 +51,15 @@ struct CoverShowcase: View {
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { appear = true }
+            // The flag was read at the top of this file and then spent only
+            // on drag damping, while the 0.35 → 1 entrance — the largest
+            // movement in the app — always ran. Reduce Motion means the
+            // spatial change, not the springiness of it.
+            if reduceMotion {
+                appear = true
+            } else {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { appear = true }
+            }
         }
     }
 
@@ -90,7 +100,11 @@ struct CoverShowcase: View {
     }
 
     private func close() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { appear = false }
+        if reduceMotion {
+            appear = false
+        } else {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { appear = false }
+        }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(260))
             isPresented = false
