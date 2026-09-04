@@ -116,26 +116,9 @@ enum ThemePalette {
 
     /// Relative luminance, sRGB, per WCAG. Shared by `onColor` and the
     /// knockout test below rather than computed twice.
-    static func luminance(of color: Color) -> Double {
-        #if canImport(UIKit)
-        let native = UIColor(color)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        guard native.getRed(&r, green: &g, blue: &b, alpha: &a) else { return 0 }
-        #else
-        guard let native = NSColor(color).usingColorSpace(.sRGB) else { return 0 }
-        let r = native.redComponent, g = native.greenComponent, b = native.blueComponent
-        #endif
-        func lin(_ c: CGFloat) -> Double {
-            let c = Double(c)
-            return c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-    }
+    static func luminance(of color: Color) -> Double { LSContrast.luminance(of: color) }
 
-    static func contrast(_ a: Color, _ b: Color) -> Double {
-        let la = luminance(of: a), lb = luminance(of: b)
-        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
-    }
+    static func contrast(_ a: Color, _ b: Color) -> Double { LSContrast.ratio(a, b) }
 
     /// What to draw *inside* a filled accent surface, so the glyph reads as a
     /// hole punched through it rather than ink sitting on top.

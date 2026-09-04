@@ -107,6 +107,52 @@ enum LSTheme {
         return Color(hue: hue.hue, saturation: sat, brightness: brightness)
     }
 
+    // MARK: Derived accent
+
+    /// Where each appearance starts looking, before contrast is considered.
+    ///
+    /// These are the brightnesses the shipped defaults already use — torch is
+    /// 0.96 on dark and torch ink is 0.60 on light — so a hue that behaves
+    /// like torch lands exactly where it does today and nothing moves.
+    static let preferredAccentBrightness = (light: 0.60, dark: 0.96)
+
+    /// The accent for one appearance, derived from a hue the user picked.
+    ///
+    /// **The user sets hue and saturation; only brightness is derived.** Tim,
+    /// 2026-09-04 — one fewer thing moving on its own, which was the objection
+    /// to deriving the whole colour at render time.
+    ///
+    /// Starts at that appearance's preferred brightness and walks toward more
+    /// contrast only if it has to. Contrast rises as a colour gets brighter on
+    /// a dark ground and darker on a light one, so the walk goes opposite ways
+    /// — which is why this is not a symmetric formula and should not be
+    /// "simplified" into one.
+    ///
+    /// Reproduces both shipped defaults from torch's own hue and saturation,
+    /// which is the evidence the rule is the right one rather than a fit.
+    static func derivedAccent(hue: Double,
+                              saturation: Double,
+                              dark: Bool,
+                              ground: Color,
+                              floor: Double = 4.5) -> Color {
+        let start = dark ? preferredAccentBrightness.dark : preferredAccentBrightness.light
+        let step = dark ? 0.01 : -0.01
+        var brightness = start
+        var best = Color(hue: hue, saturation: saturation, brightness: brightness)
+        for _ in 0..<100 {
+            let candidate = Color(hue: hue, saturation: saturation, brightness: brightness)
+            if LSContrast.ratio(candidate, ground) >= floor { return candidate }
+            best = candidate
+            brightness += step
+            if brightness > 1 || brightness < 0 { break }
+        }
+        // No brightness of this hue clears the floor. Returning the last
+        // candidate is honest — the caller decides whether to warn — but the
+        // tests assert this never happens for a real ground, which is what
+        // lets the hue wheel stay unrestricted.
+        return best
+    }
+
     /// Hero card gradient (Continue Playing).
     static var heroGradient: LinearGradient { hero(tintedBy: nil) }
 
@@ -269,5 +315,35 @@ enum LSAppearance: String, CaseIterable, Identifiable, Sendable {
     /// has always been dark; light is a thing you choose.
     init(raw: String?) {
         self = LSAppearance(rawValue: raw ?? "") ?? .dark
+    }
+}
+
+/// WCAG relative luminance and contrast, in Shared so the widgets and the
+/// Watch can reason about legibility too.
+///
+/// Moved out of `ThemePalette` (app target only) when `LSTheme.derivedAccent`
+/// needed it: the derivation lives beside the grounds it solves against, and
+/// two copies of this arithmetic is exactly how the two sides drift apart.
+/// `ThemePalette.contrast` and `.luminance` now delegate here.
+enum LSContrast {
+    static func luminance(of color: Color) -> Double {
+        #if canImport(UIKit)
+        let native = UIColor(color)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard native.getRed(&r, green: &g, blue: &b, alpha: &a) else { return 0 }
+        #else
+        guard let native = NSColor(color).usingColorSpace(.sRGB) else { return 0 }
+        let r = native.redComponent, g = native.greenComponent, b = native.blueComponent
+        #endif
+        func lin(_ c: CGFloat) -> Double {
+            let c = Double(c)
+            return c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    }
+
+    static func ratio(_ a: Color, _ b: Color) -> Double {
+        let la = luminance(of: a), lb = luminance(of: b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
 }
