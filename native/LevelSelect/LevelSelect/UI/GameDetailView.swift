@@ -218,6 +218,8 @@ struct GameDetailView: View {
         .navigationTitle(game.name)
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
+        // Glass under the name, nothing under the art. See `ScrolledBarGlass`.
+        .modifier(ScrolledBarGlass(active: titleInBar))
         #endif
         .toolbar {
             #if !os(macOS)
@@ -676,7 +678,7 @@ struct GameDetailView: View {
         // to the wrapper rather than to the scroll view — so the bar lost its
         // material entirely and the game's name sat directly on whatever text
         // was scrolling under it.
-        .scrollEdgeEffectStyle(.hard, for: .top)
+        .scrollEdgeEffectStyle(.soft, for: .top)
         // The handoff point is the header card's own title. Below it the name
         // is on screen in full; above it, the bar takes over.
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
@@ -710,7 +712,38 @@ struct GameDetailView: View {
         }
     }
 
-    /// The header art, drawn inside the scroll so it scrolls away with the
+    /// The navigation bar's material, applied only once the name is in the bar.
+///
+/// **Neither scroll-edge style is the answer, and trying both proved it.**
+/// `.soft` fades so far into a dark ground that the bar reads as a plain
+/// gaussian blur; `.hard` draws a solid band and draws it *always*, so the bar
+/// sits over the header art from the moment the page opens. Tim, on the second:
+/// *"it shouldn't be there at the start. it should only be there when things
+/// begin to scroll under it."*
+///
+/// What makes it frosted glass rather than a blur is a *material*, and only
+/// `toolbarBackground` supplies one. It cannot simply be left on: applying it
+/// at all — even with `.clear` — pins the bar open the same way. And it cannot
+/// be gated with `toolbarBackgroundVisibility`, because the two do not compose
+/// — the same trap `RootView`'s comment already records for the hiding case.
+///
+/// So the modifier has to be genuinely absent while the art is on screen, which
+/// means branching the view rather than its argument. `titleInBar` is the
+/// handoff this page already tracks, so the glass arrives exactly when the name
+/// does.
+private struct ScrolledBarGlass: ViewModifier {
+    let active: Bool
+
+    func body(content: Content) -> some View {
+        if active {
+            content.toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        } else {
+            content
+        }
+    }
+}
+
+/// The header art, drawn inside the scroll so it scrolls away with the
     /// header, and pulled up under the navigation bar so the page reads as one
     /// image with glass chrome floating on it.
     @ViewBuilder
