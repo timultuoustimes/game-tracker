@@ -96,10 +96,15 @@ struct BetaQuestionCard: View {
 
     private func answerButton(_ question: Question) -> some View {
         Button("Answer on the web") {
-            // The id rides along so an answer can be tied to the question that
-            // prompted it. The form ignores what it doesn't know.
+            // **/feedback, not /invite.** The invite form asks for an email
+            // address, which devices you own and how you track games today —
+            // onboarding questions for somebody who does not have the app.
+            // Sending a tester there asked them to sign up again and never
+            // asked the question, which is why fixing this card alone changed
+            // nothing. The id names which question to show and rides along on
+            // the answer.
             if let url = URL(string:
-                "https://levelselect.app/invite/?tester=1&q=\(question.id)") {
+                "https://levelselect.app/feedback/?q=\(question.id)") {
                 openURL(url)
             }
             markAnswered(question)
