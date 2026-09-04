@@ -218,8 +218,6 @@ struct GameDetailView: View {
         .navigationTitle(game.name)
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
-        // Glass under the name, nothing under the art. See `ScrolledBarGlass`.
-        .modifier(ScrolledBarGlass(active: titleInBar))
         #endif
         .toolbar {
             #if !os(macOS)
@@ -639,16 +637,7 @@ struct GameDetailView: View {
     }
 
     private func standardScroll(stageMode: Bool, topInset: CGFloat) -> some View {
-        // **The ground is a SIBLING of the scroll view, not a background on
-        // it.** As `.lsBackground()` — a `.background(…)` — it silently killed
-        // the scroll edge effect, so the bar lost its material and the game's
-        // name sat directly on whatever text was scrolling under it. Behind
-        // the scroll view in a ZStack, the page still stands on the theme and
-        // the scroll view keeps the identity the effect needs.
-        ZStack {
-            LSTheme.ground(tintedBy: ThemePalette.backgroundOverride)
-                .ignoresSafeArea()
-            ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 hero
                 if game.livePlaythroughs.count > 1 {
@@ -673,11 +662,18 @@ struct GameDetailView: View {
         // otherwise, and one screen fading while the rest cut is worse than
         // either done consistently.
         //
-        // **Before `.lsBackground()`, not after.** `lsBackground` is a
-        // `.background(…)`, and putting it first meant this modifier attached
-        // to the wrapper rather than to the scroll view — so the bar lost its
-        // material entirely and the game's name sat directly on whatever text
-        // was scrolling under it.
+        // ⚠️ **Nothing may wrap this scroll view.** Builds 33, 34 and 35 are
+        // byte-identical here — `ScrollView` and this line, no background
+        // modifier — and that is the version with a working frosted header.
+        // `.lsBackground()` was added on 2026-09-02 to give the page a themed
+        // ground and silently took the scroll edge effect with it: the bar
+        // became a plain blur. Moving the ground into a ZStack to win the
+        // effect back was worse — a ZStack sizes to its largest child, the
+        // ground ignores the safe area, so the scroll view inherited a frame
+        // with nothing left to scroll at all.
+        //
+        // The page's light-mode ground is therefore still unsolved, and wants a
+        // mechanism that does not touch this view.
         .scrollEdgeEffectStyle(.soft, for: .top)
         // The handoff point is the header card's own title. Below it the name
         // is on screen in full; above it, the bar takes over.
@@ -709,45 +705,9 @@ struct GameDetailView: View {
                 withAnimation(.easeInOut(duration: 0.18)) { titleInBar = handedOver }
             }
         }
-        }
     }
 
-    /// The navigation bar's material, applied only once the name is in the bar.
-///
-/// **Neither scroll-edge style is the answer, and trying both proved it.**
-/// `.soft` fades so far into a dark ground that the bar reads as a plain
-/// gaussian blur; `.hard` draws a solid band and draws it *always*, so the bar
-/// sits over the header art from the moment the page opens. Tim, on the second:
-/// *"it shouldn't be there at the start. it should only be there when things
-/// begin to scroll under it."*
-///
-/// What makes it frosted glass rather than a blur is a *material*, and only
-/// `toolbarBackground` supplies one. It cannot simply be left on: applying it
-/// at all — even with `.clear` — pins the bar open the same way. And it cannot
-/// be gated with `toolbarBackgroundVisibility`, because the two do not compose
-/// — the same trap `RootView`'s comment already records for the hiding case.
-///
-/// So the modifier has to be genuinely absent while the art is on screen, which
-/// means branching the view rather than its argument. `titleInBar` is the
-/// handoff this page already tracks, so the glass arrives exactly when the name
-/// does.
-/// iOS only: `.navigationBar` does not exist on macOS, where the window
-/// toolbar is a different object with its own background rules.
-#if !os(macOS)
-private struct ScrolledBarGlass: ViewModifier {
-    let active: Bool
-
-    func body(content: Content) -> some View {
-        if active {
-            content.toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-        } else {
-            content
-        }
-    }
-}
-#endif
-
-/// The header art, drawn inside the scroll so it scrolls away with the
+    /// The header art, drawn inside the scroll so it scrolls away with the
     /// header, and pulled up under the navigation bar so the page reads as one
     /// image with glass chrome floating on it.
     @ViewBuilder
