@@ -395,9 +395,14 @@ struct HomeTab: View {
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }, sort: \Game.name)
     private var games: [Game]
     @Query private var profiles: [PlayerProfile]
+    /// Only to tell whether Settings actually changed the theme — see the
+    /// settings sheet's `onDismiss`.
+    @Query private var themeSettings: [ThemeSettings]
 
     @State private var showingAdd = false
     @State private var showingSettings = false
+    /// The theme's `updatedAt` at the moment Settings opened.
+    @State private var themeStampAtOpen: Date?
     @State private var editingProfile = false
     @State private var showingCSVImport = false
     @State private var showingWelcome = false
@@ -511,7 +516,10 @@ struct HomeTab: View {
                 // moved them; `foregroundStyle` on the label does, because it
                 // stops asking and just says the color.
                 ToolbarItem(placement: Self.trailing) {
-                    Button { showingSettings = true } label: {
+                    Button {
+                        themeStampAtOpen = themeSettings.first?.updatedAt
+                        showingSettings = true
+                    } label: {
                         Label("Settings", systemImage: "gearshape")
                             .foregroundStyle(LSTheme.accent)
                     }
@@ -530,7 +538,28 @@ struct HomeTab: View {
         // including pushing a subscreen onto the Settings stack, which re-keyed
         // the tab tree and tore down the sheet mid-tap.
         .sheet(isPresented: $showingSettings, onDismiss: {
-            AppNavigator.shared.themeRevision += 1
+            // **Only if the theme actually changed.**
+            //
+            // Bumping this re-keys the whole tab tree (`.id(nav.themeRevision)`
+            // above), which tears down all four tabs and builds them again. Done
+            // unconditionally, that happened on EVERY Settings close — and the
+            // rebuilt tree lays out from zero width inside the sheet's dismissal
+            // animation, so Home visibly grew back from the left edge with white
+            // to the right of it. Measured off Tim's recording: 0%, 64%, 81%,
+            // 92%, 98% of the screen width across about 230ms.
+            //
+            // Most visits to Settings do not touch the theme, so most of them
+            // now cost nothing. `updatedAt` is the model's own change stamp, and
+            // it is what `RootView` already watches to refresh the palette.
+            let stamp = themeSettings.first?.updatedAt
+            defer { themeStampAtOpen = nil }
+            guard stamp != themeStampAtOpen else { return }
+            // And when it DID change, re-key without animating — the rebuild is
+            // a swap, not a movement, and animating it is what made the relayout
+            // legible in the first place.
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { AppNavigator.shared.themeRevision += 1 }
         }) { SettingsView() }
         .sheet(isPresented: $editingProfile) { ProfileEditor() }
         .sheet(isPresented: $showingCSVImport) { CSVImportView() }
@@ -567,7 +596,10 @@ struct HomeTab: View {
         // Menu bar (Mac and iPad). See LevelSelectCommands.
         .onChange(of: nav.addGameRequest) { _, _ in showingAdd = true }
         .onChange(of: nav.csvImportRequest) { _, _ in showingCSVImport = true }
-        .onChange(of: nav.settingsRequest) { _, _ in showingSettings = true }
+        .onChange(of: nav.settingsRequest) { _, _ in
+            themeStampAtOpen = themeSettings.first?.updatedAt
+            showingSettings = true
+        }
     }
 
     /// Push a game the navigator asked for (deep link or App Intent).
