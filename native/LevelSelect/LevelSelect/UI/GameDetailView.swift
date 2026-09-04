@@ -731,6 +731,9 @@ struct GameDetailView: View {
 /// means branching the view rather than its argument. `titleInBar` is the
 /// handoff this page already tracks, so the glass arrives exactly when the name
 /// does.
+/// iOS only: `.navigationBar` does not exist on macOS, where the window
+/// toolbar is a different object with its own background rules.
+#if !os(macOS)
 private struct ScrolledBarGlass: ViewModifier {
     let active: Bool
 
@@ -742,6 +745,7 @@ private struct ScrolledBarGlass: ViewModifier {
         }
     }
 }
+#endif
 
 /// The header art, drawn inside the scroll so it scrolls away with the
     /// header, and pulled up under the navigation bar so the page reads as one
