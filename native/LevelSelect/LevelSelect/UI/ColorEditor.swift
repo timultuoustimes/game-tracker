@@ -93,6 +93,121 @@ struct ColorEditor: View {
 
     private var saved: [String] { themeSettings.first?.savedSwatches ?? [] }
 
+    // MARK: The linked palette
+
+    /// One hue for both appearances, or two independent choices.
+    ///
+    /// Only offered where there is something to link — the Colors editor with
+    /// its accent pair. A single-target editor (status colours) has no second
+    /// appearance to match.
+    private var offersLinking: Bool { targets.contains { $0.id.hasPrefix("accent-") } }
+
+    private var linked: Bool {
+        get { themeSettings.first?.paletteLinked ?? true }
+        nonmutating set {
+            let theme = ThemePalette.fetchOrCreate(in: context)
+            theme.paletteLinked = newValue
+            // Seed the hue from whatever is on screen, so turning this on does
+            // not blank the accent while the user works out what it does.
+            if newValue, theme.accentHue == nil {
+                let hs = current.lsHueSaturation
+                theme.accentHue = hs?.hue ?? hue
+                theme.accentSaturation = hs?.saturation ?? saturation
+            }
+            commitTheme(theme)
+        }
+    }
+
+    private var linkedHue: Binding<Double> {
+        Binding(get: { themeSettings.first?.accentHue ?? hue },
+                set: { v in
+                    let theme = ThemePalette.fetchOrCreate(in: context)
+                    theme.accentHue = v
+                    commitTheme(theme)
+                })
+    }
+
+    private var linkedSaturation: Binding<Double> {
+        Binding(get: { themeSettings.first?.accentSaturation ?? saturation },
+                set: { v in
+                    let theme = ThemePalette.fetchOrCreate(in: context)
+                    theme.accentSaturation = v
+                    commitTheme(theme)
+                })
+    }
+
+    private func commitTheme(_ theme: ThemeSettings) {
+        theme.updatedAt = .now
+        try? context.save()
+        ThemePalette.refresh(from: theme)
+    }
+
+    /// Linking only applies where a hue has been chosen and there is a pair to
+    /// link — the same gate the palette resolution uses, so the editor can
+    /// never show a mode the app is not actually in.
+    private var linkedMode: Bool {
+        offersLinking && linked && themeSettings.first?.accentHue != nil
+    }
+
+    /// Hue and saturation once, and what each appearance makes of them.
+    @ViewBuilder
+    private var linkedEditor: some View {
+        VStack(spacing: 14) {
+            HueSaturationField(hue: linkedHue, saturation: linkedSaturation,
+                               darkGround: ThemePalette.groundBase(dark: true))
+
+            Text("Brightness is chosen for you, per appearance, so the accent stays readable on each ground.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            derivedRow(dark: false)
+            derivedRow(dark: true)
+        }
+    }
+
+    /// One appearance's result: the colour, its contrast, and — the point of
+    /// the whole model — whether the app had to soften the saturation to get
+    /// there. A silent compromise is what this exists to avoid.
+    private func derivedRow(dark: Bool) -> some View {
+        let d = derived(dark: dark)
+        let ground = ThemePalette.groundBase(dark: dark)
+        let ratio = ThemePalette.contrast(d.color, ground)
+        return HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9).fill(ground)
+                Text("Aa")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(d.color)
+            }
+            .frame(width: 54, height: 38)
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(LSTheme.hairline, lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(dark ? "Dark" : "Light")
+                    .font(.caption.weight(.semibold))
+                Text(String(format: "%.2f:1", ratio))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                if d.softened {
+                    Text("Saturation softened to \(Int((d.saturation * 100).rounded()))% — this hue cannot be read on a dark ground at \(Int((d.requested * 100).rounded()))%.")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// What the hue actually becomes in each appearance.
+    private func derived(dark: Bool) -> LSTheme.DerivedAccent {
+        LSTheme.derivedAccent(hue: linkedHue.wrappedValue,
+                              saturation: linkedSaturation.wrappedValue,
+                              dark: dark,
+                              ground: ThemePalette.groundBase(dark: dark))
+    }
+
     /// A dark-UI palette, not a full spectrum.
     ///
     /// The app is near-black everywhere, so pale washes and muddy mid-tones
@@ -133,15 +248,39 @@ struct ColorEditor: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
-                if targets.count > 1 {
-                    Picker("Editing", selection: $selectedID) {
-                        ForEach(targets) { Text($0.label).tag($0.id) }
+                if offersLinking {
+                    // Bound to `linkedMode`, not the raw flag.
+                    //
+                    // `paletteLinked` defaults true so a NEW library gets the
+                    // simpler model, but resolution is gated on a hue existing
+                    // — which is what stops an accent someone already chose
+                    // from being silently replaced. Binding the toggle to the
+                    // raw flag therefore showed it ON while the app was still
+                    // in the unlinked editor, claiming a state it was not in.
+                    // Switching it on is what seeds the hue and makes it true.
+                    Toggle("Match light and dark", isOn: Binding(
+                        get: { linkedMode }, set: { linked = $0 }))
+                        .font(.subheadline)
+                    if !linkedMode {
+                        Text("One hue, with brightness chosen per appearance so it reads on both grounds.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
 
-                preview
+                if linkedMode {
+                    linkedEditor
+                } else {
+                    if targets.count > 1 {
+                        Picker("Editing", selection: $selectedID) {
+                            ForEach(targets) { Text($0.label).tag($0.id) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+
+                    preview
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("LevelSelect")
@@ -204,6 +343,7 @@ struct ColorEditor: View {
                 // wheel is square and the sliders are shorter, so the wheel
                 // sets it.
                 .frame(height: 300)
+                }
             }
             .padding(20)
             // **Pinned, not the last thing in the scroll.** It sat after a
