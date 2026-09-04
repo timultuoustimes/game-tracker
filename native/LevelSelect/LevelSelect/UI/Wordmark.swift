@@ -64,3 +64,36 @@ struct Wordmark: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(LSTheme.background)
 }
+
+
+extension View {
+    /// The wordmark, pinned to the leading edge of the navigation bar.
+    ///
+    /// **One fixed anchor across every tab.** It used to sit `.principal` on
+    /// Home only — centred, so its position depended on how many toolbar
+    /// buttons the tab happened to have, and it vanished entirely on the other
+    /// three. Tim: *"carry it across in the upper part of the header into every
+    /// tab, not replace what was already there with it."*
+    ///
+    /// Leading rather than principal is what lets the tab keep its own large
+    /// title: a large title collapses into the CENTRE of the bar on scroll, so
+    /// a centred wordmark would collide with it. Pinned left, the two coexist —
+    /// the mark says which app, the title says which screen.
+    ///
+    /// Hidden from VoiceOver: it is the same word on every screen, and the
+    /// navigation title already names where you are.
+    func lsWordmarkHeader() -> some View {
+        #if os(macOS)
+        return self
+        #else
+        return toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Wordmark(size: 13)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .accessibilityHidden(true)
+            }
+        }
+        #endif
+    }
+}

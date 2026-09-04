@@ -137,6 +137,7 @@ struct WishlistTab: View {
             }
             .lsBackground()
             .navigationTitle("Wishlist")
+            .lsWordmarkHeader()
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
             .searchable(text: $searchText, prompt: "Search wishlist")
             .searchFocused($searchFocused)

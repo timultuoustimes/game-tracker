@@ -85,6 +85,7 @@ struct LibraryTab: View {
                 searchText = ""
             }
             .navigationTitle("Library")
+            .lsWordmarkHeader()
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
             .navigationDestination(for: GameFacet.self) { FacetGamesView(facet: $0) }
             // Each tab owns its stack, so a route appended here has to be

@@ -44,6 +44,7 @@ struct JournalTab: View {
     /// how you read your history on the phone isn't obviously the same answer
     /// as on the iPad on the desk.
     @AppStorage("journalLens") private var lensRaw = Lens.timeline.rawValue
+    @State private var addingMemory = false
     private var lens: Lens { Lens(rawValue: lensRaw) ?? .timeline }
 
     var body: some View {
@@ -72,10 +73,26 @@ struct JournalTab: View {
             }
             .lsBackground()
             .navigationTitle("Journal")
+            .lsWordmarkHeader()
             // Glass, like Home — see LibraryView.
             #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             #endif
+            // **Owned by the tab, not by a lens.** It used to live on the
+            // timeline's own toolbar, so switching to Calendar took the plus
+            // away — the same journal, no way to add to it. Tim: *"Journal
+            // should have a plus in the top corner for both timeline and
+            // calendar view."* Charts has nothing to add to.
+            .toolbar {
+                if lens != .charts {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { addingMemory = true } label: {
+                            Label("Add a memory", systemImage: "plus")
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $addingMemory) { MemorySheet() }
             .navigationDestination(for: JournalRoute.self) { JournalRouteDestination(route: $0) }
             .navigationDestination(for: CalendarMonth.self) { CalendarMonthView(month: $0.start) }
             .navigationDestination(for: CalendarDay.self) { CalendarDayView(day: $0.day) }
@@ -180,13 +197,6 @@ struct JournalTimeline: View {
             MemorySheet(existing: editingMemory ?? nil)
         }
 
-        .toolbar {
-            Button {
-                editingMemory = .some(nil)
-            } label: {
-                Label("Add a memory", systemImage: "plus")
-            }
-        }
         .overlay {
             if periods.isEmpty {
                 ContentUnavailableView(

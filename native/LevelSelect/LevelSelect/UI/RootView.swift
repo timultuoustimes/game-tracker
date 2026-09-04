@@ -485,10 +485,14 @@ struct HomeTab: View {
             .navigationDestination(for: CollectionRoute.self) { CollectionRouteView(route: $0) }
             .toolbar {
                 #if !os(macOS)
-                ToolbarItem(placement: .principal) {
+                ToolbarItem(placement: .topBarLeading) {
+                    // Leading, not principal. Centred, it drifted with the
+                    // number of buttons beside it; pinned, it is the same
+                    // anchor on every tab. See `lsWordmarkHeader`.
                     Wordmark(size: 13)
                         .lineLimit(1)
                         .fixedSize()
+                        .accessibilityHidden(true)
                 }
                 #endif
                 // Tinted per item rather than relying on an inherited tint:
