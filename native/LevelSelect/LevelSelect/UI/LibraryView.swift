@@ -383,10 +383,18 @@ struct LibraryTab: View {
             if let asset = platform.flatMap(PlatformIcon.assetName) {
                 Image(asset).resizable().scaledToFit().frame(width: 26, height: 26)
             } else if let status {
+                // `status.color`, with no special case for `.playing`.
+                //
+                // This used to hand `.playing` the ACCENT and every other
+                // status its own colour — the same exception Home had, removed
+                // there with Fable's 5.3. Fixing one and not the other is what
+                // Tim caught: Now Playing was green on Home and the accent in
+                // Library, in the same session, for the same games. Library's
+                // own LIST headers never had the exception, so the two halves
+                // of this tab disagreed with each other too.
                 Image(systemName: status.systemImage)
                     .font(.subheadline)
-                    .foregroundStyle(status == .playing
-                                     ? AnyShapeStyle(LSTheme.accent) : AnyShapeStyle(status.color))
+                    .foregroundStyle(status.color)
                     .frame(width: 26)
             } else {
                 Image(systemName: "gamecontroller.fill")
