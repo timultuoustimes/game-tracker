@@ -155,7 +155,7 @@ struct GameArrangeSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .lsSheet()
     }
 
     private func visibilityBinding(_ section: GamePageSection) -> Binding<Bool> {

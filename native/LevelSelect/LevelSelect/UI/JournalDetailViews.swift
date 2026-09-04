@@ -306,7 +306,7 @@ struct MemoryView: View {
         .toolbar {
             Button { editing = true } label: { Label("Edit", systemImage: "square.and.pencil") }
         }
-        .sheet(isPresented: $editing) { MemorySheet(existing: memory) }
+        .sheet(isPresented: $editing) { MemorySheet(existing: memory).lsSheet() }
         .sheet(item: $viewingImage) { LocalImageViewer(image: $0) }
     }
 }

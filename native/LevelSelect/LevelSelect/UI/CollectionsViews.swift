@@ -233,7 +233,7 @@ struct CollectionDetailView: View {
             }
         }
         .sheet(isPresented: $pickingMembers) {
-            CollectionMembersPicker(collection: collection)
+            CollectionMembersPicker(collection: collection).lsSheet()
         }
         .alert("Rename Collection", isPresented: $renaming) {
             TextField("Name", text: $nameField)

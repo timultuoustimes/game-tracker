@@ -532,7 +532,7 @@ struct HomeTab: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAdd) { AddGameSheet() }
+        .sheet(isPresented: $showingAdd) { AddGameSheet().lsSheet() }
         // `onDismiss`, not the sheet's own `onDisappear`: this fires ONCE when
         // Settings actually closes, where that fired on any disappearance —
         // including pushing a subscreen onto the Settings stack, which re-keyed
@@ -560,9 +560,9 @@ struct HomeTab: View {
             var t = Transaction()
             t.disablesAnimations = true
             withTransaction(t) { AppNavigator.shared.themeRevision += 1 }
-        }) { SettingsView() }
-        .sheet(isPresented: $editingProfile) { ProfileEditor() }
-        .sheet(isPresented: $showingCSVImport) { CSVImportView() }
+        }) { SettingsView().lsSheet() }
+        .sheet(isPresented: $editingProfile) { ProfileEditor().lsSheet() }
+        .sheet(isPresented: $showingCSVImport) { CSVImportView().lsSheet() }
         .sheet(isPresented: $showingWelcome, onDismiss: {
             // Any way out counts as seen — including a swipe-down. A welcome
             // that nags twice is a tour.
@@ -576,6 +576,7 @@ struct HomeTab: View {
         }) {
             WelcomeView { welcomeChoice = $0 }
                 .interactiveDismissDisabled(false)
+                .lsSheet()
         }
         // Consume navigation requested by widgets / App Intents.
         .onAppear {

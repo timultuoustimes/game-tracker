@@ -59,16 +59,18 @@ struct AddGameSheet: View {
         // slightly translucent, like a frosted glass?" — the library behind it
         // staying faintly visible is what makes this read as a layer over your
         // games rather than a separate grey screen.
-        #if !os(macOS)
-        // A tint, not a material. `.ultraThinMaterial` blurs what is behind
-        // it, and this app's ground is a near-uniform dark purple — so the
-        // blur had almost nothing to sample and read as flat grey however
-        // translucent it technically was. A 62% fill of the app's own ground
-        // lets the shapes behind actually show, which is what Tim asked for:
-        // "I am wanting to be able to see through a little bit to the app
-        // page behind it."
-        .presentationBackground(LSTheme.background.opacity(0.62))
-        #endif
+        // **No `presentationBackground` here any more.**
+        //
+        // This used to paint a 62% fill of the app's own ground, because
+        // `.ultraThinMaterial` on a full-height sheet had nothing behind it to
+        // sample and read as flat grey — Tim wanted to "see through a little
+        // bit to the app page behind it" and a tint was the only way to get
+        // anything at all.
+        //
+        // `lsSheet` gives this sheet a partial detent, and at a partial detent
+        // the system supplies real glass with the live page behind it. That IS
+        // what was being asked for, and a custom background would sit on top of
+        // it and take it away again.
     }
 
     // MARK: Search stage

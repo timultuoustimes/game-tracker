@@ -92,7 +92,7 @@ struct JournalTab: View {
                     }
                 }
             }
-            .sheet(isPresented: $addingMemory) { MemorySheet() }
+            .sheet(isPresented: $addingMemory) { MemorySheet().lsSheet() }
             .navigationDestination(for: JournalRoute.self) { JournalRouteDestination(route: $0) }
             .navigationDestination(for: CalendarMonth.self) { CalendarMonthView(month: $0.start) }
             .navigationDestination(for: CalendarDay.self) { CalendarDayView(day: $0.day) }
@@ -190,11 +190,11 @@ struct JournalTimeline: View {
         // The existing editor, not a second one — it already writes notes,
         // and it knows that a paused session's editable end is not its stored
         // end, which a note-only sheet would have had to learn again.
-        .sheet(item: $editing) { EditSessionSheet(session: $0) }
+        .sheet(item: $editing) { EditSessionSheet(session: $0).lsSheet() }
         .sheet(isPresented: Binding(
             get: { editingMemory != nil },
             set: { if !$0 { editingMemory = nil } })) {
-            MemorySheet(existing: editingMemory ?? nil)
+            MemorySheet(existing: editingMemory ?? nil).lsSheet()
         }
 
         .overlay {

@@ -125,13 +125,16 @@ struct LibraryTab: View {
             #endif
         }
         .sheet(item: $sheet) { which in
-            switch which {
-            case .addGame:            AddGameSheet()
-            case .collectionTemplates:
-                CollectionTemplatePicker { collection in
-                    path.append(CollectionRoute(id: collection.id))
+            Group {
+                switch which {
+                case .addGame:            AddGameSheet()
+                case .collectionTemplates:
+                    CollectionTemplatePicker { collection in
+                        path.append(CollectionRoute(id: collection.id))
+                    }
                 }
             }
+            .lsSheet()
         }
         .alert("New Collection", isPresented: $newCollection) {
             TextField("Name", text: $newCollectionName)

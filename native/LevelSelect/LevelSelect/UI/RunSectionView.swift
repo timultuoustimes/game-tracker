@@ -96,6 +96,7 @@ struct RunSectionView: View {
                 repo.logRun(on: pt, fields: fields, outcome: outcome,
                             started: started, duration: duration, notes: notes)
             }
+            .lsSheet()
         }
         .sheet(item: $endingRun) { run in
             EndRunSheet(template: template, categories: categories,
@@ -350,7 +351,7 @@ struct RunFieldsSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .lsSheet()
     }
 }
 
@@ -510,7 +511,7 @@ struct EndRunSheet: View {
                 outcomeID = template.outcomes.first?.id ?? ""
             }
         }
-        .presentationDetents(hasEndFields ? [.medium, .large] : [.medium])
+        .lsSheet(hasEndFields ? [.medium, .large] : [.medium])
     }
 }
 

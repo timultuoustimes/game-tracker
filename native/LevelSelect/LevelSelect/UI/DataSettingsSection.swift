@@ -122,10 +122,12 @@ struct DataSettingsSection: View {
             // and the sheet would vanish whenever that caption did.
             .sheet(item: $sheet) { which in
                 switch which {
+                // `ShareSheet` is UIKit's own activity controller — it brings
+                // its own presentation and detents do not belong on it.
                 case .export(let url): ShareSheet(url: url)
-                case .csvImport:       CSVImportView()
-                case .libraryImport:    LibraryImportView()
-                case .metadataFill:    MetadataFillView()
+                case .csvImport:       CSVImportView().lsSheet()
+                case .libraryImport:    LibraryImportView().lsSheet()
+                case .metadataFill:    MetadataFillView().lsSheet()
                 }
             }
         } header: {

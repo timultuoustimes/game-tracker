@@ -147,7 +147,7 @@ struct PlaylistPartsSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .lsSheet()
     }
 }
 

@@ -428,7 +428,7 @@ struct CalendarMonthView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .sheet(item: $creatingOn) { day in
-            MemorySheet(initialDate: day.date)
+            MemorySheet(initialDate: day.date).lsSheet()
         }
     }
 }

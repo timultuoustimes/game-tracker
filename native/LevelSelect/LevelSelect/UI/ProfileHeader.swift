@@ -607,21 +607,24 @@ struct ProfileEditor: View {
             }
             .photosPicker(isPresented: $pickingPhoto, selection: $picking, matching: .images)
             .sheet(item: $sheet) { which in
-                switch which {
-                case .artwork:
-                    AvatarArtworkPicker { take($0) }
-                case .memoji:
-                    #if os(iOS)
-                    // Stickers arrive as transparent HEIC, so `take` sends
-                    // them straight through with no crop step — which is
-                    // right: a sticker is already a cut-out of one thing.
-                    NavigationStack { StickerPicker { take($0) } }
-                    #else
-                    EmptyView()
-                    #endif
-                case .crop(let raw):
-                    AvatarCropView(source: raw) { take($0, alreadyCropped: true) }
+                Group {
+                    switch which {
+                    case .artwork:
+                        AvatarArtworkPicker { take($0) }
+                    case .memoji:
+                        #if os(iOS)
+                        // Stickers arrive as transparent HEIC, so `take` sends
+                        // them straight through with no crop step — which is
+                        // right: a sticker is already a cut-out of one thing.
+                        NavigationStack { StickerPicker { take($0) } }
+                        #else
+                        EmptyView()
+                        #endif
+                    case .crop(let raw):
+                        AvatarCropView(source: raw) { take($0, alreadyCropped: true) }
+                    }
                 }
+                .lsSheet()
             }
         }
         #if os(macOS)

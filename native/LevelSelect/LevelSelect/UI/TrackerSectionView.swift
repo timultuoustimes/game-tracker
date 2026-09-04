@@ -529,16 +529,19 @@ struct TrackerSectionView: View {
             Text(removalWarning)
         }
         .sheet(item: $sheet) { which in
-            switch which {
-            case .importList:
-                TrackerListImportView(game: game)
-            case .editItem(let target):
-                TrackerItemEditView(game: game, target: target)
-            case .reviewMerge(let id):
-                if let merge = generation.pendingMerge(for: game.id), merge.id == id {
-                    TrackerMergeReviewView(game: game, merge: merge)
+            Group {
+                switch which {
+                case .importList:
+                    TrackerListImportView(game: game)
+                case .editItem(let target):
+                    TrackerItemEditView(game: game, target: target)
+                case .reviewMerge(let id):
+                    if let merge = generation.pendingMerge(for: game.id), merge.id == id {
+                        TrackerMergeReviewView(game: game, merge: merge)
+                    }
                 }
             }
+            .lsSheet()
         }
         // A generation that finishes while another sheet is open doesn't race
         // it: the review takes the slot only when the slot is free.
@@ -626,7 +629,7 @@ struct TrackerSectionView: View {
             Text("A generator's naming is a suggestion. Renaming keeps your progress and won't confuse a future regeneration.")
         }
         .sheet(isPresented: $editingApplicability) {
-            ApplicabilitySheet(game: game)
+            ApplicabilitySheet(game: game).lsSheet()
         }
         .alert("New Personal Goal", isPresented: $addingGoal) {
             TextField("Goal", text: $goalName)
@@ -1446,7 +1449,7 @@ struct ApplicabilitySheet: View {
                 notes = current.notes
             }
         }
-        .presentationDetents([.medium])
+        .lsSheet([.medium])
     }
 }
 

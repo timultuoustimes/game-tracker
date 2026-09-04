@@ -66,15 +66,11 @@ struct CompletionSection: View {
         }
         .sheet(isPresented: $marking) {
             MarkCompletionSheet(game: game)
-                #if !os(macOS)
-                .presentationDetents([.medium, .large])
-                #endif
+                .lsSheet()
         }
         .sheet(item: $editing) { event in
             MarkCompletionSheet(game: game, editing: event)
-                #if !os(macOS)
-                .presentationDetents([.medium, .large])
-                #endif
+                .lsSheet()
         }
     }
 }

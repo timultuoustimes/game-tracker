@@ -92,9 +92,10 @@ struct SessionControlsView: View {
                 let pt = repo.ensureDefaultPlaythrough(for: game)
                 repo.logManualSession(on: pt, duration: duration, date: date, notes: notes)
             }
+            .lsSheet()
         }
         .sheet(item: $editing) { session in
-            EditSessionSheet(session: session)
+            EditSessionSheet(session: session).lsSheet()
         }
     }
 

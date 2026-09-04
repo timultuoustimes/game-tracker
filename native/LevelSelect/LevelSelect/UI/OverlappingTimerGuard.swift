@@ -254,7 +254,7 @@ private struct OverlappingTimerSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .lsSheet()
     }
 
     private func timerRow(_ session: Session) -> some View {
@@ -360,7 +360,7 @@ private struct FinishedOverlapSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .lsSheet()
     }
 
     private func name(_ session: Session) -> String {

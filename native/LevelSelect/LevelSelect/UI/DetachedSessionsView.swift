@@ -68,7 +68,7 @@ struct DetachedSessionsView: View {
         // root-level prompt tried to present. The game picker below is the
         // only modal here, and it is the innermost one.
         .sheet(item: $assigning) { session in
-            gamePicker(for: session)
+            gamePicker(for: session).lsSheet()
         }
         .confirmationDialog("Delete this session?",
                             isPresented: Binding(get: { confirmingDelete != nil },

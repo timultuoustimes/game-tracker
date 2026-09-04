@@ -238,7 +238,7 @@ struct SettingsView: View {
             // sheet with it: tapping a color row closed Settings instead of
             // opening anything. Same failure as the build-32 color picker,
             // reached by a different route. See RootView's `.sheet(onDismiss:)`.
-            .sheet(isPresented: $editingProfile) { ProfileEditor() }
+            .sheet(isPresented: $editingProfile) { ProfileEditor().lsSheet() }
         }
         // A sheet with no size on macOS gets whatever the system guesses,
         // which was too short for a screen with eight sections — the last of

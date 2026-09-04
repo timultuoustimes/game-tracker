@@ -63,7 +63,7 @@ struct StaleSessionGuard: ViewModifier {
                 Text(messageText)
             }
             .sheet(item: $ending) { session in
-                EndSessionSheet(session: session)
+                EndSessionSheet(session: session).lsSheet()
             }
     }
 

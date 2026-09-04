@@ -1293,20 +1293,10 @@ struct StatsArrangeSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
-        // **Scroll the list, don't resize the sheet.**
-        //
-        // A sheet's default at a partial detent is that a drag anywhere in its
-        // content raises the sheet instead of scrolling — so this list, which
-        // is five groups long and never fits in `.medium`, could only be read
-        // by dragging it to full height first. Tim: *"I can't scroll to view
-        // the rest of the settings, I can only slide the sheet up further."*
-        //
-        // `.scrolls` gives the gesture to the list. The sheet still resizes
-        // from the grabber and the header, which is where a resize gesture
-        // belongs — and it means the partial detent is now a place you can
-        // actually work, rather than a stop on the way to the top.
-        .presentationContentInteraction(.scrolls)
+        // The five groups here are why `.scrolls` is in `lsSheet` — this list
+        // never fits in `.medium`, and without it the only way to read the rest
+        // was to leave the detent that made it glass.
+        .lsSheet()
     }
 
     /// Apply a drag that happened inside one group's rows to the flat stored

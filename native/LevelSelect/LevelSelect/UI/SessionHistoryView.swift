@@ -112,7 +112,7 @@ struct SessionHistoryView: View {
                 }
             }
         }
-        .sheet(item: $editing) { EditSessionSheet(session: $0) }
+        .sheet(item: $editing) { EditSessionSheet(session: $0).lsSheet() }
     }
 
     private var summary: some View {

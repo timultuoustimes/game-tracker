@@ -195,9 +195,7 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $markingBeaten) {
             MarkCompletionSheet(game: game)
-                #if !os(macOS)
-                .presentationDetents([.medium, .large])
-                #endif
+                .lsSheet()
         }
         .alert("New Collection", isPresented: $newCollection) {
             TextField("Name", text: $newCollectionName)
@@ -341,10 +339,10 @@ struct GameDetailView: View {
             }
         }
         .sheet(isPresented: $fixingMatch) {
-            FixMatchView(game: game)
+            FixMatchView(game: game).lsSheet()
         }
         .sheet(item: $pickingArtwork) { role in
-            ArtworkPickerView(game: game, role: role)
+            ArtworkPickerView(game: game, role: role).lsSheet()
         }
         .alert("New Playthrough", isPresented: $namingNewPlaythrough) {
             TextField("Name", text: $playthroughName)

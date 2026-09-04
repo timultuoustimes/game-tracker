@@ -68,7 +68,7 @@ struct EndSessionSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .lsSheet([.medium])
     }
 }
 

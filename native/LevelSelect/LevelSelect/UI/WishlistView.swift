@@ -213,7 +213,10 @@ struct WishlistTab: View {
                 EmptyView()
                 #endif
             case .addGame(let name):
+                // Only this case. The Deku browser is a browser — a web page at
+                // half height is not the same kind of thing as a menu sheet.
                 AddGameSheet(initialSearch: name, defaultStatus: .wishlist)
+                    .lsSheet()
             }
         }
         .task {

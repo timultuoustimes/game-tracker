@@ -54,6 +54,7 @@ struct AppearanceSettingsSection: View {
             gamePagesAndTrackers
                 .sheet(isPresented: $arrangingPages) {
                     GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
+                        .lsSheet()
                 }
         }
     }
