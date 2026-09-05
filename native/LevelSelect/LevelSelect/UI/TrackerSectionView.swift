@@ -50,24 +50,26 @@ struct TrackerSectionView: View {
     @AppStorage private var hidePlanned: Bool
     @State private var addingGoal = false
     @State private var goalName = ""
-    @State private var expanded: Set<String> = []
-    /// **Small categories arrive open.**
+    /// **Which categories are open, remembered per game.**
     ///
-    /// Fable's 5.6 was torn about this and leaned toward opening them — *"a
-    /// closed 'Charms 4/6 ›' is a database row and an open list with
-    /// strikethroughs is a notebook page"* — and Tim decided it: *"I think that
-    /// makes sense and it might be OK for in-line, but it should definitely be
-    /// expanded like that for compact tracker view when you tap into it."*
+    /// This was `@State`, so every arrival started closed and you re-opened the
+    /// one you cared about every single time. Then it briefly opened every
+    /// category under ten items, on Fable's lean and Tim's go-ahead — and a
+    /// real tracker showed why size is the wrong signal. On Mina the Hollower
+    /// the small ones are Joule Boxes and Optional Bosses; the one he wants is
+    /// Story Progression, at 21. Tim: *"Most of the things under 10 items
+    /// aren't what I'm even wanting to track... I really just want the main
+    /// story progression to be open."*
     ///
-    /// Both get it, because `TrackerPageView` — the compact tap-in — renders
-    /// this same view. Ten is the line because that is about where a list stops
-    /// being something you take in at a glance and starts being something you
-    /// scroll; a 40-item achievement set opening by default would bury every
-    /// other category under it.
-    private static let opensWhenUnder = 10
-    /// Once per visit. `expanded` is `@State` and dies on navigation, so this
-    /// seeds the arriving state without fighting a collapse you just made.
-    @State private var seededExpansion = false
+    /// Nothing in a generated schema says which category is the spine of the
+    /// game, and guessing from size guessed wrong. So the app stops guessing:
+    /// **you open the one you want and it stays open on that game.** Stored as
+    /// a comma-joined list, the way Home stores its collapsed shelves.
+    @AppStorage private var expandedRaw: String
+    private var expanded: Set<String> {
+        get { Set(expandedRaw.split(separator: ",").map(String.init)) }
+        nonmutating set { expandedRaw = newValue.sorted().joined(separator: ",") }
+    }
     /// Generation state lives in a shared store, not here — a view's `@State`
     /// dies when you navigate away, and generation takes a minute or two.
     @State private var generation = TrackerGenerationStore.shared
@@ -137,6 +139,7 @@ struct TrackerSectionView: View {
     init(game: Game) {
         self.game = game
         _hidePlanned = AppStorage(wrappedValue: false, "hidePlanned.\(game.id.uuidString)")
+        _expandedRaw = AppStorage(wrappedValue: "", "trackerOpen.\(game.id.uuidString)")
     }
 
     /// An item whose completion ends other things, and what it ends.
@@ -663,15 +666,10 @@ struct TrackerSectionView: View {
                 let trimmed = goalName.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty else { return }
                 repo.addPersonalGoal(to: game, named: trimmed)
-                expanded.insert(TrackerSchemaJSON.personalGoalsID)
+                expanded = expanded.union([TrackerSchemaJSON.personalGoalsID])
             }
             Button("Cancel", role: .cancel) {}
         }
-        .onAppear { seedExpansion() }
-        // The schema can arrive after the first render — a generation
-        // finishing, or a fetch landing — and a category that appears later
-        // should still open if it is small.
-        .onChange(of: categories.map(\.id)) { _, _ in seedExpansion() }
     }
 
     private var isGenerating: Bool { generation.isGenerating(game.id) }
@@ -802,7 +800,7 @@ struct TrackerSectionView: View {
                         Button {
                             repo.rescueAsPersonalGoals(outcome.lostProgress, for: game)
                             generation.clearOutcome(for: game.id)
-                            expanded.insert(TrackerSchemaJSON.personalGoalsID)
+                            expanded = expanded.union([TrackerSchemaJSON.personalGoalsID])
                         } label: {
                             Label("Keep them as Personal Goals", systemImage: "pin")
                                 .font(.caption.weight(.semibold))
@@ -1181,21 +1179,13 @@ struct TrackerSectionView: View {
         return text + ". Your play sessions and completions are untouched, but this can't be undone."
     }
 
-    private func seedExpansion() {
-        guard !seededExpansion else { return }
-        let small = categories.filter { !$0.items.isEmpty && $0.items.count < Self.opensWhenUnder }
-        // Nothing to seed yet means the schema has not arrived; try again when
-        // it does rather than marking this done over an empty list.
-        guard !categories.isEmpty else { return }
-        seededExpansion = true
-        for c in small { expanded.insert(c.id) }
-    }
-
     private func expansionBinding(_ id: String) -> Binding<Bool> {
         Binding(
             get: { expanded.contains(id) },
             set: { open in
-                if open { expanded.insert(id) } else { expanded.remove(id) }
+                var next = expanded
+                if open { next.insert(id) } else { next.remove(id) }
+                expanded = next
             }
         )
     }
