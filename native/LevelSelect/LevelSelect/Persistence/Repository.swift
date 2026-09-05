@@ -1185,6 +1185,12 @@ struct Repository {
         return applyCategoryOrder(ids, to: game)
     }
 
+    /// Set the whole order at once, for drag-to-reorder.
+    @discardableResult
+    func setCategoryOrder(_ ids: [String], in game: Game) -> Bool {
+        applyCategoryOrder(ids, to: game)
+    }
+
     @discardableResult
     private func applyCategoryOrder(_ ids: [String], to game: Game) -> Bool {
         guard let schema = game.trackerSchema,

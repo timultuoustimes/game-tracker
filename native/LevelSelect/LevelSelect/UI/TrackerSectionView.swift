@@ -95,12 +95,14 @@ struct TrackerSectionView: View {
         case importList
         case editItem(EditTarget)
         case reviewMerge(UUID)
+        case arrange
 
         var id: String {
             switch self {
             case .importList:          "import"
             case .editItem(let target): "edit-\(target.id)"
             case .reviewMerge(let id): "merge-\(id.uuidString)"
+            case .arrange:             "arrange"
             }
         }
 
@@ -475,6 +477,14 @@ struct TrackerSectionView: View {
                 // override lives on the thing it overrides, the default stays
                 // in Settings → Game pages & trackers.
                 Menu {
+                    if categories.count > 1 {
+                        Button {
+                            sheet = .arrange
+                        } label: {
+                            Label("Arrange Categories", systemImage: "arrow.up.arrow.down")
+                        }
+                        Divider()
+                    }
                     Picker("Tracker layout", selection: trackerLayoutBinding) {
                         Text("Follow default (\(ThemePalette.defaultTrackerDisplay.label))")
                             .tag(String?.none)
@@ -568,6 +578,8 @@ struct TrackerSectionView: View {
                     if let merge = generation.pendingMerge(for: game.id), merge.id == id {
                         TrackerMergeReviewView(game: game, merge: merge)
                     }
+                case .arrange:
+                    TrackerArrangeSheet(game: game)
                 }
             }
             .lsSheet()
@@ -1086,27 +1098,29 @@ struct TrackerSectionView: View {
         }
     }
 
-    /// Move this category up, down, or straight to the top.
+    /// Pin this category to the top, or open the sheet to drag them all.
     ///
-    /// Buttons rather than drag-to-reorder: these rows live in a VStack inside
-    /// a scroll view, not a List, and "pin the thing I'm working on to the top"
-    /// is the actual ask — which one press does and a drag doesn't.
+    /// Move Up and Move Down are gone. They moved one place per tap, so getting
+    /// the last of fourteen categories to third was thirteen taps — Tim: *"just
+    /// move to top move up move down, which is extremely tedious and I
+    /// typically just give up on moving things around."* `TrackerArrangeSheet`
+    /// is press-and-drag, the way the Home screen reorders apps and the way the
+    /// game-page and stats sheets already work.
+    ///
+    /// Move to Top stays, because pinning what you are working on is the common
+    /// case and one press beats opening a sheet to drag.
     @ViewBuilder
     private func moveActions(_ category: TrackerCategoryDTO) -> some View {
-        let ids = categories.map(\.id)
-        let index = ids.firstIndex(of: category.id)
+        let index = categories.map(\.id).firstIndex(of: category.id)
         Button {
             repo.moveCategoryToTop(category.id, in: game)
         } label: { Label("Move to Top", systemImage: "arrow.up.to.line") }
             .disabled(index == 0)
-        Button {
-            repo.moveCategory(category.id, in: game, by: -1)
-        } label: { Label("Move Up", systemImage: "arrow.up") }
-            .disabled(index == 0)
-        Button {
-            repo.moveCategory(category.id, in: game, by: 1)
-        } label: { Label("Move Down", systemImage: "arrow.down") }
-            .disabled(index == ids.count - 1)
+        if categories.count > 1 {
+            Button {
+                sheet = .arrange
+            } label: { Label("Arrange Categories…", systemImage: "arrow.up.arrow.down") }
+        }
     }
 
     /// Items grouped under their shared location, or nil when grouping wouldn't
@@ -1547,5 +1561,70 @@ private struct HintPeekCard: View {
         .padding(16)
         .frame(maxWidth: 340, alignment: .leading)
         .background(LSTheme.background)
+    }
+}
+
+/// **Drag the categories into the order you want.**
+///
+/// The per-row menu could only move a category one place at a time, which on a
+/// tracker with fourteen categories is thirteen taps to move the last one to
+/// third. Tim: *"just move to top move up move down, which is extremely
+/// tedious and I typically just give up on moving things around."*
+///
+/// A `List` with `.onMove` is the shape the app already uses for game-page
+/// sections and stats cards, and it is drag-to-reorder — press, hold, drag,
+/// done, the way the Home screen works. It has to be a sheet because the
+/// tracker's rows live in a `VStack` inside the game page's scroll view, and
+/// `.onMove` only exists on `List`.
+///
+/// "Move to Top" stays on the row menu. Pinning the thing you are working on is
+/// one press there and a drag here, and it is the common case.
+struct TrackerArrangeSheet: View {
+    let game: Game
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+
+    private var categories: [TrackerCategoryDTO] {
+        game.trackerSchema.map { TrackerSchemaJSON.categories(from: $0.jsonData) } ?? []
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(categories) { category in
+                        HStack(spacing: 10) {
+                            Text(category.name)
+                            Spacer(minLength: 8)
+                            Text("\(category.items.count)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                    .onMove { from, to in
+                        var ids = categories.map(\.id)
+                        ids.move(fromOffsets: from, toOffset: to)
+                        Repository(context).setCategoryOrder(ids, in: game)
+                    }
+                } footer: {
+                    Text("Press and hold a category, then drag it where you want it. This order is part of the tracker, so it follows the game to your other devices.")
+                }
+            }
+            #if !os(macOS)
+            // Handles visible without an Edit button, the way the game-page
+            // and stats sheets do it.
+            .environment(\.editMode, .constant(.active))
+            #endif
+            .navigationTitle("Arrange Categories")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
