@@ -537,6 +537,12 @@ struct LibraryTab: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        // **One control, not two.** Filter and Sort & View were separate
+        // buttons, which made Library three across while Home and Journal were
+        // two and Wishlist was four. Tim: *"Every tab should have 2 at the top,
+        // not sometimes 3, sometimes 1, sometimes 4, sometimes 2."* They are
+        // one menu now, in sections, and the glyph still fills when a filter is
+        // on — the one piece of state a collapsed menu has to keep showing.
         ToolbarItem {
             Menu {
                 Picker("Status", selection: $statusFilter) {
@@ -565,14 +571,7 @@ struct LibraryTab: View {
                         .tag(String?.some(entry.short))
                     }
                 }
-            } label: {
-                Label("Filter", systemImage: anyFilterActive
-                      ? "line.3.horizontal.decrease.circle.fill"
-                      : "line.3.horizontal.decrease.circle")
-            }
-        }
-        ToolbarItem {
-            Menu {
+                Divider()
                 Picker("Sort", selection: $sortRaw) {
                     ForEach(LibrarySort.allCases, id: \.rawValue) { s in
                         Label(s.label, systemImage: s.icon).tag(s.rawValue)
@@ -598,7 +597,9 @@ struct LibraryTab: View {
                     }
                 }
             } label: {
-                Label("Sort & View", systemImage: "arrow.up.arrow.down.circle")
+                Label("Filter & Sort", systemImage: anyFilterActive
+                      ? "line.3.horizontal.decrease.circle.fill"
+                      : "line.3.horizontal.decrease.circle")
             }
         }
         ToolbarItem(placement: .primaryAction) {

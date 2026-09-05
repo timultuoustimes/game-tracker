@@ -71,6 +71,9 @@ struct WishlistTab: View {
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }, sort: \Game.name)
     private var library: [Game]
 
+    /// Pushed by the "Coming soon" shelf's See all — the release calendar
+    /// is that shelf, read as dates.
+    @State private var showingCalendar = false
     @State private var store = DekuWishlistStore()
     @State private var searchText = ""
     @State private var sort: WishlistSort = .dateNewest
@@ -172,6 +175,10 @@ struct WishlistTab: View {
             .navigationTitle("Wishlist")
             .toolbarTitleDisplayMode(.inlineLarge)
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
+            // Pushed, not presented: it is another way of reading the same
+            // wishlist, and tapping a game from it should lead onward to that
+            // game the way every other list here does.
+            .navigationDestination(isPresented: $showingCalendar) { ReleaseCalendarView() }
             .searchable(text: $searchText, prompt: "Search wishlist")
             .searchFocused($searchFocused)
             .onChange(of: AppNavigator.shared.searchRequest) { _, _ in searchFocused = true }
@@ -204,32 +211,30 @@ struct WishlistTab: View {
                                 }
                             }
                         }
+                        Divider()
+                        Button {
+                            openDeku(DekuLinks.home)
+                        } label: {
+                            Label("Browse Deku Deals", systemImage: "globe")
+                        }
                     } label: {
                         Label("Sort & View", systemImage: "arrow.up.arrow.down")
                     }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    // Pushed, not presented: it is another way of reading the
-                    // same wishlist, and tapping a game from it should lead
-                    // onward to that game the way every other list here does.
-                    NavigationLink {
-                        ReleaseCalendarView()
-                    } label: {
-                        Label("Release calendar", systemImage: "calendar")
-                    }
-                }
+                // **Two, like every other tab.** This was four across — sort,
+                // calendar, add, globe — while Home and Journal were two and
+                // Library was three. Tim: *"Every tab should have 2 at the top,
+                // not sometimes 3, sometimes 1, sometimes 4, sometimes 2."*
+                //
+                // The calendar moved to the "Coming soon" shelf's own "See
+                // all", which is what it always was — Fable's 5.8 — and the
+                // globe moved into the menu above, since Deku Deals already
+                // has a segment two rows down and did not need a third door.
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         sheet = .addGame("")
                     } label: {
                         Label("Add to Wishlist", systemImage: "plus")
-                    }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        openDeku(DekuLinks.home)
-                    } label: {
-                        Label("Browse Deku Deals", systemImage: "globe")
                     }
                 }
             }
@@ -301,7 +306,8 @@ struct WishlistTab: View {
                     let sections = [soon, undated, out].filter { !$0.isEmpty }
                     if sections.count > 1 {
                         if !soon.isEmpty {
-                            section("Coming soon", soon, showsDate: true, icon: "calendar")
+                            section("Coming soon", soon, showsDate: true, icon: "calendar",
+                                    onSeeAll: { showingCalendar = true })
                         }
                         if !undated.isEmpty {
                             // NOT "unannounced" — these games are very much
@@ -335,14 +341,16 @@ struct WishlistTab: View {
     }
 
     private func section(_ title: String, _ games: [Game],
-                         showsDate: Bool, icon: String) -> some View {
+                         showsDate: Bool, icon: String,
+                         onSeeAll: (() -> Void)? = nil) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             // These three already carried the glyph that means the block —
             // a calendar for dated, a bag for out now. What they did not carry
             // was Home's heading, so the same kind of row read a size smaller
             // here than one tab over.
             ShelfHeader(title: title, count: games.count,
-                        systemImage: icon, tint: LSTheme.accent)
+                        systemImage: icon, tint: LSTheme.accent,
+                        onSeeAll: onSeeAll)
             grid(games, showsDate: showsDate)
         }
     }

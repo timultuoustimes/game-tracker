@@ -75,6 +75,26 @@ struct ColorEditor: View {
         return targets.first { $0.id == id }?.binding.wrappedValue ?? .clear
     }
 
+    /// **The appearance the preview must be drawn in.**
+    ///
+    /// Not the one the phone is in. Editing the LIGHT ground while the device
+    /// is dark drew the preview dark, because every surface in it resolves
+    /// through `lsDynamic`, which asks the environment — so the one control
+    /// whose whole job is showing you a light ground showed you a dark one.
+    /// Tim: *"Background preview for light is showing as dark (system is
+    /// currently dark)."*
+    ///
+    /// nil for the single-target editors (the status colours), which have no
+    /// light/dark split and should stay in the appearance you are actually
+    /// looking at.
+    private var previewScheme: ColorScheme? {
+        if selectedID.hasSuffix("-dark") { return .dark }
+        if selectedID.hasSuffix("-light") { return .light }
+        return nil
+    }
+
+    @Environment(\.colorScheme) private var deviceScheme
+
     /// What the theme looked like when the sheet opened, for Cancel — one
     /// per target, because Cancel now has to undo everything the sheet
     /// touched rather than just the last thing.
@@ -455,7 +475,12 @@ struct ColorEditor: View {
         // The real ground, derived exactly as the app derives it, so the two
         // colours are judged against each other in the arrangement they will
         // actually appear in.
-        .background(LSTheme.ground(tintedBy: ground), in: .rect(cornerRadius: 14))
+        .background(LSTheme.ground(tintedBy: ground, scheme: previewScheme ?? deviceScheme),
+                    in: .rect(cornerRadius: 14))
+        // Everything inside resolves through `lsDynamic`, which reads the
+        // environment — so the environment has to say which appearance this
+        // preview is OF, not which one the phone is in.
+        .environment(\.colorScheme, previewScheme ?? deviceScheme)
     }
 
     /// A hex field and a keep button.
