@@ -176,6 +176,7 @@ enum CloudKitSchemaSeeder {
         game.pinned = true
         game.rating = 5
         game.review = marker
+        game.sectionStateRaw = marker        // build 37 — per-game section overrides
         game.addedAt = now
         game.currentPlaythroughID = UUID()
         game.trackerDisplayRaw = TrackerDisplay.inline.rawValue
@@ -454,6 +455,7 @@ enum CloudKitSchemaSeeder {
         collection.sortIndex = 1
         collection.isBundle = true
         collection.gameIDs = [game.id.uuidString]
+        collection.filterRuleRaw = marker      // build 37 — Smart Collections
         context.insert(collection)
 
         // --- PlayerProfile (build 33; no soft-delete field, purge removes it) ---
@@ -521,6 +523,10 @@ enum CloudKitSchemaSeeder {
             // reverted by purge, like every other real preference here.
             if existingTheme.accentHue == nil { existingTheme.accentHue = seededHue }
             if existingTheme.accentSaturation == nil { existingTheme.accentSaturation = seededHue }
+            // build 37 — game-page section defaults and the composable Home.
+            if existingTheme.expandedSectionsRaw == nil { existingTheme.expandedSectionsRaw = marker }
+            if existingTheme.homeLayoutRaw == nil { existingTheme.homeLayoutRaw = marker }
+            if existingTheme.homeSystemsRaw == nil { existingTheme.homeSystemsRaw = marker }
         // ⚠️ A NEW ThemeSettings FIELD MUST BE ADDED TO BOTH BRANCHES.
         //
         // The app creates a ThemeSettings on launch, so a seed run almost
@@ -543,6 +549,9 @@ enum CloudKitSchemaSeeder {
             theme.statusNamesData = stamp                 // build 36 (V5)
             theme.appearanceRaw = marker                  // build 36 (V5)
             theme.backgroundHex = marker                  // build 36 (V5)
+            theme.expandedSectionsRaw = marker            // build 37
+            theme.homeLayoutRaw = marker                  // build 37
+            theme.homeSystemsRaw = marker                 // build 37
             theme.accentHexLight = marker                 // build 37
             theme.accentHexDark = marker                  // build 37
             theme.backgroundHexLight = marker             // build 37
@@ -613,6 +622,9 @@ enum CloudKitSchemaSeeder {
             if theme.accentHexDark == marker { theme.accentHexDark = nil }
             if theme.backgroundHexLight == marker { theme.backgroundHexLight = nil }
             if theme.backgroundHexDark == marker { theme.backgroundHexDark = nil }
+            if theme.expandedSectionsRaw == marker { theme.expandedSectionsRaw = nil }
+            if theme.homeLayoutRaw == marker { theme.homeLayoutRaw = nil }
+            if theme.homeSystemsRaw == marker { theme.homeSystemsRaw = nil }
             if theme.backgroundHex == marker { theme.backgroundHex = nil }
             if theme.backdropIntensityRaw == marker { theme.backdropIntensityRaw = nil }
             if theme.gamePageLayoutRaw == marker { theme.gamePageLayoutRaw = nil }
