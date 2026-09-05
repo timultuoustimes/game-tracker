@@ -125,3 +125,53 @@ struct PlatformMenuIcon: View {
     }
     #endif
 }
+
+/// **When each platform first went on sale in North America.**
+///
+/// For sorting your consoles into the order they arrived — Tim: *"being able
+/// to auto sort by general console release (initial North American release for
+/// now, not variations) could still be a decent option for quick ordering."*
+///
+/// North American release, and the ORIGINAL model only. No Mini, no OLED, no
+/// Slim, no Pro, and no Japanese launch — a Genesis is 1989 here because that
+/// is when it reached the shelves this app's users bought from, even though
+/// the Mega Drive was 1988 at home.
+///
+/// Computers and phones have no single launch the way a console does, so they
+/// take their platform's own first release: the IBM PC, the Macintosh, the
+/// first iPhone. That is a judgement rather than a fact, and it is recorded
+/// here so the next person does not have to re-derive it.
+///
+/// This is deliberately NOT `PlatformShort.rank`, which is a taste heuristic
+/// for deciding which platform LABELS a game and ranks emulators last. Two
+/// different questions; two different tables.
+enum PlatformEra {
+    static func releaseYear(_ platform: String) -> Int? {
+        guard let asset = PlatformIcon.assetName(platform) else { return nil }
+        return years[String(asset.dropFirst("platform-".count))]
+    }
+
+    /// Keyed by the icon slug, so a platform can never have art without a year
+    /// or a year without art — `PlatformEraTests` holds the two lists together.
+    static let years: [String: Int] = [
+        // Nintendo
+        "nes": 1985, "snes": 1991, "n64": 1996, "gamecube": 2001,
+        "wii": 2006, "wiiu": 2012, "switch": 2017, "switch2": 2025,
+        "gameboy": 1989, "gbc": 1998, "gba": 2001, "3ds": 2011,
+        // Sony
+        "ps1": 1995, "ps2": 2000, "ps3": 2006, "ps4": 2013, "ps5": 2020,
+        "vita": 2012,
+        // Microsoft
+        "xbox": 2001, "xbox360": 2005, "xbox-series": 2020,
+        // Sega
+        "genesis": 1989,
+        // Valve
+        "steamdeck": 2022, "steammachine": 2026,
+        // Computers — the platform's own first release, not a console launch.
+        "pc": 1981, "mac": 1984, "linux": 1991,
+        // Phones and tablets, same rule.
+        "iphone": 2007, "ipad": 2010, "android": 2008,
+        // Emulation frontends take their project's first public release.
+        "recalbox": 2015,
+    ]
+}
