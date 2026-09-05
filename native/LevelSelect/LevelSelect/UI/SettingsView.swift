@@ -121,23 +121,21 @@ struct SettingsView: View {
                     Text("Appearance")
                 }
 
+                // Nothing in this group leaves the app any more.
                 Section {
-                    // Two links out, said plainly — the app's whole pitch is
-                    // that it doesn't talk to anything, so a row that opens a
-                    // browser should look like one. Both become real pages
-                    // once the site publishes them as feeds.
-                    ExternalSettingsRow(title: "What's New", icon: "sparkles",
-                                        url: AppLinks.changelog)
-                    ExternalSettingsRow(title: "What's Coming", icon: "map",
-                                        url: AppLinks.roadmap)
-                    // The one that already doesn't leave.
+                    SettingsRow(title: "What's New", icon: "sparkles") {
+                        WhatsNewView()
+                    }
+                    SettingsRow(title: "What's Coming", icon: "map") {
+                        WhatsComingView()
+                    }
                     SettingsRow(title: "Send feedback", icon: "paperplane") {
                         FeedbackView()
                     }
                 } header: {
                     Text("News & feedback")
                 } footer: {
-                    Text("The first two open levelselect.app for now. Feedback goes straight to \(Mail.feedbackAddress) from your own mail account — no account, no ticket, and the reply comes back to your inbox.")
+                    Text("The first two read levelselect.app and send nothing about you — not even the anonymous install id. Feedback goes to \(Mail.feedbackAddress) from your own mail account, so the reply comes back to your inbox.")
                 }
 
                 Section {

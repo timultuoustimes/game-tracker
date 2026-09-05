@@ -89,17 +89,31 @@ enum Diagnostics {
         return lines.joined(separator: "\n")
     }
 
-    /// This launch's log lines from our own subsystem, oldest first.
+    /// How far back to read. Ten minutes is "what just went wrong" — and it is
+    /// the difference between a screen that opens and one that hangs.
+    ///
+    /// `position(timeIntervalSinceLatestBoot: 0)` scans from boot, which on a
+    /// device that has been up for days is a long walk through every log line
+    /// the process ever wrote. Tim, on the first build of this screen: *"Send
+    /// feedback takes 7 seconds to load."* That was this call, on the main
+    /// actor, doing exactly that.
+    static let logWindow: TimeInterval = 600
+
+    /// Recent log lines from our own subsystem, oldest first.
     ///
     /// `.currentProcessIdentifier` is the only scope an app is allowed on
     /// iOS, which suits this exactly: it can read what IT did since launch and
     /// nothing else on the device. When the store refuses — it does, on some
     /// configurations — the report says so rather than silently arriving
     /// without the half that would have explained the bug.
-    static func recentLog(limit: Int = logLineLimit) -> String {
+    ///
+    /// **Call this off the main actor.** It is a synchronous scan of the log
+    /// store and it is not fast even with the window above.
+    static func recentLog(limit: Int = logLineLimit,
+                          window: TimeInterval = logWindow) -> String {
         do {
             let store = try OSLogStore(scope: .currentProcessIdentifier)
-            let since = store.position(timeIntervalSinceLatestBoot: 0)
+            let since = store.position(date: Date().addingTimeInterval(-window))
             let entries = try store.getEntries(
                 at: since,
                 matching: NSPredicate(format: "subsystem == %@", subsystem))
@@ -110,7 +124,7 @@ enum Diagnostics {
                                                     time: .standard)
                     return "\(time) [\(entry.category)] \(entry.composedMessage)"
                 }
-            if lines.isEmpty { return "No log entries this launch." }
+            if lines.isEmpty { return "No log entries in the last \(Int(window / 60)) minutes." }
             return lines.suffix(limit).joined(separator: "\n")
         } catch {
             return "Log unavailable (\(error.localizedDescription))."

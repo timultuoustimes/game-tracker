@@ -71,10 +71,15 @@ struct FeedbackView: View {
     @State private var includeDiagnostics = true
     @State private var showingDiagnostics = false
     @State private var composing = false
+    /// Send was tapped before the log finished. Shown on the button so the tap
+    /// is visibly doing something.
+    @State private var preparing = false
     @State private var result: String?
-    /// Read once when the screen opens rather than on every keystroke —
-    /// reading the log store is the one slow part of this.
-    @State private var log = ""
+    /// nil until the log has been read. Reading it is the one slow part of
+    /// this screen — see `Diagnostics.recentLog` — so it happens off the main
+    /// actor and the section says it is working until it lands.
+    @State private var log: String?
+    @State private var logTask: Task<String, Never>?
 
     private var kindInUse: Kind { selectedKind ?? kind }
     private var trimmed: String {
@@ -106,11 +111,30 @@ struct FeedbackView: View {
                     .tint(LSTheme.accent)
                 if includeDiagnostics {
                     DisclosureGroup("What gets sent", isExpanded: $showingDiagnostics) {
-                        Text(diagnosticsText)
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .padding(.vertical, 2)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(diagnosticsSummary)
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                            if let log {
+                                Text(log)
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            } else {
+                                // A spinner rather than nothing: an empty
+                                // space under a heading called "What gets
+                                // sent" reads as "nothing does".
+                                HStack(spacing: 8) {
+                                    ProgressView().controlSize(.small)
+                                    Text("Reading this launch's log…")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
                     }
                 }
             } footer: {
@@ -123,9 +147,16 @@ struct FeedbackView: View {
                 Button {
                     send()
                 } label: {
-                    Label(sendLabel, systemImage: "paperplane")
+                    if preparing {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Preparing…")
+                        }
+                    } else {
+                        Label(sendLabel, systemImage: "paperplane")
+                    }
                 }
-                .disabled(trimmed.isEmpty)
+                .disabled(trimmed.isEmpty || preparing)
 
                 Button {
                     Mail.copyToClipboard("To: \(Mail.feedbackAddress)\nSubject: \(subject)\n\n\(messageBody)")
@@ -145,10 +176,18 @@ struct FeedbackView: View {
             }
         }
         .task {
-            // Cheap enough to do every time the screen opens, and it has to be
-            // fresh: the point of the log is what just went wrong.
-            if log.isEmpty { log = Diagnostics.recentLog() }
             if message.isEmpty { message = seededMessage }
+            // Detached, because this screen must appear instantly and the log
+            // read is slow enough to be felt — it was seven seconds before the
+            // window narrowed and this moved off the main actor. Started as
+            // soon as the screen opens so it is almost always ready by the
+            // time anyone has typed a sentence.
+            guard logTask == nil else { return }
+            let task = Task.detached(priority: .userInitiated) {
+                Diagnostics.recentLog()
+            }
+            logTask = task
+            log = await task.value
         }
         #if os(iOS)
         .sheet(isPresented: $composing) {
@@ -176,13 +215,17 @@ struct FeedbackView: View {
     }
 
     private var diagnosticsText: String {
-        let summary = Diagnostics.summary(
+        guard let log else { return diagnosticsSummary }
+        return diagnosticsSummary + "\n\n" + log
+    }
+
+    private var diagnosticsSummary: String {
+        Diagnostics.summary(
             games: games.count,
             sessions: sessions.count,
             sync: SyncStatusMonitor.shared.shortStatus,
             services: connectedServices,
             appearance: LSAppearance(raw: themeSettings.first?.appearanceRaw).label)
-        return summary + "\n\n" + log
     }
 
     private var connectedServices: [String] {
@@ -204,6 +247,17 @@ struct FeedbackView: View {
 
     private func send() {
         result = nil
+        // If the log has not landed yet, wait for it rather than sending a
+        // report with the half that explains the bug quietly missing.
+        if includeDiagnostics, log == nil, let logTask {
+            preparing = true
+            Task {
+                log = await logTask.value
+                preparing = false
+                send()
+            }
+            return
+        }
         #if os(iOS)
         if Mail.canComposeInApp {
             composing = true

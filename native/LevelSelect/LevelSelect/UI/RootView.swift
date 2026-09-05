@@ -50,6 +50,7 @@ struct RootView: View {
             .sessionNotePrompt()
             .releaseRemindersPrompt()
             .overlappingTimerGuard()
+            .whatsNewOnUpdate()
             .id(nav.themeRevision)
 
             if showingSplash {
