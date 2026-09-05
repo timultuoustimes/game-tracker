@@ -165,7 +165,10 @@ enum PlatformEra {
         "xbox": 2001, "xbox360": 2005, "xbox-series": 2020,
         // Sega
         "genesis": 1989,
-        // Valve
+        // Valve. `steammachine` is the 2026 console, which shipped in June —
+        // NOT the 2015 Steam Machine, a line of third-party PCs that shared
+        // the name and died quietly. Two products, one name; the art in
+        // `platform-steammachine` is the new one, so this is the new one.
         "steamdeck": 2022, "steammachine": 2026,
         // Computers — the platform's own first release, not a console launch.
         "pc": 1981, "mac": 1984, "linux": 1991,
