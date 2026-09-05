@@ -247,9 +247,14 @@ struct MemoryView: View {
 
     var body: some View {
         ScrollView {
+            // **Words before pictures.** This opened on the gallery, so a
+            // memory with three photos pushed its own title, its date and
+            // everything you wrote below the fold — Fable's 3.3: *"A Memory
+            // opens on pictures and hides the words and the date."* The
+            // pictures are the illustration; the sentence you wrote down is
+            // the entry. The gallery keeps its hero-then-grid shape exactly,
+            // it just sits under the text now.
             VStack(alignment: .leading, spacing: 16) {
-                gallery
-
                 VStack(alignment: .leading, spacing: 8) {
                     Text(memory.title).font(.title2.weight(.semibold))
                     // Always the user's words for the date — never re-rendered
@@ -275,6 +280,8 @@ struct MemoryView: View {
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+
+                gallery
 
                 if let game = memory.game {
                     NavigationLink(value: game) {

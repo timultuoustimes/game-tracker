@@ -438,7 +438,13 @@ struct TrackerSectionView: View {
                             .disabled(isGenerating)
                     }
                 } label: {
-                    Label("Build", systemImage: "hammer")
+                    // "Plan", because the empty state right above this says
+                    // *"Generate the whole thing, or plan it out first and fill
+                    // it in a piece at a time."* The two buttons are that
+                    // sentence's two halves, and "Build" was a third word for
+                    // one of them — Fable's cheap win 2. Same width, so the
+                    // row's hyphenation problem stays solved.
+                    Label("Plan", systemImage: "hammer")
                         .font(.subheadline)
                 }
                 // How this tracker looks and whether it spoils itself are
@@ -462,10 +468,13 @@ struct TrackerSectionView: View {
                         Text("Hide hints (play blind)").tag(Bool?.some(false))
                     }
                 } label: {
-                    // Icon only. "Generate with AI" and "Build" are already a
-                    // wide pair, and a promoted RetroAchievements button makes
-                    // three — a fourth worded button hyphenated the whole row
-                    // into "Gener-ate with AI" / "Op-tions".
+                    // Icon only, and it stays that way. "Generate with AI"
+                    // and "Plan" are already a wide pair, and a promoted
+                    // RetroAchievements button makes three — a fourth worded
+                    // button hyphenated the whole row into "Gener-ate with AI"
+                    // / "Op-tions". Fable asked for this glyph to be labelled;
+                    // it is, for VoiceOver, on the line below. A visible label
+                    // is the thing the row cannot afford.
                     Image(systemName: "slider.horizontal.3")
                         .font(.subheadline)
                 }

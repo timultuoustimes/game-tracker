@@ -235,9 +235,16 @@ struct MemorySheet: View {
                     Text("A photo of the day itself. Pictures are downscaled and kept in your own iCloud, like every other picture you add.")
                 }
 
-                Section("What kind") {
+                // **"What kind — Just a memory"** was the row, and it read
+                // as a form arguing with itself: a header asking a question, a
+                // label repeating it, and an answer apologising for being the
+                // default. Fable's 3.4. The header now names the group, the
+                // label names the control, and the default kind is just what
+                // it is — an entry that is a memory rather than an acquisition
+                // or a sale. The other five kinds are real and stay.
+                Section("Kind of entry") {
                     Picker("Kind", selection: $kind) {
-                        Text("Just a memory").tag("memory")
+                        Text("Memory").tag("memory")
                         ForEach(Memory.kindLabels.sorted(by: { $0.value < $1.value }), id: \.key) {
                             Text($0.value).tag($0.key)
                         }

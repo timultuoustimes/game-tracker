@@ -74,7 +74,7 @@ struct CollectionCard: View {
                     .font(.footnote.weight(.medium))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                Text("\(members.count) game\(members.count == 1 ? "" : "s")")
+                Text(Format.gameCount(members.count))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -186,6 +186,16 @@ struct CollectionDetailView: View {
                 }
                 .frame(maxWidth: .infinity).padding(.top, 60)
             } else {
+                // The count the Library tile already shows. An inline title
+                // gives the name and nothing else, so arriving from a tile
+                // that said "3 games" landed on a page that would not confirm
+                // it — Fable's cheap win 10.
+                VStack(alignment: .leading, spacing: 12) {
+                Text(Format.gameCount(members.count))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 16) {
                     ForEach(members) { game in
                         NavigationLink(value: game) {
@@ -195,7 +205,9 @@ struct CollectionDetailView: View {
                         .gameContextMenu(game)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                }
+                .padding(.vertical)
             }
         }
         .scrollIndicators(.hidden)

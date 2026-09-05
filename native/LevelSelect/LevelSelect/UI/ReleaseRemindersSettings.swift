@@ -28,7 +28,10 @@ struct ReleaseRemindersSettings: View {
 
     var body: some View {
         Section {
-            Toggle("Tell me when a game arrives", isOn: $on)
+            // Nouns, not first person. "Tell me when a game arrives" and
+            // "Let me know" were the app speaking as the user, in a list where
+            // every other row is a plain label — Fable's cheap win 3.
+            Toggle("Release notifications", isOn: $on)
                 .tint(LSTheme.accent)
                 .onChange(of: on) { _, value in
                     NotificationManager.releaseRemindersOn = value
@@ -37,7 +40,7 @@ struct ReleaseRemindersSettings: View {
                 }
 
             if on {
-                Picker("Let me know", selection: $leadDays) {
+                Picker("When", selection: $leadDays) {
                     Text("On the day").tag(0)
                     Text("A day before").tag(1)
                     Text("Three days before").tag(3)

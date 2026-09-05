@@ -89,6 +89,12 @@ enum Format {
         return parts.filter { !$0.isEmpty }.joined(separator: ":")
     }
 
+    /// "1 game" / "12 games". One place, because the collection card and the
+    /// collection page were saying the same thing in two spellings.
+    static func gameCount(_ n: Int) -> String {
+        "\(n) game\(n == 1 ? "" : "s")"
+    }
+
     static func timestamp(_ t: TimeInterval) -> String {
         let s = max(0, Int(t))
         let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
