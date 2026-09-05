@@ -75,14 +75,29 @@ enum SessionState: String, Codable, Sendable {
 /// it or deleting the history. New case in a String-raw enum = no schema
 /// version, the same free path `wishlist` and `ongoing` took.
 enum Ownership: String, Codable, CaseIterable, Sendable {
-    case physical, digital, emulated, previouslyOwned
+    // `previouslyOwned` keeps its raw value forever — it is what is stored in
+    // every library already. Only the LABEL changed.
+    case physical, digital, emulated, subscription, previouslyOwned
 
+    /// **Five chips, five single words, and they all finish the same sentence.**
+    ///
+    /// Each label is an adjective modifying an implied "copy" — a physical
+    /// copy, a digital copy, an emulated copy, a subscription copy, a former
+    /// copy. That is what makes them a set rather than four of one kind and one
+    /// of another, and it is why "Previously owned" had to go: it was the only
+    /// one that was a sentence about you instead of a description of the copy.
+    ///
+    /// "Former" over "Past", which reads as *past games* — finished ones — in
+    /// an app that also tracks whether you beat something. Over "Sold", which
+    /// is only one of the ways a game leaves. Over "Gone", which is true but
+    /// sounds like a loss rather than a record.
     var label: String {
         switch self {
         case .physical: "Physical"
         case .digital:  "Digital"
         case .emulated: "Emulated"
-        case .previouslyOwned: "Previously owned"
+        case .subscription: "Subscription"
+        case .previouslyOwned: "Former"
         }
     }
 
@@ -91,6 +106,10 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
         case .physical: "opticaldisc"
         case .digital:  "arrow.down.circle"
         case .emulated: "cpu"
+        // It renews, and it stops when you stop paying — which is the whole
+        // difference between this and `digital`, and the reason it earns its
+        // own chip rather than hiding inside one.
+        case .subscription: "arrow.triangle.2.circlepath"
         case .previouslyOwned: "shippingbox"
         }
     }

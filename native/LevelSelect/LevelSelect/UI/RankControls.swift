@@ -19,7 +19,19 @@ enum RankDisplay {
     /// Pick a display from the schema's explicit hint, else from the shape of
     /// the data. Inference matters because the built-in schemas predate the
     /// hint and shouldn't need rewriting to look right.
-    static func resolve(explicit: String?, categoryName: String, maxRank: Int) -> RankDisplay {
+    /// `deciderRank` is the rank the STYLE is chosen from; `maxRank` is what a
+    /// single item actually shows. They differ on purpose.
+    ///
+    /// **One category, one style.** Deciding per item meant Mina's "Trinkets by
+    /// Region" drew Astral Orrery (5) as dots and Queensbury Crypt (6) as
+    /// numbers, in the same list, for the same kind of thing — Tim: *"This
+    /// counter tracking feels all over the place. 3 different kinds in a single
+    /// type of item/category."* Passing the category's largest rank here makes
+    /// the whole category agree, while each row still shows its own real
+    /// count: numbered 1–5 beside numbered 1–8, rather than dots beside boxes.
+    static func resolve(explicit: String?, categoryName: String,
+                        maxRank: Int, deciderRank: Int? = nil) -> RankDisplay {
+        let deciding = deciderRank ?? maxRank
         switch explicit?.lowercased() {
         case "pips":     return .pips
         case "hearts":   return .hearts
@@ -29,8 +41,8 @@ enum RankDisplay {
         }
         // Hades draws keepsake affinity as hearts, so match the source game.
         if categoryName.localizedCaseInsensitiveContains("keepsake") { return .hearts }
-        if maxRank <= 5  { return .pips }
-        if maxRank <= 12 { return .numbered }
+        if deciding <= 5  { return .pips }
+        if deciding <= 12 { return .numbered }
         return .stepper
     }
 }

@@ -95,10 +95,33 @@ struct Build31Tests {
 
     /// New case in a String-raw enum — the free path. The label and icon
     /// exist, and the raw value round-trips.
+    /// **The raw value is data; the label is copy.**
+    ///
+    /// `previouslyOwned` is written into every library that has ever used it,
+    /// so the case name can never change. Its LABEL is free to — it became
+    /// "Former" when `subscription` arrived and the chips had to read as one
+    /// set of five single words.
     @Test func previouslyOwnedIsARealOwnership() {
         #expect(Ownership(rawValue: "previouslyOwned") == .previouslyOwned)
-        #expect(Ownership.previouslyOwned.label == "Previously owned")
         #expect(Ownership.allCases.contains(.previouslyOwned))
+        #expect(Ownership.previouslyOwned.label == "Former")
+    }
+
+    /// Every chip is one word, because they are one set. A two-word label is
+    /// the tell that a chip has stopped describing the copy and started
+    /// describing you.
+    @Test func everyOwnershipChipIsASingleWord() {
+        for o in Ownership.allCases {
+            #expect(!o.label.contains(" "), Comment(rawValue: "\(o.rawValue) → \"\(o.label)\""))
+        }
+        #expect(Ownership.allCases.count == 5)
+    }
+
+    /// Adding a case must never renumber or rename the existing ones — an old
+    /// library decodes by raw value, not position.
+    @Test func theStoredOwnershipNamesAreStable() {
+        let raw = Set(Ownership.allCases.map(\.rawValue))
+        #expect(raw == ["physical", "digital", "emulated", "subscription", "previouslyOwned"])
     }
 
     // MARK: Game page sections

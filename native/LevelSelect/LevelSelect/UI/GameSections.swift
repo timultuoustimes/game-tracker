@@ -223,9 +223,15 @@ struct GameArrangeSheet: View {
             // has no editMode and reorders List rows natively.
             .environment(\.editMode, .constant(.active))
             #endif
-            // Not "Arrange Sections". This sheet opens from ONE game's menu
-            // and changes every game page on the device, which read as a
-            // per-game action to everyone who found it there.
+            // Not "Arrange Sections", because it changes every game page
+            // rather than the one you came from.
+            //
+            // It USED to open from a game's own menu, and this comment used to
+            // say so; it lives in Settings → Personalization now, which is the
+            // other half of a complaint Tim has already made — *"it's weird
+            // that I have to jump out of a game page, go back to the home tab,
+            // tap settings, scroll until I find game page and tracker
+            // settings."* Reaching it from both places is the open question.
             .navigationTitle("All Game Pages")
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)

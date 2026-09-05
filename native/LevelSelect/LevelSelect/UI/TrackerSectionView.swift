@@ -1421,7 +1421,11 @@ struct TrackerSectionView: View {
         RankPicker(
             display: RankDisplay.resolve(explicit: item.display,
                                          categoryName: category.name,
-                                         maxRank: maxRank),
+                                         maxRank: maxRank,
+                                         // The category's largest, so every row
+                                         // in it wears the same control.
+                                         deciderRank: category.items
+                                            .compactMap(\.maxRank).max() ?? maxRank),
             current: current,
             maxRank: maxRank,
             rankNames: item.rankNames,
