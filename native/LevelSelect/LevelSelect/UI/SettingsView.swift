@@ -130,12 +130,14 @@ struct SettingsView: View {
                                         url: AppLinks.changelog)
                     ExternalSettingsRow(title: "What's Coming", icon: "map",
                                         url: AppLinks.roadmap)
-                    ExternalSettingsRow(title: "Report a problem", icon: "ladybug",
-                                        url: AppLinks.issues)
+                    // The one that already doesn't leave.
+                    SettingsRow(title: "Send feedback", icon: "paperplane") {
+                        FeedbackView()
+                    }
                 } header: {
                     Text("News & feedback")
                 } footer: {
-                    Text("These three open levelselect.app in your browser for now. Beta feedback is best sent through TestFlight — take a screenshot in the app, or use TestFlight's Send Feedback.")
+                    Text("The first two open levelselect.app for now. Feedback goes straight to \(Mail.feedbackAddress) from your own mail account — no account, no ticket, and the reply comes back to your inbox.")
                 }
 
                 Section {

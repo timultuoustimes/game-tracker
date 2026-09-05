@@ -62,7 +62,8 @@ struct BetaQuestionCard: View {
     /// question is not asked it again — but is still reachable for later ones.
     @AppStorage("betaQuestionDismissed") private var legacyDismissed = false
 
-    @Environment(\.openURL) private var openURL
+    /// The question being answered, which is also what presents the composer.
+    @State private var answering: Question?
 
     /// TestFlight installs carry a sandbox receipt; App Store ones don't.
     /// Debug builds show the card so it can be seen and styled in development.
@@ -94,20 +95,19 @@ struct BetaQuestionCard: View {
         answeredRaw = ids.sorted().joined(separator: ",")
     }
 
+    /// Answered where it's asked.
+    ///
+    /// This button used to say "Answer in Safari" and open the web form. It
+    /// was the clearest example of the friction Tim named: *"not needing to go
+    /// to my website or their email... it removes every bit of friction one
+    /// could bump up against."* A question asked in the app and answered in a
+    /// browser tab loses most of the people who were willing.
+    ///
+    /// The question rides along as the subject and sits quoted above the
+    /// cursor, so the reply has its own context when it lands.
     private func answerButton(_ question: Question) -> some View {
-        Button("Answer in Safari") {
-            // **/feedback, not /invite.** The invite form asks for an email
-            // address, which devices you own and how you track games today —
-            // onboarding questions for somebody who does not have the app.
-            // Sending a tester there asked them to sign up again and never
-            // asked the question, which is why fixing this card alone changed
-            // nothing. The id names which question to show and rides along on
-            // the answer.
-            if let url = URL(string:
-                "https://levelselect.app/feedback/?q=\(question.id)") {
-                openURL(url)
-            }
-            markAnswered(question)
+        Button("Answer") {
+            answering = question
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.small)
@@ -141,6 +141,20 @@ struct BetaQuestionCard: View {
                     VStack(alignment: .leading, spacing: 8) {
                         answerButton(question); declineButton(question)
                     }
+                }
+                // On the button row, not on the card and not on a Section —
+                // one view, one presentation. See LSSheet's note.
+                .sheet(item: $answering) { asked in
+                    NavigationStack {
+                        FeedbackView(kind: .question,
+                                     seededMessage: "> \(asked.prompt)\n\n",
+                                     seededSubjectDetail: "Beta question (\(asked.id))")
+                    }
+                    .lsSheet()
+                    // Marked answered on dismissal rather than on send: the
+                    // card's job is to ask once, and someone who opened it and
+                    // changed their mind has still been asked.
+                    .onDisappear { markAnswered(asked) }
                 }
             }
             .padding(14)
