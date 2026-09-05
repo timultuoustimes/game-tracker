@@ -409,6 +409,9 @@ struct HomeTab: View {
     /// What the welcome's button asked for, fired from its onDismiss so the
     /// next sheet never races the one still animating away.
     @State private var welcomeChoice: WelcomeView.Choice?
+    /// Whether Home's content has moved under the bar — drives the scroll
+    /// edge effect while the header's art bleeds. See the scroll view below.
+    @State private var scrolledUnderBar = false
     @State private var path = NavigationPath()
     @State private var nav = AppNavigator.shared
     /// Once per device, not synced: seeing the welcome on your phone says
@@ -745,6 +748,27 @@ struct HomeTab: View {
             // content start under the bar would put Continue Playing behind
             // the toolbar at rest, which is a bug rather than an effect.
             .ignoresSafeArea(.container, edges: headerBleeds ? .top : [])
+            // **Clear at rest, frosted once you move.**
+            //
+            // Home's art deliberately starts UNDER the bar, so the scroll edge
+            // effect has something to frost from the very first frame — and it
+            // did, putting a glass band across the top of the artwork before
+            // anyone had scrolled. Tim: *"Home is now opening with the glass bar
+            // across the top, as opposed to showing when a scroll starts."*
+            //
+            // The bar's own background is already hidden while the header
+            // bleeds; this is the other half, the edge effect. Hidden while the
+            // content is where it started, so the art is unobstructed, and back
+            // the moment anything passes under the bar.
+            //
+            // Only when the header bleeds. Without art there is nothing under
+            // the bar at rest anyway, and the system's own timing is right.
+            .scrollEdgeEffectHidden(headerBleeds && !scrolledUnderBar, for: .top)
+            .onScrollGeometryChange(for: Bool.self) { geo in
+                geo.contentOffset.y + geo.contentInsets.top > 1
+            } action: { _, moved in
+                scrolledUnderBar = moved
+            }
         }
     }
 

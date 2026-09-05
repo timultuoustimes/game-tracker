@@ -68,10 +68,15 @@ struct LibraryTab: View {
             // three tabs shaped this way — while Home, whose scroll view is the
             // direct child, had a different symptom entirely.
             //
-            // `safeAreaInset` pins the same chrome in the same place and leaves
-            // the scroll view where the bar can see it.
+            // `safeAreaBar` pins the same chrome in the same place, leaves the
+            // scroll view where the bar can see it, AND carries the bar's own
+            // glass down over it. `safeAreaInset` does the first two and not
+            // the third, which left the chips and the segmented pickers
+            // floating with content passing behind them un-frosted — Tim:
+            // *"Glass is also not going far enough down behind the ownership
+            // pills, or other top tab pills."*
             content
-                .safeAreaInset(edge: .top, spacing: 0) { filterBar }
+                .safeAreaBar(edge: .top) { filterBar }
             .lsBackground()
             // "See all" on a Home shelf lands here, filtered, rather than
             // pushing a list onto Home's own stack. Consumed on arrival so

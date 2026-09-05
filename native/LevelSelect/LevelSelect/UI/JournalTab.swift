@@ -60,8 +60,13 @@ struct JournalTab: View {
             // three tabs shaped this way — while Home, whose scroll view is the
             // direct child, had a different symptom entirely.
             //
-            // `safeAreaInset` pins the same chrome in the same place and leaves
-            // the scroll view where the bar can see it.
+            // `safeAreaBar` pins the same chrome in the same place, leaves the
+            // scroll view where the bar can see it, AND carries the bar's own
+            // glass down over it. `safeAreaInset` does the first two and not
+            // the third, which left the chips and the segmented pickers
+            // floating with content passing behind them un-frosted — Tim:
+            // *"Glass is also not going far enough down behind the ownership
+            // pills, or other top tab pills."*
             Group {
                 switch lens {
                 case .timeline: JournalTimeline()
@@ -72,7 +77,7 @@ struct JournalTab: View {
             // Pinned rather than scrolled with the content: this is how you
             // move between the two halves of the tab, so it does not get to
             // disappear once you are reading.
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .safeAreaBar(edge: .top) {
                 Picker("View", selection: Binding(
                     get: { lens },
                     set: { lensRaw = $0.rawValue })) {
