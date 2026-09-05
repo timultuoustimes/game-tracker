@@ -103,9 +103,17 @@ final class ThemeSettings {
     /// it on the iPad too.
     /// **What Home is made of, in order.**
     ///
-    /// Comma-joined block descriptors — `status:playing`, `systems`,
+    /// Comma-joined block descriptors — `status:playing`, `systems:6`,
     /// `collections`, `collection:<uuid>`, `filter:<uuid>`. Nil means the
     /// shipped composition.
+    ///
+    /// **A block may carry a count**, which is how "show six consoles, the rest
+    /// behind view more" is stored without a field of its own. Tim: *"you can
+    /// select how many you want to show on your Home Screen (the rest stay in
+    /// view more), and then you can drag the order around from there."* The
+    /// count and the order are one idea — the list is your preference, and the
+    /// first N of it is what fits. It generalises: `collections:4` later needs
+    /// no new storage.
     ///
     /// Synced, unlike the game page's section order, and for a reason Tim gave
     /// when asked the same question twice and answered it differently: a game
@@ -120,11 +128,16 @@ final class ThemeSettings {
     /// Comma-joined platform names. Nil means "all of them, biggest first",
     /// which is what the Library shelf does today.
     ///
-    /// One ordered list answers both halves of Tim's question — which systems
-    /// appear IS the list, and the order IS the list. Release order and
-    /// acquisition order are separate asks: the app has no platform release
-    /// years (`PlatformShort.rank` is a taste heuristic for labelling a game,
-    /// not a generation table) and no record of when anyone got a console.
+    /// One ordered list plus the `systems:N` count on the Home block answers
+    /// the whole question: drag to set the order, set N for how many fit, and
+    /// the rest are behind "view more" in that same order.
+    ///
+    /// Release order and acquisition order are separate asks. The app has no
+    /// platform release years — `PlatformShort.rank` is a taste heuristic for
+    /// deciding which platform LABELS a game, not a generation table — and no
+    /// record of when anyone got a console. A manual drag is the one of Tim's
+    /// three orderings that needs no data we do not have, and it is also the
+    /// one he called "personal favorite".
     var homeSystemsRaw: String?
 
     /// **Which game-page sections open by default, library-wide.**
