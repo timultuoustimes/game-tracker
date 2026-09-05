@@ -296,6 +296,28 @@ enum LSTheme {
     ///
     /// Radius is always 0 where this is used. A gaussian blur is the one thing
     /// pixel art never has.
+    /// **One block of Press Start 2P, in points.** The offset a hard shadow
+    /// under pixel type is allowed to take.
+    ///
+    /// Measured out of the font, not guessed: `unitsPerEm` is 1000, the GCD of
+    /// every outline coordinate in the face is 125, and the cap height and the
+    /// advance width are both exactly 8 of those. So the grid is 8x8 and one
+    /// block is `size / 8`, precisely.
+    ///
+    /// **Floored, never rounded.** A zero-blur shadow offset by MORE than one
+    /// block leaves a lit sliver between the glyph and its shadow, because
+    /// nothing is drawn in the gap; offset by less, the shadow simply tucks
+    /// under the glyph and still reads as a solid step. So overshooting is
+    /// visible and undershooting is not, and the safe direction is down.
+    ///
+    /// This is what `ProfileHeader` found by eye at 22pt — *"y:2, not 3... an
+    /// offset larger than one of its blocks leaves a lit gap"* — and 22/8 is
+    /// 2.75, which floors to 2 and rounds to 3. `Wordmark` rounded, and was
+    /// wrong at exactly that size.
+    static func pixelStep(for size: CGFloat) -> CGFloat {
+        max(1, (size / 8).rounded(.down))
+    }
+
     static func hardStep(under ink: Color) -> Color {
         .lsDynamic(light: ink.mix(with: .black, by: 0.55),
                    dark: ink.mix(with: .black, by: 0.40))

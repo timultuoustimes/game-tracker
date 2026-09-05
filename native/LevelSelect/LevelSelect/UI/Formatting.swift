@@ -37,6 +37,58 @@ enum Format {
     }
 
     /// Video timestamp, e.g. "4:02" or "1:12:41".
+    /// **A game's title as a short mark**, for a cover with no art.
+    ///
+    /// Tim's rule: the initials of the words that carry meaning, the colon
+    /// kept as a separator, numerals and roman numerals left whole.
+    ///
+    ///     The Legend of Heroes: Trails of Cold Steel  ->  LH:TCS
+    ///     Hollow Knight                               ->  HK
+    ///     Vampire Survivors                           ->  VS
+    ///     Cat Quest III                               ->  CQIII
+    ///     Sonic the Hedgehog 2                        ->  SH2
+    ///
+    /// Multi-letter rather than one initial, because one initial cannot tell
+    /// two games apart and a real library is full of pairs — Hades and Hollow
+    /// Knight are both H. The colon survives because a subtitle is the thing
+    /// that distinguishes entries in a series from each other, which is
+    /// exactly when you need the mark to be specific.
+    static func abbreviation(_ title: String) -> String {
+        // Only a LEADING article is dropped. "The Legend of Heroes" is LH, but
+        // "Journey to the Savage Planet" keeps its shape from the other words
+        // rather than losing its first letter.
+        var t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        for article in ["The ", "A ", "An "] where t.lowercased().hasPrefix(article.lowercased()) {
+            t = String(t.dropFirst(article.count))
+            break
+        }
+        let skipped: Set<String> = ["the", "of", "a", "an", "and", "to", "in", "for", "or"]
+        // **Capped, because a title can be arbitrarily long and a mark cannot.**
+        // Without this, "The Legend of Heroes: Trails of Cold Steel IV..." on
+        // Home came out as LH:TCSIVESFEDDSC — sixteen characters, which at the
+        // width of a cover card sets at six points and is a smear rather than a
+        // mark. Three tokens a segment and two segments lands Tim's own example
+        // exactly (LH:TCS) and truncates the runaway case to the same thing.
+        let tokensPerSegment = 3
+        let segments = 2
+        let parts = t.split(separator: ":").prefix(segments).map { segment -> String in
+            segment
+                .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+                .filter { !skipped.contains($0.lowercased()) }
+                .prefix(tokensPerSegment)
+                .map { word -> String in
+                    // "III" and "2" are the whole point of the title they are
+                    // in — an initial would turn Cat Quest III into CQI and
+                    // collide it with the first game.
+                    let isNumeral = word.allSatisfy(\.isNumber)
+                    let isRoman = word.count > 1 && word.allSatisfy { "IVXLCivxlc".contains($0) }
+                    return isNumeral || isRoman ? word.uppercased() : String(word.prefix(1)).uppercased()
+                }
+                .joined()
+        }
+        return parts.filter { !$0.isEmpty }.joined(separator: ":")
+    }
+
     static func timestamp(_ t: TimeInterval) -> String {
         let s = max(0, Int(t))
         let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
@@ -225,6 +277,13 @@ enum PlatformPreference {
 /// Async cover art with a themed placeholder. Box-art aspect ratio.
 struct CoverThumb: View {
     let urlString: String?
+    /// The game's title, for the placeholder when there is no art. Nil at the
+    /// six call sites with no game in scope — the artwork picker, the profile
+    /// backdrop, recently deleted — which keep the old glyph.
+    var name: String? = nil
+    /// Colours the mark, the way every other status glyph in the app is
+    /// coloured. Nil falls back to secondary ink.
+    var status: GameStatus? = nil
     /// Fill is right for box art, which is meant to be cropped to a shelf
     /// tile. It is wrong for a wordmark: a wide logo in a 2.2 tile gets its
     /// ends cut off, so the picker offered a row of "T FIGHT" and "ET FIGHTE"
@@ -249,10 +308,58 @@ struct CoverThumb: View {
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator, lineWidth: 0.5))
     }
 
+    /// **A missing cover says which game it is.**
+    ///
+    /// It used to be a grey field and one `gamecontroller.fill`, which is the
+    /// same object for every game in the library — four unmatched games on a
+    /// shelf read as four copies of one thing. Now it carries the title as a
+    /// short mark in the app's own face, in the game's status colour, with the
+    /// hard step the wordmark and the profile name already wear.
+    ///
+    /// Fable's 5.7 proposed the full name in the status colour. Two things
+    /// sent it here instead. The name is already printed under the card on
+    /// shelves and in rows — so drawing it inside repeats it exactly where the
+    /// card is biggest — and at the 44pt calendar cell a name is not readable
+    /// at any weight. An abbreviation survives every size this appears at,
+    /// which runs from 44pt to 108pt.
+    ///
+    /// The step is not decoration. Pixel strokes are two pixels wide and a
+    /// flat fill on a mid-tone card goes soft; the offset adds a second
+    /// contrast edge, which is the whole reason the wordmark has one. Tim, on
+    /// seeing it: *"Darker offset on the light background provides smaller
+    /// text a bit more contrast which makes it a little easier to read."*
     private var placeholder: some View {
-        ZStack {
-            Rectangle().fill(.quaternary)
-            Image(systemName: "gamecontroller.fill").foregroundStyle(.secondary)
+        GeometryReader { geo in
+            ZStack {
+                Rectangle().fill(.quaternary)
+                if let mark = name.map(Format.abbreviation), !mark.isEmpty {
+                    // Sized to the card AND to the mark's length, because they
+                    // pull in opposite directions: the face is monospaced at
+                    // one em per character, so LH:TCS needs six times the width
+                    // of H and has to give up type size to get it.
+                    let side = min(geo.size.width, geo.size.height)
+                    let type = min(side * 0.28, geo.size.width * 0.9 / CGFloat(mark.count))
+                    let ink = status?.color ?? .secondary
+                    Text(mark)
+                        .font(LSTheme.pixel(type))
+                        .fontDesign(nil)
+                        .foregroundStyle(ink)
+                        .shadow(color: LSTheme.hardStep(under: ink), radius: 0,
+                                y: LSTheme.pixelStep(for: type))
+                        .lineLimit(1)
+                        // Shrink rather than truncate. The sizing above should
+                        // make this unreachable, but a mark with an ellipsis in
+                        // it would be worse than a small one.
+                        .minimumScaleFactor(0.5)
+                } else {
+                    Image(systemName: "gamecontroller.fill").foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
+        // The mark names the game the caller has already named. Two readings
+        // of the same title is noise, and the six nameless call sites have
+        // nothing to announce anyway.
+        .accessibilityHidden(true)
     }
 }

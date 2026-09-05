@@ -60,17 +60,15 @@ struct Wordmark: View {
 
     private var iconSide: CGFloat { (size * 2.1).rounded() }
 
-    /// **A whole point, so the hard shadow stays hard.**
+    /// One block of the face — see `LSTheme.pixelStep(for:)`, which is where
+    /// the 8×8 grid and the floor-don't-round rule are derived.
     ///
-    /// This was `size * 0.16`, which at size 22 is 3.52pt — not a whole point,
-    /// so a `radius: 0` shadow landed across a pixel boundary and antialiased
-    /// into a smeared two-pixel bar sitting away from the letters rather than
-    /// an edge on them. Tim: *"the shadow spacing needs corrected."*
-    ///
-    /// One font-pixel is `size / 8` in Press Start 2P, whose glyphs are drawn
-    /// on an 8×8 grid — the offset the pixel-art convention actually calls for
-    /// — rounded to a whole point so it can never half-land again.
-    private var shadowOffset: CGFloat { max(1, (size / 8).rounded()) }
+    /// This was `size * 0.16` (3.52pt at the Settings size, well over a block,
+    /// which is the smeared detached bar Tim reported), then briefly
+    /// `(size / 8).rounded()`, which at that same size gives 3 — a quarter of
+    /// a block too far, and the exact value `ProfileHeader` had already found
+    /// leaves a lit gap.
+    private var shadowOffset: CGFloat { LSTheme.pixelStep(for: size) }
 
     /// A darkened version of the tint, so a custom accent gets a shadow that
     /// belongs to it rather than a fixed brown.

@@ -101,7 +101,7 @@ struct RelatedGamesSection: View {
                     ForEach(games) { other in
                         NavigationLink(value: other) {
                             VStack(alignment: .leading, spacing: 4) {
-                                CoverThumb(urlString: other.displayCoverURLString)
+                                CoverThumb(urlString: other.displayCoverURLString, name: other.name, status: other.status)
                                     .frame(width: coverWidth, height: coverWidth * 4 / 3)
                                     .clipShape(.rect(cornerRadius: 8))
                                 Text(other.name)

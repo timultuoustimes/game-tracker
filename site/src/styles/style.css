@@ -65,11 +65,18 @@ a:hover { color: #B78DFF; }
      recipe holds at any size. Fixed pixels were far too small on the hero and
      far too heavy in the 11px header.
 
-     0.125em, not 0.16em. Press Start 2P draws its glyphs on an 8x8 grid, so
-     ONE font-pixel is exactly font-size / 8 — the offset the pixel-art
-     convention calls for. 0.16em is 1.28 of them, which is why the shadow read
-     as a detached bar under the type rather than an edge on it. */
+     0.125em, not 0.16em. Measured out of the font rather than guessed:
+     unitsPerEm is 1000, the GCD of every outline coordinate is 125, and the
+     cap height and advance width are both exactly 8 of those. So the grid is
+     8x8 and one block is font-size / 8, precisely. 0.16em is 1.28 blocks,
+     which is why the shadow read as a detached bar rather than an edge.
+
+     Rounded DOWN to a whole pixel. A zero-blur shadow offset by more than one
+     block leaves a lit sliver between the glyph and its shadow, because
+     nothing is drawn in the gap; offset by less, it tucks under and still
+     reads as a solid step. Overshooting is visible, undershooting is not. */
   --wm-offset: 0.125em;
+  --wm-offset: round(down, 0.125em, 1px);
   text-shadow: 0 var(--wm-offset) 0 var(--torch-deep), 0 0 0.65em rgba(245, 163, 77, 0.3);
 }
 
@@ -85,10 +92,9 @@ a:hover { color: #B78DFF; }
 /* flex: none — without it the icon shrinks horizontally in a cramped header
    and a square image renders squished. */
 .brand img { width: 28px; height: 28px; border-radius: 7px; flex: none; }
-/* At 11px one font-pixel is 1.375px, and a zero-blur shadow that lands across
-   a device pixel gets antialiased into a soft smear — the same half-landing
-   the app fixed by rounding to a whole point. Pin it to a whole pixel here,
-   since this is the one wordmark on the site with a fixed size. */
+/* At 11px one block is 1.375px, which floors to 1. Pinned rather than computed
+   because this is the one wordmark on the site with a fixed size, and it does
+   not need to wait on `round()` support. */
 .brand span { font-size: 11px; white-space: nowrap; --wm-offset: 1px; }
 .navlinks { display: flex; gap: 1.25rem; font-size: .9rem; }
 .navlinks a { color: var(--muted); text-decoration: none; }

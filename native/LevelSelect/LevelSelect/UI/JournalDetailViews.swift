@@ -86,7 +86,7 @@ struct JournalDayView: View {
     private func headerContent(_ game: Game?) -> some View {
         HStack(alignment: .top, spacing: 14) {
             if let game {
-                CoverThumb(urlString: game.displayCoverURLString)
+                CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
                     .frame(width: 74, height: 99)
                     .clipShape(.rect(cornerRadius: 8))
                     .coverGloss()
@@ -279,7 +279,7 @@ struct MemoryView: View {
                 if let game = memory.game {
                     NavigationLink(value: game) {
                         HStack(spacing: 10) {
-                            CoverThumb(urlString: game.displayCoverURLString)
+                            CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
                                 .frame(width: 36, height: 48)
                                 .clipShape(.rect(cornerRadius: 5))
                             Text(game.name).font(.subheadline.weight(.medium))

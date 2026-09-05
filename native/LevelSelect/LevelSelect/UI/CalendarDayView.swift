@@ -67,8 +67,8 @@ struct CalendarDayView: View {
     /// through the Timeline.
     private func row(_ entry: JournalEntry) -> some View {
         HStack(spacing: 12) {
-            if let url = entry.game?.displayCoverURLString {
-                CoverThumb(urlString: url)
+            if let game = entry.game, let url = game.displayCoverURLString {
+                CoverThumb(urlString: url, name: game.name, status: game.status)
                     .frame(width: 44, height: 59)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             } else if let data = entry.images.first?.data {

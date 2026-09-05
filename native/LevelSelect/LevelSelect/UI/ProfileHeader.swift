@@ -125,12 +125,12 @@ struct ProfileHeader: View {
                         // The ink darkened, so a custom name colour gets a
                         // shadow that belongs to it rather than a fixed brown
                         // — the rule `Wordmark.shadowTint` already follows.
-                        // y:2, not 3. The face draws on a pixel grid, and an
-                        // offset larger than one of its blocks leaves a lit
-                        // gap between glyph and shadow instead of a solid
-                        // step — visible at 22pt, which is far larger than
-                        // the wordmark usually renders.
-                        .shadow(color: LSTheme.hardStep(under: ink), radius: 0, y: 2)
+                        // The hard-coded y:2 that used to sit here was right,
+                        // and was found by eye. It is now derived: one block of
+                        // the face at this size, floored — `LSTheme.pixelStep`,
+                        // which carries the measurement and the reasoning.
+                        .shadow(color: LSTheme.hardStep(under: ink), radius: 0,
+                                y: LSTheme.pixelStep(for: 22))
                 }
                 handleChips(profile)
             }

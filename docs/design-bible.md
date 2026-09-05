@@ -1172,10 +1172,17 @@ corrected."*
 
 The glow's `0.65em` is unchanged — blur has no grid to land on.
 
-**Round it to a whole pixel wherever the size is fixed.** A zero-blur shadow only stays hard if it
-lands on a device pixel boundary; at a fractional offset the browser antialiases it into the same
-smear. The app rounds `size / 8` to a whole point; the site pins `--wm-offset: 1px` on the 11px header
-mark and lets the fluid hero keep the em.
+**Floor it to a whole pixel, never round up.** Measured out of the font on 2026-09-04: `unitsPerEm`
+is 1000, the GCD of every outline coordinate is 125, and both the cap height and the advance width are
+exactly 8 of those — so the grid is 8×8 and one block is `size / 8` precisely.
+
+The direction matters. A zero-blur shadow offset by **more** than one block leaves a lit sliver between
+the glyph and its shadow, because nothing is drawn in the gap. Offset by **less**, the shadow tucks
+under the glyph and still reads as a solid step. Overshooting is visible; undershooting is not.
+
+This is what `ProfileHeader` had already found by eye at 22pt — y:2, not 3 — and 22/8 is 2.75, which
+floors to 2 and rounds to 3. The app now derives it in `LSTheme.pixelStep(for:)`; the site pins
+`--wm-offset: 1px` on the 11px header mark and uses `round(down, 0.125em, 1px)` for the fluid hero.
 
 At the two real app sizes:
 
