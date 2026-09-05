@@ -67,8 +67,6 @@ struct ReleaseRemindersSettings: View {
                     NotificationManager.breaksThroughFocus = value
                     reschedule()
                 }
-        } header: {
-            Text("Notifications")
         } footer: {
             if on {
                 // The count is the honest answer to "will this ever fire".

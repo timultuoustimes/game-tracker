@@ -1,16 +1,23 @@
 import SwiftUI
 
-/// Settings "About" section (beta P0 metadata): version/build, the privacy
-/// policy (bundled in-app so it works offline; the same text lives at
-/// PRIVACY.md in the repo for the App Store URL), and a feedback path.
-struct AboutSection: View {
-    private static let repoURL = URL(string: "https://github.com/timultuoustimes/levelselect")!
-    private static let issuesURL = URL(string: "https://github.com/timultuoustimes/levelselect/issues")!
-    private static let helpURL = URL(string: "https://levelselect.app/docs/")!
-    private static let changelogURL = URL(string: "https://levelselect.app/changelog/")!
-    private static let roadmapURL = URL(string: "https://levelselect.app/roadmap/")!
+/// The addresses the app can send you to.
+///
+/// Gathered in one place because three of them are on their way out: What's
+/// New and What's Coming become pages fed by the same content that builds the
+/// site, and Report a problem becomes a composer that never leaves the app.
+/// Until then they are links, and the rows that use them say so.
+enum AppLinks {
+    static let repo = URL(string: "https://github.com/timultuoustimes/levelselect")!
+    static let issues = URL(string: "https://github.com/timultuoustimes/levelselect/issues")!
+    static let help = URL(string: "https://levelselect.app/docs/")!
+    static let changelog = URL(string: "https://levelselect.app/changelog/")!
+    static let roadmap = URL(string: "https://levelselect.app/roadmap/")!
+}
 
-    private var versionString: String {
+/// What the app *is*: which build you have, what it does with your data, and
+/// what it never does.
+struct AboutSettingsPage: View {
+    static var versionString: String {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
@@ -18,37 +25,21 @@ struct AboutSection: View {
     }
 
     var body: some View {
-        // Two sections rather than one: what the app *is* (version, policy,
-        // feedback) is a different question from where to read more about it.
-        Section {
-            Link(destination: Self.helpURL) {
-                Label("How to use LevelSelect", systemImage: "questionmark.circle")
+        SettingsPage(title: "About LevelSelect",
+                     icon: "info.circle",
+                     blurb: "No accounts, no ads, no analytics, no tracking. Your library is yours, on your device and in your own iCloud.") {
+            Section {
+                LabeledContent("Version", value: Self.versionString)
+                NavigationLink("Privacy Policy") { PrivacyPolicyView() }
+                ExternalSettingsRow(title: "Source code", icon: "chevron.left.forwardslash.chevron.right",
+                                    url: AppLinks.repo)
+            } footer: {
+                // Worth saying here rather than only inside the policy: it is
+                // the one line that separates this app from every other tracker
+                // on the store, and it belongs where someone checking the
+                // version can read it.
+                Text("The App Store privacy card for LevelSelect says Data Not Collected, because nothing is.")
             }
-            Link(destination: Self.changelogURL) {
-                Label("What's New", systemImage: "sparkles")
-            }
-            Link(destination: Self.roadmapURL) {
-                Label("Roadmap", systemImage: "map")
-            }
-        } header: {
-            Text("Learn More")
-        } footer: {
-            // Said plainly because the app's whole pitch is that it doesn't
-            // talk to anything — a link that opens a browser deserves a note
-            // that it's a link, not a feature quietly phoning home.
-            Text("Opens levelselect.app in your browser.")
-        }
-
-        Section {
-            LabeledContent("Version", value: versionString)
-            NavigationLink("Privacy Policy") { PrivacyPolicyView() }
-            Link(destination: Self.issuesURL) {
-                Label("Report an Issue", systemImage: "ladybug")
-            }
-        } header: {
-            Text("About")
-        } footer: {
-            Text("Beta feedback is best sent through TestFlight — take a screenshot in the app or use the TestFlight app's Send Feedback.")
         }
     }
 }

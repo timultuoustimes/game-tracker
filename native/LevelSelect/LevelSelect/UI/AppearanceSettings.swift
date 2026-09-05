@@ -19,8 +19,14 @@ struct AppearanceSettingsSection: View {
     /// Trackers keep a group of their own at his call: *"it's not about the
     /// game page as a whole, it's a very specifically scoped item within a
     /// game page."*
-    enum Scope { case personalization, gamePages, trackers }
-    var scope: Scope = .personalization
+    ///
+    /// **Four now.** Personalization split again when Settings became an
+    /// index: a page per destination, and statuses earned one of their own —
+    /// they were six colour rows and ten name fields folded into two
+    /// disclosure groups inside a section about something else. Tim, on the
+    /// same question: *"its own page."*
+    enum Scope { case theme, statuses, gamePages, trackers }
+    var scope: Scope = .theme
 
     @Environment(\.modelContext) private var context
     @Query private var themeSettings: [ThemeSettings]
@@ -55,8 +61,11 @@ struct AppearanceSettingsSection: View {
         // direction expects to keep growing, so it needs room of its own.
         // Split per the 2026-08-28 settings audit.
         switch scope {
-        case .personalization:
-            personalization
+        case .theme:
+            theme
+                .onDisappear { flushThemeCommit() }
+        case .statuses:
+            statuses
                 .onDisappear { flushThemeCommit() }
         case .gamePages:
             gamePages
@@ -65,7 +74,7 @@ struct AppearanceSettingsSection: View {
         }
     }
 
-    private var personalization: some View {
+    private var theme: some View {
         Section {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Appearance")
@@ -89,33 +98,6 @@ struct AppearanceSettingsSection: View {
             colorRow("Colors", swatch: LSTheme.accent,
                      isCustom: anyAccentChosen || anyBackgroundChosen) {
                 ColorEditor(title: "Colors", targets: themeColorTargets)
-            }
-
-
-            DisclosureGroup("Status colors") {
-                ForEach(GameStatus.displayOrder, id: \.self) { status in
-                    colorRow(status.sectionTitle, icon: status.systemImage,
-                             swatch: status.color,
-                             isCustom: settings?.statusColors[status.rawValue] != nil) {
-                        // A single target: a status colour is chosen on its
-                        // own, so there is nothing to compare it against and
-                        // the picker stays hidden.
-                        ColorEditor(title: status.sectionTitle, targets: [
-                            ColorTarget(id: status.rawValue,
-                                        label: status.sectionTitle,
-                                        defaultColor: ThemePalette.defaultColor(for: status),
-                                        isCustomised: settings?.statusColors[status.rawValue] != nil,
-                                        binding: statusBinding(status),
-                                        onReset: {
-                                            let s = ensureSettings()
-                                            var map = s.statusColors
-                                            map[status.rawValue] = nil
-                                            s.statusColors = map
-                                            save(s)
-                                        }),
-                        ])
-                    }
-                }
             }
 
 
@@ -143,45 +125,6 @@ struct AppearanceSettingsSection: View {
             }
             .onChange(of: starNamesExpanded) { _, open in
                 if open { loadStarDrafts() } else { commitStarNames() }
-            }
-
-            // The app says what each status means; this is where you disagree.
-            // One person's "Abandoned" is another's "played it to bits", and
-            // that is not settled by choosing a better default word.
-            DisclosureGroup("Status names", isExpanded: $statusNamesExpanded) {
-                ForEach(GameStatus.displayOrder, id: \.self) { status in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            Label {
-                                Text(status.defaultTitle)
-                            } icon: {
-                                Image(systemName: status.systemImage)
-                                    .foregroundStyle(status.color)
-                            }
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            Spacer(minLength: 12)
-                            TextField(status.defaultTitle, text: Binding(
-                                get: { statusDrafts[status.rawValue] ?? "" },
-                                set: { statusDrafts[status.rawValue] = $0 }))
-                                .textFieldStyle(.plain)
-                                .multilineTextAlignment(.trailing)
-                                .submitLabel(.done)
-                                .onSubmit { commitStatusNames() }
-                        }
-                        // The blurb here as well as in the picker: renaming a
-                        // status is exactly when you need to know what it was
-                        // for, and it is the one screen where all ten sit
-                        // together.
-                        Text(status.blurb)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
-            .onChange(of: statusNamesExpanded) { _, open in
-                if open { loadStatusDrafts() } else { commitStatusNames() }
             }
 
             // Collapsed, and only present when something can actually be
@@ -230,16 +173,91 @@ struct AppearanceSettingsSection: View {
                 }
             }
 
-        } header: {
-            Text("Personalization")
         } footer: {
+            // No header any more: the page it sits on is the header now.
             Text("Everything here syncs to your other devices through iCloud. A blank rating label keeps the built-in word.")
         }
     }
 
-    /// What shows up ON game and tracker surfaces — as opposed to what the app
-    /// looks like. Both defaults here are overridden per game from that game's
-    /// Tracker section.
+    /// Statuses get a page rather than two disclosure groups.
+    ///
+    /// Colour and name are the same decision made twice — you rename
+    /// "Abandoned" for the same reason you recolour it — and they were folded
+    /// away in separate collapsed groups inside a section about the app's
+    /// theme. On their own page the ten statuses are just a list, one row
+    /// each, which is also the shape the show/hide switch will need.
+    @ViewBuilder
+    private var statuses: some View {
+        Section {
+            ForEach(GameStatus.displayOrder, id: \.self) { status in
+                colorRow(status.sectionTitle, icon: status.systemImage,
+                         swatch: status.color,
+                         isCustom: settings?.statusColors[status.rawValue] != nil) {
+                    // A single target: a status colour is chosen on its
+                    // own, so there is nothing to compare it against and
+                    // the picker stays hidden.
+                    ColorEditor(title: status.sectionTitle, targets: [
+                        ColorTarget(id: status.rawValue,
+                                    label: status.sectionTitle,
+                                    defaultColor: ThemePalette.defaultColor(for: status),
+                                    isCustomised: settings?.statusColors[status.rawValue] != nil,
+                                    binding: statusBinding(status),
+                                    onReset: {
+                                        let s = ensureSettings()
+                                        var map = s.statusColors
+                                        map[status.rawValue] = nil
+                                        s.statusColors = map
+                                        save(s)
+                                    }),
+                    ])
+                }
+            }
+        } footer: {
+            Text("Tap a status to change its colour. Colours and names sync through iCloud, and a blank name keeps the built-in word.")
+        }
+
+        Section {
+            // The app says what each status means; this is where you disagree.
+            // One person's "Abandoned" is another's "played it to bits", and
+            // that is not settled by choosing a better default word.
+            DisclosureGroup("Status names", isExpanded: $statusNamesExpanded) {
+                ForEach(GameStatus.displayOrder, id: \.self) { status in
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Label {
+                                Text(status.defaultTitle)
+                            } icon: {
+                                Image(systemName: status.systemImage)
+                                    .foregroundStyle(status.color)
+                            }
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            Spacer(minLength: 12)
+                            TextField(status.defaultTitle, text: Binding(
+                                get: { statusDrafts[status.rawValue] ?? "" },
+                                set: { statusDrafts[status.rawValue] = $0 }))
+                                .textFieldStyle(.plain)
+                                .multilineTextAlignment(.trailing)
+                                .submitLabel(.done)
+                                .onSubmit { commitStatusNames() }
+                        }
+                        // The blurb here as well as in the picker: renaming a
+                        // status is exactly when you need to know what it was
+                        // for, and it is the one screen where all ten sit
+                        // together.
+                        Text(status.blurb)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+            .onChange(of: statusNamesExpanded) { _, open in
+                if open { loadStatusDrafts() } else { commitStatusNames() }
+            }
+        }
+    }
+
     /// How a game page looks — the four that moved out of Personalization,
     /// plus the sections list.
     private var gamePages: some View {
@@ -290,13 +308,14 @@ struct AppearanceSettingsSection: View {
                 GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
                     .lsSheet()
             }
-        } header: {
-            Text("Game pages")
         } footer: {
             Text("Applies to every game page. Colours and layout sync through iCloud; section order and hiding are set per device.")
         }
     }
 
+    /// What shows up ON game and tracker surfaces — as opposed to what the app
+    /// looks like. Both defaults here are overridden per game from that game's
+    /// Tracker section.
     private var trackers: some View {
         Section {
             Picker("Default layout", selection: trackerDisplayBinding) {
@@ -325,8 +344,6 @@ struct AppearanceSettingsSection: View {
             // closes almost immediately."* Same fix and same reasoning as
             // `DataSettingsSection`, and it has to be an UNCONDITIONAL row —
             // hang it on something that can disappear and the sheet goes too.
-        } header: {
-            Text("Trackers")
         } footer: {
             // States the sync rule once, and names the exception, rather than
             // leaving someone to infer storage from section membership — a

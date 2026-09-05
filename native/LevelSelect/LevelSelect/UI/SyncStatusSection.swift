@@ -89,8 +89,6 @@ struct SyncStatusSection: View {
                         DeviceIdentity.name = newValue
                     }
             }
-        } header: {
-            Text("iCloud")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
                 if !orphanedSessions.isEmpty {
@@ -127,19 +125,7 @@ struct SyncStatusSection: View {
         }
     }
 
-    private var title: String {
-        switch monitor.state {
-        case .synced: "Synced"
-        case .syncing: "Syncing…"
-        case .accountUnavailable: "iCloud unavailable"
-        case .localFallback: "Working locally"
-        // Rate limiting is a wait, not a fault — presenting it as "Sync
-        // issue" with a raw CloudKit error read as "sync is broken" during
-        // exactly the half hour it was merely queued.
-        case .error: monitor.isThrottled ? "iCloud is catching up" : "Sync issue"
-        case .checking: "Checking iCloud…"
-        }
-    }
+    private var title: String { monitor.shortStatus }
 
     private var detail: String? {
         switch monitor.state {
@@ -181,6 +167,25 @@ struct SyncStatusSection: View {
             return "Sync will retry automatically. Your changes are safe on this device in the meantime."
         default:
             return nil
+        }
+    }
+}
+
+extension SyncStatusMonitor {
+    /// The one-word answer, used twice: as this section's own title and as the
+    /// value on the iCloud row in the Settings index — so "is my library safe
+    /// on my other devices" is answered before you tap anything.
+    var shortStatus: String {
+        switch state {
+        case .synced: "Synced"
+        case .syncing: "Syncing…"
+        case .accountUnavailable: "iCloud unavailable"
+        case .localFallback: "Working locally"
+        // Rate limiting is a wait, not a fault — presenting it as "Sync
+        // issue" with a raw CloudKit error read as "sync is broken" during
+        // exactly the half hour it was merely queued.
+        case .error: isThrottled ? "Catching up" : "Sync issue"
+        case .checking: "Checking…"
         }
     }
 }

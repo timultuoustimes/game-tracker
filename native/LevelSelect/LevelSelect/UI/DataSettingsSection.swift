@@ -6,6 +6,16 @@ import SwiftData
 /// Export ships before the first external tester (beta P0): iCloud sync is not
 /// a backup, and a tester who deletes the app should still have their hours.
 struct DataSettingsSection: View {
+    /// Which of the three sections to render.
+    ///
+    /// Getting data in and out is one destination; repairing and tidying what
+    /// is already in the library is another. They were adjacent sections in
+    /// one scroll, which made "Recently deleted" look like part of backup.
+    /// Each scope keeps its own copy of this view's sheet and alert state, so
+    /// the two pages present independently.
+    enum Scope { case transfer, tools }
+    var scope: Scope = .transfer
+
     @Environment(\.modelContext) private var context
 
     @State private var sheet: DataSheet?
@@ -66,6 +76,15 @@ struct DataSettingsSection: View {
     }
 
     var body: some View {
+        switch scope {
+        case .transfer: transfer
+        case .tools:    tools
+        }
+    }
+
+    /// Getting the library in and out — the export that iCloud is not.
+    @ViewBuilder
+    private var transfer: some View {
         Section {
             Button {
                 runExport()
@@ -130,8 +149,6 @@ struct DataSettingsSection: View {
                 case .metadataFill:    MetadataFillView().lsSheet()
                 }
             }
-        } header: {
-            Text("Storage & backup")
         } footer: {
             // The load-bearing sentence stays. The rest moved into the
             // workflows, which already explain themselves — a footer is read
@@ -139,12 +156,27 @@ struct DataSettingsSection: View {
             // and this one ran longer than a phone screen.
             Text("iCloud keeps your devices in sync, but it isn't a backup — the export is. It writes your library to a readable JSON file, pictures you've added included. Map images are still saved as links rather than embedded.")
         }
+    }
 
+    /// Repair and tidy what is already here, and the two scoped resets.
+    @ViewBuilder
+    private var tools: some View {
         Section {
             Button {
                 sheet = .metadataFill
             } label: {
                 Label("Update missing game details", systemImage: "sparkle.magnifyingglass")
+            }
+            // Its own presentation, because this scope is now a separate
+            // screen from the one that owns the export/import sheet — and,
+            // as above, on the ROW rather than the Section.
+            .sheet(item: $sheet) { which in
+                switch which {
+                case .export(let url): ShareSheet(url: url)
+                case .csvImport:       CSVImportView().lsSheet()
+                case .libraryImport:   LibraryImportView().lsSheet()
+                case .metadataFill:    MetadataFillView().lsSheet()
+                }
             }
 
             NavigationLink {
@@ -158,8 +190,6 @@ struct DataSettingsSection: View {
             } label: {
                 Label("Recently deleted", systemImage: "trash")
             }
-        } header: {
-            Text("Library tools")
         } footer: {
             // Maintenance is not backup. These three answer "repair or tidy
             // what's in my library", which is a different question from "get
@@ -199,6 +229,7 @@ struct DataSettingsSection: View {
             Text("Start fresh without deleting your games.")
         }
     }
+
 
     private func runExport() {
         exporting = true

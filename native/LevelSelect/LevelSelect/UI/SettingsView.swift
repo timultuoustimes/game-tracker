@@ -8,21 +8,22 @@ struct SettingsView: View {
 
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }) private var games: [Game]
     @Query private var profiles: [PlayerProfile]
+    @Query private var themeSettings: [ThemeSettings]
 
     @State private var editingProfile = false
+    /// Read here only for the word on the iCloud row. The page behind it owns
+    /// the presentation; this is the answer you get without opening it.
+    @State private var syncMonitor = SyncStatusMonitor.shared
 
-    // Developer tools. Debug builds only — none of this ships in a Release
-    // build. See project.yml.
-    //
-    // The gate was called DEV_TOOLS when its job was Tim's one-time
-    // migration off the web app. That migration is done and its two settings
-    // are gone, so the flag is named for what it still guards.
-    #if DEV_TOOLS
-    /// Result text from the CloudKit schema seeder/purge and demo library.
-    @State private var seedResult: String?
-    @State private var seedingDemo = false
-    @State private var library = LibrarySwitcher.shared
-    #endif
+    /// How many services are connected, or nothing at all when none are.
+    ///
+    /// A row that says "0 connected" is a row nagging you about a feature you
+    /// have chosen not to use.
+    private var servicesValue: String? {
+        let connected = [RACredentials.isConfigured, ItchCredentials.isConfigured]
+            .filter { $0 }.count
+        return connected == 0 ? nil : "\(connected) connected"
+    }
 
     var body: some View {
         NavigationStack {
@@ -76,127 +77,84 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
 
-                // Status, not a setting, so it sits with the profile rather
-                // than inside a group of preferences. "Is my library safe on
-                // my other devices" is the question people open Settings to
-                // answer fastest, and it was six sections down, under a
-                // heading about how the app looks.
-                SyncStatusSection()
-
-                // Two groups, because these settings answer two different
-                // questions and were interleaved.
+                // An index, not a scroll.
+                //
+                // Every row below either goes somewhere or answers its own
+                // question on the way past. That second part is what keeps
+                // iCloud fast to check even though it stopped being a section
+                // of its own: "Synced" is on the row.
                 //
                 // Tim asked whether each tab should get its own settings
                 // button. The answer was no — Library's Sort & View menu
                 // already IS its per-tab settings, one tap from what it
                 // affects — but the observation underneath was right: things
-                // about YOUR GAMES (tracker layout, critic scores, achievement
-                // badges) were sitting among things about THE APP (accent
-                // colour, iCloud, this device) with nothing marking the
-                // difference. Grouping them costs no new surface.
-                SettingsGroupHeader(
-                    "Your library",
-                    "How your games are shown, and where their information comes from.")
-
+                // about YOUR GAMES were sitting among things about THE APP
+                // with nothing marking the difference. Groups do that now, and
+                // the two prose headings that used to do it are gone.
                 Section {
-                    LabeledContent("Games", value: "\(games.count)")
+                    SettingsRow(title: "iCloud", icon: "icloud",
+                                value: syncMonitor.shortStatus) { ICloudSettingsPage() }
+                    SettingsRow(title: "Library", icon: "books.vertical",
+                                value: Format.gameCount(games.count)) { LibrarySettingsPage() }
+                    SettingsRow(title: "Import & Export",
+                                icon: "arrow.up.arrow.down.circle") { TransferSettingsPage() }
+                    SettingsRow(title: "Services", icon: "link",
+                                value: servicesValue) { ServicesSettingsPage() }
+                    SettingsRow(title: "Notifications", icon: "bell.badge") {
+                        NotificationSettingsPage()
+                    }
+                } header: {
+                    Text("General")
                 }
 
-                AppearanceSettingsSection(scope: .gamePages)
-                AppearanceSettingsSection(scope: .trackers)
+                Section {
+                    SettingsRow(title: "Theme & colors", icon: "circle.lefthalf.filled",
+                                value: LSAppearance(raw: themeSettings.first?.appearanceRaw).label) {
+                        ThemeSettingsPage()
+                    }
+                    SettingsRow(title: "Statuses",
+                                icon: "circle.grid.2x1.left.filled") { StatusSettingsPage() }
+                    SettingsRow(title: "Game pages",
+                                icon: "rectangle.topthird.inset.filled") { GamePagesSettingsPage() }
+                    SettingsRow(title: "Trackers", icon: "checklist") { TrackerSettingsPage() }
+                } header: {
+                    Text("Appearance")
+                }
 
-                CriticScoreSettings()
+                Section {
+                    // Two links out, said plainly — the app's whole pitch is
+                    // that it doesn't talk to anything, so a row that opens a
+                    // browser should look like one. Both become real pages
+                    // once the site publishes them as feeds.
+                    ExternalSettingsRow(title: "What's New", icon: "sparkles",
+                                        url: AppLinks.changelog)
+                    ExternalSettingsRow(title: "What's Coming", icon: "map",
+                                        url: AppLinks.roadmap)
+                    ExternalSettingsRow(title: "Report a problem", icon: "ladybug",
+                                        url: AppLinks.issues)
+                } header: {
+                    Text("News & feedback")
+                } footer: {
+                    Text("These three open levelselect.app in your browser for now. Beta feedback is best sent through TestFlight — take a screenshot in the app, or use TestFlight's Send Feedback.")
+                }
 
-                RetroAchievementsSettings()
-
-                ItchSettings()
-
-                ReleaseRemindersSettings()
-
-                DataSettingsSection()
-
-                SettingsGroupHeader(
-                    "This app",
-                    "How LevelSelect looks and syncs, across your devices.")
-
-                AppearanceSettingsSection(scope: .personalization)
+                Section {
+                    ExternalSettingsRow(title: "How to use LevelSelect",
+                                        icon: "questionmark.circle", url: AppLinks.help)
+                    SettingsRow(title: "About LevelSelect", icon: "info.circle",
+                                value: AboutSettingsPage.versionString) { AboutSettingsPage() }
+                } header: {
+                    Text("Help")
+                }
 
                 #if DEV_TOOLS
                 Section {
-                    Button {
-                        seedResult = CloudKitSchemaSeeder.seed(context: context)
-                    } label: {
-                        Label("Seed CloudKit schema", systemImage: "cloud.bolt")
+                    SettingsRow(title: "Developer", icon: "hammer") {
+                        DeveloperSettingsPage()
                     }
-                    Button(role: .destructive) {
-                        seedResult = CloudKitSchemaSeeder.purge(context: context)
-                    } label: {
-                        Label("Purge seed records", systemImage: "trash")
-                    }
-                    if let seedResult {
-                        Text(seedResult)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("Developer — CloudKit schema")
-                } footer: {
-                    Text("Writes one hidden, fully-populated record of every model so the Development schema gains every field. Seed → wait for Synced → Deploy Schema Changes to Production in CloudKit Console → Purge.")
-                }
-
-                Section {
-                    Toggle(isOn: Binding(
-                        get: { library.isDemo },
-                        set: { library.setDemo($0) }
-                    )) {
-                        Label("Use demo library", systemImage: "theatermasks")
-                    }
-
-                    if library.isDemo {
-                        Button {
-                            seedingDemo = true
-                            Task {
-                                seedResult = await DemoLibrarySeeder.seed(context: context)
-                                seedingDemo = false
-                                // Push the demo library out to the widgets so
-                                // Home Screen shots match what's on screen.
-                                WidgetBridge.refresh()
-                            }
-                        } label: {
-                            if seedingDemo {
-                                HStack { ProgressView(); Text("Building demo library…") }
-                            } else {
-                                Label("Load demo games", systemImage: "sparkles")
-                            }
-                        }
-                        .disabled(seedingDemo)
-                        Button(role: .destructive) {
-                            seedResult = DemoLibrarySeeder.purge(context: context)
-                            // Widgets read a snapshot, not the store, so they
-                            // need telling — otherwise the Home Screen keeps
-                            // showing games the library no longer has.
-                            WidgetBridge.refresh()
-                        } label: {
-                            Label("Empty demo library", systemImage: "trash")
-                        }
-                    } else {
-                        Button(role: .destructive) {
-                            library.destroyDemoStore()
-                            seedResult = "Demo library file deleted."
-                        } label: {
-                            Label("Delete demo library file", systemImage: "trash.slash")
-                        }
-                    }
-                } header: {
-                    Text("Developer — screenshots")
-                } footer: {
-                    Text(library.isDemo
-                         ? "You're in the demo library. Your real library is untouched in its own file — switch back any time. Demo data is local only and never syncs to iCloud."
-                         : "Switches to a separate, disposable library for screenshots and video. Your real library isn't hidden or filtered — it's a different file, left exactly as it is. 14 well-known games with real IGDB art, play history, a populated tracker, a run record, and a collection. Deterministic, so retakes look identical.")
                 }
                 #endif
 
-                AboutSection()
             }
             // This screen is mostly one-and-two-row sections, and the default
             // gap between them is sized for sections with more in them. At
@@ -300,43 +258,4 @@ struct SettingsView: View {
         }
     }
 
-}
-
-
-/// The boundary between Settings' two groups.
-///
-/// A plain row rather than a `Section` header: real headers already label the
-/// sections inside each group ("Personalization", "Game pages & trackers"),
-/// and nesting a header inside a header reads as a mistake. This is the
-/// heading those headers sit under.
-struct SettingsGroupHeader: View {
-    let title: String
-    let subtitle: String
-
-    init(_ title: String, _ subtitle: String) {
-        self.title = title
-        self.subtitle = subtitle
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.title3.bold())
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        // No `listRowInsets` override and no `fixedSize`.
-        //
-        // Overriding the insets takes over ALL of them, and a 4pt leading
-        // inset put the text hard against the row's clip bounds: every
-        // WRAPPED line lost a sliver of its first glyph, which read as a
-        // stray vertical tick before the "H" of "How" and the "c" of "comes".
-        // The default row insets already align this with the cards below it.
-        .padding(.top, 6)
-        .padding(.bottom, 2)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .accessibilityAddTraits(.isHeader)
-    }
 }
