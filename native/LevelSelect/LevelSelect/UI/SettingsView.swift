@@ -103,6 +103,7 @@ struct SettingsView: View {
                 }
 
                 AppearanceSettingsSection(scope: .gamePages)
+                AppearanceSettingsSection(scope: .trackers)
 
                 CriticScoreSettings()
 

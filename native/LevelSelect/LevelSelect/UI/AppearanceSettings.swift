@@ -11,7 +11,15 @@ struct AppearanceSettingsSection: View {
     /// different sections: theming is about the app, while tracker layout and
     /// badges are about your games. They still share this view's state and
     /// helpers, so the split is a parameter rather than a second type.
-    enum Scope { case personalization, gamePages }
+    /// **Three groups, not two.** They were split by whether a setting was
+    /// about colour or about content — a real distinction, and not one anybody
+    /// has in mind when they want to change how a game page works. Tim:
+    /// *"Things are oddly split here."*
+    ///
+    /// Trackers keep a group of their own at his call: *"it's not about the
+    /// game page as a whole, it's a very specifically scoped item within a
+    /// game page."*
+    enum Scope { case personalization, gamePages, trackers }
     var scope: Scope = .personalization
 
     @Environment(\.modelContext) private var context
@@ -51,8 +59,9 @@ struct AppearanceSettingsSection: View {
             personalization
                 .onDisappear { flushThemeCommit() }
         case .gamePages:
-            // The sheet is NOT here. See the button that raises it.
-            gamePagesAndTrackers
+            gamePages
+        case .trackers:
+            trackers
         }
     }
 
@@ -80,42 +89,6 @@ struct AppearanceSettingsSection: View {
             colorRow("Colors", swatch: LSTheme.accent,
                      isCustom: anyAccentChosen || anyBackgroundChosen) {
                 ColorEditor(title: "Colors", targets: themeColorTargets)
-            }
-
-            Picker("Game page background", selection: pageBackgroundBinding) {
-                ForEach(ThemePageBackground.allCases, id: \.rawValue) { choice in
-                    Text(choice.label).tag(choice)
-                }
-            }
-
-            Picker("Game page layout", selection: gamePageLayoutBinding) {
-                ForEach(GamePageLayout.allCases) { choice in
-                    Text(choice.label).tag(choice)
-                }
-            }
-            // "Showcase" and "Classic" name nothing on their own, so the
-            // choice says what it does rather than making you try both.
-            Text(gamePageLayoutBinding.wrappedValue.blurb)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .listRowSeparator(.hidden)
-
-            Toggle("Use game logos", isOn: Binding(
-                get: { ThemePalette.showGameLogos },
-                set: { on in
-                    let s = ensureSettings()
-                    s.showGameLogos = on
-                    save(s)
-                }
-            ))
-            .tint(LSTheme.accent)
-
-            if pageBackgroundBinding.wrappedValue.usesArtwork {
-                Picker("Backdrop strength", selection: backdropIntensityBinding) {
-                    ForEach(BackdropIntensity.allCases) { choice in
-                        Text(choice.label).tag(choice)
-                    }
-                }
             }
 
 
@@ -267,15 +240,72 @@ struct AppearanceSettingsSection: View {
     /// What shows up ON game and tracker surfaces — as opposed to what the app
     /// looks like. Both defaults here are overridden per game from that game's
     /// Tracker section.
-    private var gamePagesAndTrackers: some View {
+    /// How a game page looks — the four that moved out of Personalization,
+    /// plus the sections list.
+    private var gamePages: some View {
         Section {
-            Picker("Default tracker layout", selection: trackerDisplayBinding) {
+            Picker("Background", selection: pageBackgroundBinding) {
+                ForEach(ThemePageBackground.allCases, id: \.rawValue) { choice in
+                    Text(choice.label).tag(choice)
+                }
+            }
+
+            Picker("Layout", selection: gamePageLayoutBinding) {
+                ForEach(GamePageLayout.allCases) { choice in
+                    Text(choice.label).tag(choice)
+                }
+            }
+            // "Showcase" and "Classic" name nothing on their own, so the
+            // choice says what it does rather than making you try both.
+            Text(gamePageLayoutBinding.wrappedValue.blurb)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .listRowSeparator(.hidden)
+
+            Toggle("Use game logos", isOn: Binding(
+                get: { ThemePalette.showGameLogos },
+                set: { on in
+                    let s = ensureSettings()
+                    s.showGameLogos = on
+                    save(s)
+                }
+            ))
+            .tint(LSTheme.accent)
+
+            if pageBackgroundBinding.wrappedValue.usesArtwork {
+                Picker("Backdrop strength", selection: backdropIntensityBinding) {
+                    ForEach(BackdropIntensity.allCases) { choice in
+                        Text(choice.label).tag(choice)
+                    }
+                }
+            }
+
+            Button {
+                arrangingPages = true
+            } label: {
+                Label("Sections…", systemImage: "arrow.up.arrow.down")
+            }
+            // On the row, not on the Section — see the note in `trackers`.
+            .sheet(isPresented: $arrangingPages) {
+                GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
+                    .lsSheet()
+            }
+        } header: {
+            Text("Game pages")
+        } footer: {
+            Text("Applies to every game page. Colours and layout sync through iCloud; section order and hiding are set per device.")
+        }
+    }
+
+    private var trackers: some View {
+        Section {
+            Picker("Default layout", selection: trackerDisplayBinding) {
                 ForEach(TrackerDisplay.allCases, id: \.rawValue) { choice in
                     Text(choice.label).tag(choice)
                 }
             }
 
-            Toggle("Show tracker hints", isOn: Binding(
+            Toggle("Show hints", isOn: Binding(
                 get: { settings?.showItemHints ?? true },
                 set: { newValue in
                     let s = ensureSettings()
@@ -286,34 +316,17 @@ struct AppearanceSettingsSection: View {
 
             Toggle("Show achievement badges", isOn: $showRAArt)
 
-            // This used to open from a single game's ⋯ menu while changing
-            // every game page on the device. Placement declares scope: a
-            // library-wide, device-local layout preference belongs beside the
-            // other library-wide defaults, not anchored to Super Metroid.
-            Button {
-                arrangingPages = true
-            } label: {
-                Label("Arrange game pages…", systemImage: "arrow.up.arrow.down")
-            }
-            // **On the row, not on the Section.**
+            // **A `.sheet` goes on a ROW, never on the Section.**
             //
-            // A `.sheet` attached to a `Section` becomes one sheet per CHILD,
-            // all bound to the same flag — so tapping this raised four or five
-            // presentations at once and they cancelled each other: the sheet
-            // slid up and shut again immediately. Tim: *"when I tap 'arrange
-            // game pages' it starts to slide up and then closes almost
-            // immediately."*
-            //
-            // A row is a single view, so the modifier stays singular — the same
-            // fix and the same reasoning as `DataSettingsSection`. It has to be
-            // an UNCONDITIONAL row: hang it on something that can disappear and
-            // the sheet goes with it.
-            .sheet(isPresented: $arrangingPages) {
-                GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
-                    .lsSheet()
-            }
+            // A modifier on a `Section` is applied to each of its CHILDREN, so
+            // one flag raised four presentations at once and they cancelled
+            // each other: the sheet slid up and shut again immediately. Tim:
+            // *"when I tap 'arrange game pages' it starts to slide up and then
+            // closes almost immediately."* Same fix and same reasoning as
+            // `DataSettingsSection`, and it has to be an UNCONDITIONAL row —
+            // hang it on something that can disappear and the sheet goes too.
         } header: {
-            Text("Game pages & trackers")
+            Text("Trackers")
         } footer: {
             // States the sync rule once, and names the exception, rather than
             // leaving someone to infer storage from section membership — a

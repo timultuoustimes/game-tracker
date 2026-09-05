@@ -16,6 +16,7 @@ struct GameDetailView: View {
     /// Automatically-found wordmark, when the user hasn't chosen one.
     @State private var fetchedLogo: URL?
     /// Library-wide reading preference, device-local like the Stats cards.
+    @State private var showingPageSettings = false
     @Query private var themeSettings: [ThemeSettings]
     @AppStorage("gameSectionOrder") private var sectionOrderRaw = ""
     @AppStorage("gameHiddenSections") private var hiddenSectionsRaw = ""
@@ -328,6 +329,15 @@ struct GameDetailView: View {
                         Label("Game information", systemImage: "info.circle")
                     }
                     Divider()
+                    // Named for what someone is looking for, not for its scope
+                    // — the sheet's own title carries the scope. Tim: *"Game
+                    // page settings seems like the better choice right now."*
+                    Button {
+                        showingPageSettings = true
+                    } label: {
+                        Label("Game page settings…", systemImage: "slider.horizontal.3")
+                    }
+                    Divider()
                     Button(role: .destructive) {
                         confirmingDelete = true
                     } label: {
@@ -341,6 +351,9 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $fixingMatch) {
             FixMatchView(game: game).lsSheet()
+        }
+        .sheet(isPresented: $showingPageSettings) {
+            GamePageSettingsSheet().lsSheet()
         }
         .sheet(item: $pickingArtwork) { role in
             ArtworkPickerView(game: game, role: role).lsSheet()

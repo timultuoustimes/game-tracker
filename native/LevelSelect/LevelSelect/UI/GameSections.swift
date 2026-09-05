@@ -139,6 +139,7 @@ struct GameArrangeSheet: View {
     @Binding var hiddenRaw: String
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Query private var themeSettings: [ThemeSettings]
     @AppStorage("gamePageShowStats") private var showGameStats = true
 
@@ -158,6 +159,47 @@ struct GameArrangeSheet: View {
                 settings.expandedSectionsRaw = GamePageSection.allCases
                     .filter(next.contains).map(\.rawValue).joined(separator: ",")
                 settings.updatedAt = .now
+            })
+    }
+
+    /// **A section is one of three things, not two switches.**
+    ///
+    /// Shown-or-hidden and opens-or-not used to be separate lists, which let
+    /// you say something meaningless: hidden AND open by default. Nothing
+    /// stopped it and nothing surfaced it. As one control the state cannot be
+    /// written down, so it cannot happen.
+    ///
+    /// Tim picked this over a toggle-plus-chip for a reason I had missed:
+    /// *"with number 2 you can immediately tap it as open, which turns it on
+    /// and open in one tap."* Reaching the most common state costs one tap
+    /// rather than two.
+    enum SectionState: String, CaseIterable, Identifiable {
+        case off, closed, open
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .off:    "Off"
+            case .closed: "Closed"
+            case .open:   "Open"
+            }
+        }
+    }
+
+    /// Reads and writes BOTH stores, which is the point of merging the lists:
+    /// hiding is device-local and opening is synced, and someone arranging
+    /// their page should not have to know that.
+    private func stateBinding(_ section: GamePageSection) -> Binding<SectionState> {
+        Binding(
+            get: {
+                if hidden.contains(section) { return .off }
+                return expandedDefaults.contains(section) ? .open : .closed
+            },
+            set: { state in
+                visibilityBinding(section).wrappedValue = (state != .off)
+                // Off clears the open flag too. Otherwise turning a section
+                // back on would silently restore an "opens" it no longer shows
+                // anywhere — the invisible state coming back by the side door.
+                expandedBinding(section).wrappedValue = (state == .open)
             })
     }
 
@@ -185,10 +227,34 @@ struct GameArrangeSheet: View {
 
                 Section {
                     ForEach(order) { section in
-                        Toggle(isOn: visibilityBinding(section)) {
-                            Label(section.displayName, systemImage: section.icon)
+                        // Three things want this row's width and only two fit.
+                        // The picker holds three fixed words and can't give
+                        // ground — narrowed to 152 it truncated its own
+                        // selected segment to "Clos…" — and the drag handle
+                        // is the system's. So the icon goes: with it there,
+                        // "Sessions" wrapped to "Ses-/sions" and
+                        // "Connections" truncated. The name is the thing you
+                        // read down this list; the icon was decoration it
+                        // could not afford. At accessibility sizes nothing
+                        // fits side by side and the row stacks, same rule as
+                        // the playthrough picker.
+                        let layout = typeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                            : AnyLayout(HStackLayout(spacing: 10))
+                        layout {
+                            Text(section.displayName)
+                                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                                .minimumScaleFactor(typeSize.isAccessibilitySize ? 1 : 0.8)
+                            if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                            Picker("", selection: stateBinding(section)) {
+                                ForEach(SectionState.allCases) { Text($0.label).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            // nil = unconstrained, which is what the stacked
+                            // layout wants: full width on its own line.
+                            .frame(width: typeSize.isAccessibilitySize ? nil : 178)
                         }
-                        .tint(LSTheme.accent)
                     }
                     .onMove { from, to in
                         var sections = order
@@ -198,24 +264,10 @@ struct GameArrangeSheet: View {
                 } header: {
                     Text("Sections")
                 } footer: {
-                    Text("Applies to every game page on this device. Hidden sections keep their contents — nothing is deleted.")
-                }
-
-                Section {
-                    ForEach(order.filter { !hidden.contains($0) }) { section in
-                        Toggle(isOn: expandedBinding(section)) {
-                            Label(section.displayName, systemImage: section.icon)
-                        }
-                        .tint(LSTheme.accent)
-                    }
-                } header: {
-                    Text("Open by default")
-                } footer: {
-                    // Says both halves, because the second one is what makes
-                    // the first safe to change: a game you have adjusted keeps
-                    // its own answer, and adjusting one game never silently
-                    // rewrites the rest.
-                    Text("Which sections start open on a game you haven't adjusted. Unlike order and hiding, this follows you to your other devices — and so does closing a section on one particular game.")
+                    // Both storage rules, because they differ and the
+                    // difference is deliberate — and the per-game one, because
+                    // it is what makes changing the default safe.
+                    Text("Off hides a section — its contents are kept, nothing is deleted. Open and Closed decide how a section arrives on a game you haven't adjusted, and that choice follows you to your other devices; so does closing a section on one particular game. Order and hiding stay on this device.")
                 }
             }
             #if !os(macOS)
