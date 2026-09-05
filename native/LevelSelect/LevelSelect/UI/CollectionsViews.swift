@@ -191,11 +191,31 @@ struct CollectionDetailView: View {
                 // that said "3 games" landed on a page that would not confirm
                 // it — Fable's cheap win 10.
                 VStack(alignment: .leading, spacing: 12) {
-                Text(Format.gameCount(members.count))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+                // **The tile you tapped, at the top of what it opened.**
+                //
+                // An inline title gave the name and nothing else, so arriving
+                // from a Library tile that showed a four-cover composite and a
+                // count landed on a page that confirmed neither — Fable's 5.8.
+                // Same `CoverMosaic` the tile draws, so they cannot drift.
+                HStack(spacing: 14) {
+                    CoverMosaic(games: members)
+                        .frame(width: 84, height: 84)
+                        .clipShape(.rect(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(LSTheme.hairline))
+                        .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(collection.name)
+                            .font(.title3.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(Format.gameCount(members.count))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal)
+                // The name is on screen twice otherwise — here and in the bar.
+                .accessibilityElement(children: .combine)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 16) {
                     ForEach(members) { game in
                         NavigationLink(value: game) {

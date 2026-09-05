@@ -579,7 +579,16 @@ struct HomeTab: View {
         }) {
             WelcomeView { welcomeChoice = $0 }
                 .interactiveDismissDisabled(false)
-                .lsSheet()
+                // **Full height, unlike every other sheet.**
+                //
+                // Fable's 5.9 is that the welcome should appear on iPad, and it
+                // does — the trigger is an empty library and an unseen flag,
+                // with no idiom gate anywhere. What it did NOT survive was
+                // today's move to a partial detent for every menu sheet: on a
+                // 13-inch iPad that renders the app's introduction as a small
+                // floating card. A first run is the one sheet with nothing
+                // behind it worth seeing through to.
+                .lsSheet([.large])
         }
         // Consume navigation requested by widgets / App Intents.
         .onAppear {

@@ -206,11 +206,15 @@ struct PlatformGamesView: View {
         .navigationTitle(PlatformShort.name(platform))
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: "Search this console")
-        #else
-        .searchable(text: $searchText, prompt: "Search this console")
         #endif
+        // **Only when there is something to search.** A pinned search field
+        // over eight covers is a control that costs more room than the list it
+        // filters — Fable's 5.8. The threshold is `onPlatform`, not `visible`,
+        // so a filter that narrows the page to three does not make the field
+        // vanish out from under you mid-search.
+        .modifier(SearchWhenWorthIt(text: $searchText,
+                                    enabled: onPlatform.count >= 8,
+                                    prompt: "Search this console"))
         .toolbar {
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 7) {
@@ -364,5 +368,32 @@ struct PlatformGamesView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+}
+
+
+/// `.searchable`, applied conditionally.
+///
+/// A `#if`/`if` around a modifier changes the view's TYPE, which SwiftUI reads
+/// as a different view — the page rebuilt and lost its scroll position every
+/// time the count crossed the threshold. A modifier keeps one type and moves
+/// the condition inside it.
+private struct SearchWhenWorthIt: ViewModifier {
+    @Binding var text: String
+    let enabled: Bool
+    let prompt: String
+
+    func body(content: Content) -> some View {
+        if enabled {
+            #if os(macOS)
+            content.searchable(text: $text, prompt: prompt)
+            #else
+            content.searchable(text: $text,
+                               placement: .navigationBarDrawer(displayMode: .always),
+                               prompt: prompt)
+            #endif
+        } else {
+            content
+        }
     }
 }
