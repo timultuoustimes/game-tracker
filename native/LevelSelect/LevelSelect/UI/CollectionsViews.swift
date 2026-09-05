@@ -348,7 +348,11 @@ struct CollectionMembersPicker: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title3)
                             .symbolRenderingMode(.palette)
-                            .foregroundStyle(.black, LSTheme.accent)
+                            // The tick is ink ON the accent, so it takes the
+                            // ink the accent computes for itself. Fixed black
+                            // disappeared on a dark accent — the one case the
+                            // knockout exists to handle. Codex cheap win 2.
+                            .foregroundStyle(LSTheme.onAccent, LSTheme.accent)
                             .padding(5)
                     }
                 }

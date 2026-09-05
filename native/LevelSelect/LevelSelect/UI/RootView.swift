@@ -803,7 +803,8 @@ struct HomeTab: View {
             Text("Add a game you're playing — then give it a tracker: paste a checklist you already have, or let LevelSelect draft one.")
         } actions: {
             VStack(spacing: 10) {
-                Button("Add a Game") { showingAdd = true }
+                // Matches the sheet it opens, and the menu item. Codex P5.
+                Button("Add Game") { showingAdd = true }
                     .buttonStyle(.borderedProminent)
                 // A spreadsheet is how most people arrive with a backlog. This
                 // opened the whole Settings form and left them to find the

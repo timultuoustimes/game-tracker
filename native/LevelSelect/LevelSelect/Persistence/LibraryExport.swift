@@ -373,7 +373,11 @@ enum LibraryExport {
             FetchDescriptor<Memory>(predicate: #Predicate { $0.deletedAt == nil })
         )
         let memoryObjects = memories
-            .sorted { $0.earliest < $1.earliest }
+            // `id` after the date: two memories with the same interval —
+            // easy, since a year-grain memory's interval is the whole year —
+            // would otherwise export in whichever order the store happened to
+            // hand them over. Codex data #11.
+            .sorted { $0.earliest == $1.earliest ? $0.id < $1.id : $0.earliest < $1.earliest }
             .map { memory -> [String: Any] in
                 var m: [String: Any] = [
                     "id": memory.id.uuidString,

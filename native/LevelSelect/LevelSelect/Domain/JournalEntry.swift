@@ -316,7 +316,14 @@ enum JournalBuilder {
                 JournalPeriod(
                     start: $0.start,
                     grain: $0.grain,
-                    entries: $0.items.sorted { $0.date > $1.date },
+                    // `id` breaks the tie, because `sorted` is not stable
+                    // and two entries can share a date — a session day and a
+                    // memory written for it, or two memories on one day. Same
+                    // library, two devices, two orders otherwise, and two
+                    // exports that diff against each other. Codex data #11.
+                    entries: $0.items.sorted {
+                        $0.date == $1.date ? $0.id < $1.id : $0.date > $1.date
+                    },
                     headingOverride: $0.items.first?.headingOverride,
                     calendar: $0.calendar)
             }

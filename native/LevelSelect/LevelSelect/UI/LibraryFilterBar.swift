@@ -168,9 +168,17 @@ struct FilterChip: View {
             .font(.caption)
             .lineLimit(1)
             .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(isOn ? color.opacity(0.45) : .white.opacity(0.07), in: .capsule)
+            // `cardFill` / `hairline`, not white-at-7%.
+            //
+            // "White means raised" is a dark-mode recipe: on the light ground
+            // an inactive chip made of white was the ground, so the row read as
+            // loose labels with no capsule under them. The tokens already
+            // solve this and flip per appearance — LSSurfaces' own comment says
+            // so. Codex K3.
+            .background(isOn ? AnyShapeStyle(color.opacity(0.45))
+                             : AnyShapeStyle(LSTheme.cardFill), in: .capsule)
             .overlay(Capsule().strokeBorder(
-                isOn ? color : .white.opacity(0.12),
+                isOn ? AnyShapeStyle(color) : AnyShapeStyle(LSTheme.hairline),
                 style: StrokeStyle(lineWidth: 1, dash: isGap ? [3, 3] : [])))
         }
         .buttonStyle(.plain)

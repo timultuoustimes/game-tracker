@@ -1783,7 +1783,11 @@ struct GameDetailView: View {
                         .background(LSTheme.accent.opacity(0.18), in: .capsule)
                         .overlay(Capsule().strokeBorder(LSTheme.accent.opacity(0.55), lineWidth: 1))
                     } else {
-                        Chip(text: platform, tint: .blue)
+                        // Grey, not blue. Accent means "mine" on the row above;
+                        // a second saturated colour beside it read as a second
+                        // kind of selected, and stayed blue whatever the app's
+                        // accent was. Codex K5, the editor's other half.
+                        Chip(text: platform, tint: .secondary)
                     }
                 }
             }

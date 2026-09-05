@@ -197,7 +197,11 @@ struct AltDescription: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
                         .background(
-                            Capsule().fill(usingAlt || showingAlt ? tint.opacity(0.25) : Color.white.opacity(0.07))
+                            // Same reason as the library chips: an inactive
+                            // capsule of white vanishes into a light ground.
+                            Capsule().fill(usingAlt || showingAlt
+                                           ? AnyShapeStyle(tint.opacity(0.25))
+                                           : AnyShapeStyle(LSTheme.cardFill))
                         )
                         .overlay(Capsule().strokeBorder(tint.opacity(usingAlt || showingAlt ? 0.6 : 0.25)))
                         .foregroundStyle(usingAlt || showingAlt ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))

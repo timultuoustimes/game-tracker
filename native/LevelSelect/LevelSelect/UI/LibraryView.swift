@@ -199,7 +199,9 @@ struct LibraryTab: View {
                     } description: {
                         Text("Add the games you're playing and they'll be grouped by system here.")
                     } actions: {
-                        Button("Add a Game") { sheet = .addGame }
+                        // "Add Game" — the sheet's own title and the
+                        // dominant command form. Codex P5.
+                        Button("Add Game") { sheet = .addGame }
                             .buttonStyle(.borderedProminent)
                     }
                 } else {

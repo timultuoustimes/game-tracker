@@ -379,14 +379,22 @@ private struct JournalRow: View {
             if entry.kind == .memory {
                 if let detail = entry.detail { Text(detail) }
             } else {
-                if entry.duration > 0 {
+                // The separator belongs to the gap between two facts, not to
+                // the fact after it. A day with runs and no timed session read
+                // as "🎮 · 1 run" — a dot with nothing before it. Each piece
+                // now asks whether anything has been said yet.
+                let hasDuration = entry.duration > 0
+                let hasSessions = entry.sessions.count > 1
+                if hasDuration {
                     Text(Format.duration(entry.duration))
                 }
-                if entry.sessions.count > 1 {
-                    Text("· \(entry.sessions.count) sessions")
+                if hasSessions {
+                    Text(hasDuration ? "· \(entry.sessions.count) sessions"
+                                     : "\(entry.sessions.count) sessions")
                 }
                 if !entry.runs.isEmpty {
-                    Text("· \(entry.runs.count) " + (entry.runs.count == 1 ? "run" : "runs"))
+                    let runs = "\(entry.runs.count) " + (entry.runs.count == 1 ? "run" : "runs")
+                    Text(hasDuration || hasSessions ? "· \(runs)" : runs)
                 }
                 ForEach(entry.finishes) { finish in
                     Label(finish.journalLabel, systemImage: "flag.checkered")
@@ -394,10 +402,12 @@ private struct JournalRow: View {
                         .foregroundStyle(LSTheme.accent)
                 }
             }
-            if entry.grain == .day, entry.kind == .memory {
-                Text(entry.date.formatted(date: .omitted, time: .shortened))
-                    .foregroundStyle(.tertiary)
-            }
+            // No time on a memory, at any precision.
+            //
+            // The sheet never asks for one. A day-grain memory saved at 07:51
+            // showed "8:00 PM", which is midnight UTC rendered locally — a
+            // number the writer never chose and cannot change, sitting beside
+            // words they did choose. Fable runtime 2.5.
         }
         .font(.caption)
         .foregroundStyle(.secondary)

@@ -216,6 +216,18 @@ enum ThemePalette {
         // values, then the legacy single value, then the default. Gated on the
         // hue being set so switching the flag alone can never silently discard
         // an accent someone already chose.
+
+        // The ground is assigned BEFORE anything is measured against it.
+        //
+        // `groundBase(dark:)` reads these statics, and both the legibility
+        // correction below and the knockout further down call it — so with the
+        // assignment last, a change of accent AND background in one save
+        // measured the new accent against the OLD ground. It usually stayed
+        // safe, because the fallback ink is conservative, but it made the
+        // committed colours disagree with the editor's own preview, which
+        // computes against the candidate ground. Codex K1.
+        backgroundOverrideLight = settings?.backgroundHex(dark: false).flatMap(Color.init(hex:))
+        backgroundOverrideDark = settings?.backgroundHex(dark: true).flatMap(Color.init(hex:))
         var linkedLight: Color?
         var linkedDark: Color?
         if let s = settings, s.paletteLinked, let hue = s.accentHue {
@@ -240,8 +252,6 @@ enum ThemePalette {
                                          on: groundBase(dark: true))
         accent = .lsDynamic(light: lightAccent, dark: darkAccent)
         accentIsCustom = lightCustom != nil || darkCustom != nil
-        backgroundOverrideLight = settings?.backgroundHex(dark: false).flatMap(Color.init(hex:))
-        backgroundOverrideDark = settings?.backgroundHex(dark: true).flatMap(Color.init(hex:))
         // A knockout, not simply a contrasting ink — see `knockout(on:)`.
         //
         // Computed per appearance against that appearance's ACTUAL ground,

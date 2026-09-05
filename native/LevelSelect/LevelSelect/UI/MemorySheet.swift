@@ -301,7 +301,15 @@ struct MemorySheet: View {
     /// photo from the memory."*
     ///
     /// No confirmation: removing is a soft delete, the same as everywhere else
-    /// pictures are removed, so the picture is recoverable rather than gone.
+    /// pictures are removed.
+    ///
+    /// ⚠️ **This used to say "so the picture is recoverable rather than gone",
+    /// and that is not true today.** `Repository.restore(_ image:)` exists and
+    /// nothing calls it: Recently Deleted carries Games, Playthroughs and
+    /// Collections only, so a removed picture is tombstoned, invisible, and
+    /// unreachable — and its external bytes stay on disk forever. Codex data
+    /// #4. The comment was believed once already; it says what is true now
+    /// until either recovery or an immediate Undo exists.
     private func removeButton(_ label: String,
                               action: @escaping () -> Void) -> some View {
         Button(role: .destructive, action: action) {
@@ -315,9 +323,15 @@ struct MemorySheet: View {
         .accessibilityLabel(label)
     }
 
+    /// Oldest first — the same order the detail page shows.
+    ///
+    /// These two disagreed: the detail led with the first photo added and this
+    /// sheet listed the newest first, so removing "the first thumbnail" here
+    /// deleted the last-added picture, which is not the one anyone was looking
+    /// at. Fable runtime 2.13.
     private var photos: [GameImage] {
         (existing?.images ?? []).filter { $0.deletedAt == nil }
-            .sorted { $0.addedAt > $1.addedAt }
+            .sorted { $0.addedAt < $1.addedAt }
     }
 
     private func ingestPickedPhoto() async {

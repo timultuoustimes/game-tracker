@@ -130,8 +130,15 @@ struct PlatformEditor: View {
             .accessibilityLabel("Remove \(PlatformShort.name(platform))")
         }
         .padding(.horizontal, 9).padding(.vertical, 5)
-        .background((isMine ? LSTheme.accent : .blue).opacity(0.18), in: .capsule)
-        .overlay(Capsule().strokeBorder((isMine ? LSTheme.accent : .blue).opacity(isMine ? 0.55 : 0.35), lineWidth: 1))
+        // Accent means "mine"; not-mine is a plain surface, not a second
+        // accent. Fixed blue made an unowned platform look like a differently
+        // selected one, and stayed blue in a lime, orange or purple app —
+        // the only unexplained theme bypass in the audit. Codex K5.
+        .background(isMine ? AnyShapeStyle(LSTheme.accent.opacity(0.18))
+                           : AnyShapeStyle(LSTheme.cardFill), in: .capsule)
+        .overlay(Capsule().strokeBorder(
+            isMine ? AnyShapeStyle(LSTheme.accent.opacity(0.55))
+                   : AnyShapeStyle(LSTheme.hairline), lineWidth: 1))
         .foregroundStyle(.primary)
         .contentShape(.capsule)
         .onTapGesture {
