@@ -100,7 +100,21 @@ struct LibraryTab: View {
                 tagFilter = nil
                 searchText = ""
             }
+            // **Large, left, and it stays there.**
+            //
+            // The default for a stack root is `.large`: a full-size title on
+            // its OWN row under the toolbar, collapsing to a small CENTRED one
+            // on scroll. That is the row Tim asked to reclaim, and the centring
+            // is the jump he objected to. Dropping the mode entirely got the
+            // title onto the toolbar row but about a fifth smaller.
+            //
+            // `.inlineLarge` is the third option and the one Gamery uses —
+            // measured off Tim's screenshots at 0.061 of the screen width in
+            // glyph height, against 0.062 here. Full size, on the toolbar row,
+            // left-aligned, and it does not move when you scroll. It costs no
+            // height, because that row exists for the toolbar anyway.
             .navigationTitle("Library")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
             .navigationDestination(for: GameFacet.self) { FacetGamesView(facet: $0) }
             // Each tab owns its stack, so a route appended here has to be
