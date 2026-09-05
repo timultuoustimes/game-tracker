@@ -550,6 +550,28 @@ struct GameDetailView: View {
         game.trackerSchema.flatMap { TrackerSchemaJSON.runTemplate(from: $0.jsonData) }
     }
 
+    /// **Which sections open on arrival, and why the reference ones do not.**
+    ///
+    /// The rule shipped as "open when it has something in it", and Tim caught
+    /// that it did not describe what the page does: *"all games pull info from
+    /// igdb and have things in them and none of them start expanded except for
+    /// tracker and Notes."* He was right twice over — About, Game Info and
+    /// Connections were still pinned `defaultExpanded: false` from before, so
+    /// the rule could never reach them; and had it reached them, every game
+    /// page would open with a wall of IGDB prose, a metadata table and two
+    /// carousels, on every game, identically.
+    ///
+    /// So the rule is narrower and says something true: **a section opens when
+    /// it holds something YOU put there.** Sessions, Beaten, Runs, Tags,
+    /// Review — those are your record of this game, and differ game to game.
+    /// About, Game Info, Connections and Media are IGDB's, the same shape on
+    /// every game, and are reference you go to rather than history you arrive
+    /// at. They still light their glyph and still carry a caption, so a closed
+    /// row tells you they are there and what is in them.
+    ///
+    /// Tracker and Notes open even when empty, because their empty state is a
+    /// control rather than an absence.
+
     /// **What a closed section holds, in a few words.**
     ///
     /// Fable's 5.6: the page below the hero was twelve identical grey rows, so
@@ -589,7 +611,10 @@ struct GameDetailView: View {
             // studio — so it is never "empty", just closed.
             return "Release, studio, genres"
         case .connections:
-            return nil   // counted by the section itself, which fetches lazily
+            // Not counted. The matching lives in `RelatedGamesSection` and
+            // duplicating it here to produce a number would run it twice on
+            // every game page. Naming what is inside is enough.
+            return "Series and similar games"
         case .tags:
             return plural(game.userTags.count, "tag", "tags")
         case .review:
@@ -652,6 +677,7 @@ struct GameDetailView: View {
                 VideoListView(game: game, playing: $pagePlaying)
             }
         case .about:
+            // **Yours opens; IGDB's stays closed.** See `sectionOpensByDefault`.
             CollapsibleSection("About", icon: "text.alignleft",
                                caption: caption(for: .about),
                                defaultExpanded: false, scope: scope) {
@@ -660,13 +686,12 @@ struct GameDetailView: View {
                     .foregroundStyle(.secondary)
             }
         case .media:
-            // Collapsed by default: the strip fetches only when rendered, so
-            // a closed section spends no proxy quota.
             CollapsibleSection("Media", icon: "photo.stack",
                                caption: caption(for: .media),
-                               // Still closed by default even when full: the
-                               // strip fetches only when rendered, so a closed
-                               // section spends no proxy quota.
+                               // Closed even when full, and for a second reason
+                               // on top of the rule: the strip fetches only when
+                               // rendered, so a closed section spends no proxy
+                               // quota.
                                defaultExpanded: false, scope: scope) {
                 ScreenshotStrip(game: game)
             }
