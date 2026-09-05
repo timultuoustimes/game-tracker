@@ -155,7 +155,7 @@ struct SchemaFreezeTests {
             // "out on PC, coming to Switch 2" is one game with two true
             // answers). Seed-and-promote before any build that writes it.
             "Game: addedAt,backdropURLString,completionEvents,coverImageID,coverOverrideURLString,coverURLString,createdAt,currentPlaythroughID,deletedAt,developers,firstReleaseDate,franchise,gameModes,genres,id,igdbID,igdbSlug,images,legacyID,logoURLString,maps,memories,name,notes,ownedPlatforms,ownership,pinned,platformReleasesData,platforms,playerPerspectives,playthroughs,publishers,rating,review,revision,sectionStateRaw,showItemHintsOverride,status,summary,themes,trackerDisplayRaw,trackerItemDetails,trackerSchema,updatedAt,userID,userTags,videos",
-            "GameCollection: createdAt,deletedAt,gameIDs,id,isBundle,legacyID,name,notes,revision,sortIndex,updatedAt,userID",
+            "GameCollection: createdAt,deletedAt,filterRuleRaw,gameIDs,id,isBundle,legacyID,name,notes,revision,sortIndex,updatedAt,userID",
             // memory added 2026-09-02 build 36 (V5): a photo can belong to
             // a memory instead of a game. Reused rather than given its own
             // model precisely so the deployed CKAsset fields are not
@@ -214,7 +214,7 @@ struct SchemaFreezeTests {
             // uses them: an unused optional costs nothing and a schema version
             // costs a promote cycle, so a field whose feature is a build away
             // still belongs in the batch deploying today.
-            "ThemeSettings: accentHex,accentHexDark,accentHexLight,accentHue,accentSaturation,appearanceRaw,backdropIntensityRaw,backgroundHex,backgroundHexDark,backgroundHexLight,createdAt,defaultMergeModeRaw,defaultTrackerDisplayRaw,dekuWishlistURLString,expandedSectionsRaw,gamePageLayoutRaw,overlappingTimerPolicyRaw,pageBackgroundRaw,paletteLinked,platformIconVariantsData,savedSwatchesData,showGameLogos,showItemHints,starNamesData,statusColorsData,statusNamesData,updatedAt",
+            "ThemeSettings: accentHex,accentHexDark,accentHexLight,accentHue,accentSaturation,appearanceRaw,backdropIntensityRaw,backgroundHex,backgroundHexDark,backgroundHexLight,createdAt,defaultMergeModeRaw,defaultTrackerDisplayRaw,dekuWishlistURLString,expandedSectionsRaw,gamePageLayoutRaw,homeLayoutRaw,homeSystemsRaw,overlappingTimerPolicyRaw,pageBackgroundRaw,paletteLinked,platformIconVariantsData,savedSwatchesData,showGameLogos,showItemHints,starNamesData,statusColorsData,statusNamesData,updatedAt",
             "TrackerItemDetail: chosenName,createdAt,deletedAt,game,id,itemID,legacyID,note,revision,sourceName,updatedAt,userID",
             "TrackerSchemaRecord: createdAt,deletedAt,engine,game,generatedAt,generatedBy,id,jsonData,legacyID,revision,schemaVersion,source,sourcesJSON,updatedAt,userID",
             "TrackerStateRecord: completed,completedAt,count,createdAt,deletedAt,id,itemID,legacyID,notes,playthrough,rank,revealed,revision,selectedVariant,selectedVariantUpdatedAt,updatedAt,userID",

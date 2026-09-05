@@ -101,6 +101,32 @@ final class ThemeSettings {
     /// Synced, for the same reason `backdropIntensityRaw` is: it is a look,
     /// not a device preference. Someone who prefers the quiet header prefers
     /// it on the iPad too.
+    /// **What Home is made of, in order.**
+    ///
+    /// Comma-joined block descriptors — `status:playing`, `systems`,
+    /// `collections`, `collection:<uuid>`, `filter:<uuid>`. Nil means the
+    /// shipped composition.
+    ///
+    /// Synced, unlike the game page's section order, and for a reason Tim gave
+    /// when asked the same question twice and answered it differently: a game
+    /// page's layout is a reading preference and an iPad has more room for it,
+    /// but *"Home order definitely needs to sync"* — because Home is a picture
+    /// of who you are, and a self-portrait that differs between your phone and
+    /// your iPad is two self-portraits.
+    var homeLayoutRaw: String?
+
+    /// **Which consoles Home shows, in the order you want them.**
+    ///
+    /// Comma-joined platform names. Nil means "all of them, biggest first",
+    /// which is what the Library shelf does today.
+    ///
+    /// One ordered list answers both halves of Tim's question — which systems
+    /// appear IS the list, and the order IS the list. Release order and
+    /// acquisition order are separate asks: the app has no platform release
+    /// years (`PlatformShort.rank` is a taste heuristic for labelling a game,
+    /// not a generation table) and no record of when anyone got a console.
+    var homeSystemsRaw: String?
+
     /// **Which game-page sections open by default, library-wide.**
     ///
     /// Comma-joined `GamePageSection` raw values; nil means the built-in set.

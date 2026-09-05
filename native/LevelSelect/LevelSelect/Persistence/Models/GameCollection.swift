@@ -25,6 +25,19 @@ final class GameCollection {
     /// just a curated grouping and never hides its members.
     var isBundle: Bool = false
 
+    /// **A rule instead of a hand-picked list — a Smart Collection.**
+    ///
+    /// Nil for an ordinary collection. Otherwise an encoded filter, the same
+    /// combination Library already offers: status, system, ownership, tag.
+    ///
+    /// Tim, asked whether a saved filter should be its own noun: *"I think
+    /// saved filters can be smart collections?"* — which is the answer that
+    /// costs one field instead of a model, and inherits the Collections tab,
+    /// the prompts, the naming and the composite art rather than inventing a
+    /// sixth kind of thing for the app to explain.
+    var filterRuleRaw: String?
+
+
     /// Member game ids (`Game.id.uuidString`).
     var gameIDs: [String] = []
 
