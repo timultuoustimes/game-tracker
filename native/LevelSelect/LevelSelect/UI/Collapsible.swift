@@ -17,15 +17,34 @@ struct CollapsibleSection<Content: View>: View {
 
     @AppStorage private var expanded: Bool
 
-    init(_ title: String, icon: String, defaultExpanded: Bool = true,
+    /// What this section holds, in a few words, for when it is closed.
+    ///
+    /// **Nil means empty**, and that one signal does three jobs: the caption
+    /// appears, the glyph takes the accent, and the section opens the first
+    /// time you see the game. Fable's 5.6 asked for the caption; the tint is a
+    /// change to their proposal, which coloured every glyph — eight accent
+    /// glyphs in a column is the "everything shouts" problem Home's shelves
+    /// were just fixed for. Lit only where there is something, the colour says
+    /// where this game's life is instead of decorating a menu.
+    let caption: String?
+
+    init(_ title: String, icon: String, caption: String? = nil,
+         defaultExpanded: Bool? = nil,
          scope: String? = nil,
          @ViewBuilder content: () -> Content) {
         self.title = title
         self.icon = icon
-        self.defaultExpanded = defaultExpanded
+        self.caption = caption
+        // **Open when there is something to open.** A page of twelve closed
+        // rows makes you hunt; a page that opens what this game actually has
+        // answers "what happened here" without a tap. An explicit value still
+        // wins, for the two sections whose EMPTY state is an invitation with a
+        // control in it rather than an absence — Tracker and Notes.
+        let opensByDefault = defaultExpanded ?? (caption != nil)
+        self.defaultExpanded = opensByDefault
         self.content = content()
         let key = scope.map { "section.\($0).\(title)" } ?? "section.\(title)"
-        _expanded = AppStorage(wrappedValue: defaultExpanded, key)
+        _expanded = AppStorage(wrappedValue: opensByDefault, key)
     }
 
     var body: some View {
@@ -35,16 +54,33 @@ struct CollapsibleSection<Content: View>: View {
                     expanded.toggle()
                 }
             } label: {
-                HStack {
-                    Label(title, systemImage: icon)
+                HStack(spacing: 10) {
+                    Image(systemName: icon)
                         .font(.headline)
-                    Spacer()
+                        .foregroundStyle(caption == nil
+                                         ? AnyShapeStyle(.secondary)
+                                         : AnyShapeStyle(LSTheme.accent))
+                        .frame(width: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title).font(.headline)
+                        // Only while closed. Open, the content says it better
+                        // than a summary of the content can.
+                        if let caption, !expanded {
+                            Text(caption)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer(minLength: 0)
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(expanded ? 0 : -90))
                 }
                 .contentShape(.rect)
+                // The glyph repeats the title and the caption repeats what is
+                // inside; one announcement, not three.
+                .accessibilityElement(children: .combine)
             }
             .buttonStyle(.plain)
 

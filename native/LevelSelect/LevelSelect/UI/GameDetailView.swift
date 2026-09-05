@@ -550,6 +550,57 @@ struct GameDetailView: View {
         game.trackerSchema.flatMap { TrackerSchemaJSON.runTemplate(from: $0.jsonData) }
     }
 
+    /// **What a closed section holds, in a few words.**
+    ///
+    /// Fable's 5.6: the page below the hero was twelve identical grey rows, so
+    /// the only way to learn whether a section had anything in it was to open
+    /// all twelve. Nil here means genuinely empty — and `CollapsibleSection`
+    /// reads that one signal three ways: no caption, a grey glyph instead of
+    /// an accent one, and closed on first sight.
+    private func caption(for section: GamePageSection) -> String? {
+        func plural(_ n: Int, _ one: String, _ many: String) -> String? {
+            n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
+        }
+        switch section {
+        case .sessions:
+            let played = game.livePlaythroughs.reduce(0) { $0 + $1.totalPlaytime() }
+            let count = game.livePlaythroughs.reduce(0) { $0 + ($1.sessions ?? []).filter { $0.deletedAt == nil }.count }
+            guard count > 0 else { return nil }
+            return played > 0
+                ? "\(Format.duration(played)) over \(plural(count, "session", "sessions") ?? "")"
+                : plural(count, "session", "sessions")
+        case .beaten:
+            return plural((game.completionEvents ?? []).filter { $0.deletedAt == nil }.count,
+                          "time", "times")
+        case .runs:
+            return nil   // the section only exists when there is a template
+        case .tracker:
+            return game.trackerSchema == nil ? nil : "Set up"
+        case .videos:
+            return plural((game.videos ?? []).filter { $0.deletedAt == nil }.count,
+                          "video", "videos")
+        case .about:
+            let summary = game.summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return summary.isEmpty ? nil : "From IGDB"
+        case .media:
+            return plural(game.liveImages.count, "picture", "pictures")
+        case .info:
+            // Always has something to say — a platform, a release year, a
+            // studio — so it is never "empty", just closed.
+            return "Release, studio, genres"
+        case .connections:
+            return nil   // counted by the section itself, which fetches lazily
+        case .tags:
+            return plural(game.userTags.count, "tag", "tags")
+        case .review:
+            guard let r = game.rating, r > 0 else { return nil }
+            return "\(r) of 5"
+        case .notes:
+            let n = game.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            return n.isEmpty ? nil : "Written"
+        }
+    }
+
     /// One game-page section, collapse state scoped to this game — the
     /// title-only key collapsed a section on every game at once.
     @ViewBuilder
@@ -557,12 +608,13 @@ struct GameDetailView: View {
         let scope = game.id.uuidString
         switch section {
         case .sessions:
-            CollapsibleSection("Sessions", icon: "stopwatch", scope: scope) {
+            CollapsibleSection("Sessions", icon: "stopwatch",
+                               caption: caption(for: .sessions), scope: scope) {
                 SessionControlsView(game: game)
             }
         case .beaten:
             CollapsibleSection("Beaten", icon: "flag.checkered",
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .beaten), scope: scope) {
                 CompletionSection(game: game)
             }
         case .runs:
@@ -573,12 +625,17 @@ struct GameDetailView: View {
             // branch meant turning on "Log Runs for This Game" in compact
             // changed nothing you could see, so the menu item read as broken.
             if let template = runTemplate {
-                CollapsibleSection("Runs", icon: "arrow.2.squarepath", scope: scope) {
+                CollapsibleSection("Runs", icon: "arrow.2.squarepath",
+                                   caption: caption(for: .runs), scope: scope) {
                     RunSectionView(game: game, template: template)
                 }
             }
         case .tracker:
-            CollapsibleSection("Tracker", icon: "checklist", scope: scope) {
+            // Open even when empty: the empty state here is "Set up a
+            // tracker", a control rather than an absence.
+            CollapsibleSection("Tracker", icon: "checklist",
+                               caption: caption(for: .tracker),
+                               defaultExpanded: true, scope: scope) {
                 // Above both display modes: the question "what was I
                 // doing?" is the same one whether the checklist is inline
                 // or behind a card.
@@ -591,11 +648,12 @@ struct GameDetailView: View {
             }
         case .videos:
             CollapsibleSection("Guides & Videos", icon: "play.rectangle",
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .videos), scope: scope) {
                 VideoListView(game: game, playing: $pagePlaying)
             }
         case .about:
             CollapsibleSection("About", icon: "text.alignleft",
+                               caption: caption(for: .about),
                                defaultExpanded: false, scope: scope) {
                 Text(game.summary ?? "")
                     .font(.subheadline)
@@ -605,30 +663,41 @@ struct GameDetailView: View {
             // Collapsed by default: the strip fetches only when rendered, so
             // a closed section spends no proxy quota.
             CollapsibleSection("Media", icon: "photo.stack",
+                               caption: caption(for: .media),
+                               // Still closed by default even when full: the
+                               // strip fetches only when rendered, so a closed
+                               // section spends no proxy quota.
                                defaultExpanded: false, scope: scope) {
                 ScreenshotStrip(game: game)
             }
         case .info:
             CollapsibleSection("Game Info", icon: "info.circle",
+                               caption: caption(for: .info),
                                defaultExpanded: false, scope: scope) {
                 gameInfo
             }
         case .connections:
             CollapsibleSection("Connections", icon: "point.3.connected.trianglepath.dotted",
+                               caption: caption(for: .connections),
                                defaultExpanded: false, scope: scope) {
                 RelatedGamesSection(game: game)
             }
         case .tags:
-            CollapsibleSection("Tags", icon: "tag", defaultExpanded: false, scope: scope) {
+            CollapsibleSection("Tags", icon: "tag",
+                               caption: caption(for: .tags), scope: scope) {
                 tagsEditor
             }
         case .review:
             CollapsibleSection("Review", icon: "star.bubble",
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .review), scope: scope) {
                 reviewEditor
             }
         case .notes:
-            CollapsibleSection("Notes", icon: "note.text", scope: scope) {
+            // Open even when empty, like Tracker: an empty Notes is a
+            // field waiting for you, not a section with nothing in it.
+            CollapsibleSection("Notes", icon: "note.text",
+                               caption: caption(for: .notes),
+                               defaultExpanded: true, scope: scope) {
                 notesField
             }
         }
