@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// The game page's sections, in default order — the same shape as
 /// `StatsCard`: reorder by drag, hide by switch, stored device-local in
@@ -57,6 +58,57 @@ enum GamePageSection: String, CaseIterable, Identifiable {
     /// at their default position relative to the ones around them — so a
     /// future build's new section appears for arranged users exactly as it
     /// does for fresh installs. Same algorithm as `StatsCard.resolveOrder`.
+    /// **The sections that open on a game you have never touched.**
+    ///
+    /// Tim's minimum, plus the two whose empty state is a control: *"at minimum
+    /// it should be game info and connections. It's weird right now that I
+    /// can't see anything about the game itself aside from the cover and
+    /// title."* About is deliberately NOT here — it is the long one, a wall of
+    /// IGDB prose on every game — but it is one toggle away in Settings, which
+    /// is the point of making this settable rather than deciding it for people.
+    static let builtInExpanded: Set<GamePageSection> =
+        [.sessions, .tracker, .info, .connections, .notes]
+
+    /// The library-wide default, from settings or the built-in set.
+    static func defaultExpanded(stored: String?) -> Set<GamePageSection> {
+        guard let stored else { return builtInExpanded }
+        // An empty string is a real answer — "open nothing" — and must not
+        // fall through to the built-in set.
+        return Set(stored.split(separator: ",").compactMap { GamePageSection(rawValue: String($0)) })
+    }
+
+    /// Whether THIS section on THIS game opens, default plus any override.
+    static func isExpanded(_ section: GamePageSection,
+                           defaults: Set<GamePageSection>,
+                           overrides: String?) -> Bool {
+        if let value = overrideMap(overrides)[section] { return value }
+        return defaults.contains(section)
+    }
+
+    static func overrideMap(_ raw: String?) -> [GamePageSection: Bool] {
+        var map: [GamePageSection: Bool] = [:]
+        for pair in (raw ?? "").split(separator: ",") {
+            let parts = pair.split(separator: ":")
+            guard parts.count == 2, let s = GamePageSection(rawValue: String(parts[0])) else { continue }
+            map[s] = parts[1] == "1"
+        }
+        return map
+    }
+
+    /// Writing an override back. A choice that MATCHES the default is dropped
+    /// rather than stored, so a game stops disagreeing once it agrees again —
+    /// otherwise changing the library default would leave games pinned to the
+    /// old one with nothing on screen explaining why.
+    static func writingOverride(_ section: GamePageSection, open: Bool,
+                                into raw: String?,
+                                defaults: Set<GamePageSection>) -> String? {
+        var map = overrideMap(raw)
+        if open == defaults.contains(section) { map[section] = nil } else { map[section] = open }
+        guard !map.isEmpty else { return nil }
+        return allCases.compactMap { s in map[s].map { "\(s.rawValue):\($0 ? 1 : 0)" } }
+            .joined(separator: ",")
+    }
+
     static func resolveOrder(stored: String) -> [GamePageSection] {
         let chosen = stored.split(separator: ",").compactMap { GamePageSection(rawValue: String($0)) }
         guard !chosen.isEmpty else { return Array(allCases) }
@@ -86,7 +138,28 @@ struct GameArrangeSheet: View {
     @Binding var orderRaw: String
     @Binding var hiddenRaw: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @Query private var themeSettings: [ThemeSettings]
     @AppStorage("gamePageShowStats") private var showGameStats = true
+
+    private var expandedDefaults: Set<GamePageSection> {
+        GamePageSection.defaultExpanded(stored: themeSettings.first?.expandedSectionsRaw)
+    }
+
+    private func expandedBinding(_ section: GamePageSection) -> Binding<Bool> {
+        Binding(
+            get: { expandedDefaults.contains(section) },
+            set: { open in
+                var next = expandedDefaults
+                if open { next.insert(section) } else { next.remove(section) }
+                let settings = ThemePalette.fetchOrCreate(in: context)
+                // Ordered by `allCases` so the stored string is stable and two
+                // devices that set the same sections write the same value.
+                settings.expandedSectionsRaw = GamePageSection.allCases
+                    .filter(next.contains).map(\.rawValue).joined(separator: ",")
+                settings.updatedAt = .now
+            })
+    }
 
     private var order: [GamePageSection] { GamePageSection.resolveOrder(stored: orderRaw) }
     private var hidden: Set<GamePageSection> { GamePageSection.hiddenSet(stored: hiddenRaw) }
@@ -126,6 +199,23 @@ struct GameArrangeSheet: View {
                     Text("Sections")
                 } footer: {
                     Text("Applies to every game page on this device. Hidden sections keep their contents — nothing is deleted.")
+                }
+
+                Section {
+                    ForEach(order.filter { !hidden.contains($0) }) { section in
+                        Toggle(isOn: expandedBinding(section)) {
+                            Label(section.displayName, systemImage: section.icon)
+                        }
+                        .tint(LSTheme.accent)
+                    }
+                } header: {
+                    Text("Open by default")
+                } footer: {
+                    // Says both halves, because the second one is what makes
+                    // the first safe to change: a game you have adjusted keeps
+                    // its own answer, and adjusting one game never silently
+                    // rewrites the rest.
+                    Text("Which sections start open on a game you haven't adjusted. Unlike order and hiding, this follows you to your other devices — and so does closing a section on one particular game.")
                 }
             }
             #if !os(macOS)

@@ -190,6 +190,14 @@ final class Game {
     var ownedPlatforms: [String]?
     /// How the game is owned (raw `Ownership` values; multi-select).
     var ownership: [String] = []
+    /// **Sections this game disagrees with the default about.**
+    ///
+    /// `"about:1,media:0"` — only the ones you have actually toggled here, so
+    /// changing the library-wide default still moves every game you never
+    /// touched. Synced, because closing Connections on a game you know inside
+    /// out should be true on the iPad too.
+    var sectionStateRaw: String?
+
     var userTags: [String] = []
     var genres: [String] = []
     var themes: [String] = []

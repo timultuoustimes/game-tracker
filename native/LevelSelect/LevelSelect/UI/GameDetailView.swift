@@ -16,6 +16,7 @@ struct GameDetailView: View {
     /// Automatically-found wordmark, when the user hasn't chosen one.
     @State private var fetchedLogo: URL?
     /// Library-wide reading preference, device-local like the Stats cards.
+    @Query private var themeSettings: [ThemeSettings]
     @AppStorage("gameSectionOrder") private var sectionOrderRaw = ""
     @AppStorage("gameHiddenSections") private var hiddenSectionsRaw = ""
     @State private var browserTarget: DekuLinkTarget?
@@ -550,6 +551,22 @@ struct GameDetailView: View {
         game.trackerSchema.flatMap { TrackerSchemaJSON.runTemplate(from: $0.jsonData) }
     }
 
+    /// One section's open state: the synced library default, overridden by
+    /// anything this game disagrees about, written back to the game.
+    private func expansion(_ section: GamePageSection) -> Binding<Bool> {
+        let defaults = GamePageSection.defaultExpanded(stored: themeSettings.first?.expandedSectionsRaw)
+        return Binding(
+            get: {
+                GamePageSection.isExpanded(section, defaults: defaults,
+                                           overrides: game.sectionStateRaw)
+            },
+            set: { open in
+                game.sectionStateRaw = GamePageSection.writingOverride(
+                    section, open: open, into: game.sectionStateRaw, defaults: defaults)
+                game.updatedAt = .now
+            })
+    }
+
     /// **Which sections open on arrival, and why the reference ones do not.**
     ///
     /// The rule shipped as "open when it has something in it", and Tim caught
@@ -630,16 +647,15 @@ struct GameDetailView: View {
     /// title-only key collapsed a section on every game at once.
     @ViewBuilder
     private func sectionView(_ section: GamePageSection, stageMode: Bool) -> some View {
-        let scope = game.id.uuidString
         switch section {
         case .sessions:
             CollapsibleSection("Sessions", icon: "stopwatch",
-                               caption: caption(for: .sessions), scope: scope) {
+                               caption: caption(for: .sessions), isExpanded: expansion(.sessions)) {
                 SessionControlsView(game: game)
             }
         case .beaten:
             CollapsibleSection("Beaten", icon: "flag.checkered",
-                               caption: caption(for: .beaten), scope: scope) {
+                               caption: caption(for: .beaten), isExpanded: expansion(.beaten)) {
                 CompletionSection(game: game)
             }
         case .runs:
@@ -651,7 +667,7 @@ struct GameDetailView: View {
             // changed nothing you could see, so the menu item read as broken.
             if let template = runTemplate {
                 CollapsibleSection("Runs", icon: "arrow.2.squarepath",
-                                   caption: caption(for: .runs), scope: scope) {
+                                   caption: caption(for: .runs), isExpanded: expansion(.runs)) {
                     RunSectionView(game: game, template: template)
                 }
             }
@@ -659,8 +675,7 @@ struct GameDetailView: View {
             // Open even when empty: the empty state here is "Set up a
             // tracker", a control rather than an absence.
             CollapsibleSection("Tracker", icon: "checklist",
-                               caption: caption(for: .tracker),
-                               defaultExpanded: true, scope: scope) {
+                               caption: caption(for: .tracker), isExpanded: expansion(.tracker)) {
                 // Above both display modes: the question "what was I
                 // doing?" is the same one whether the checklist is inline
                 // or behind a card.
@@ -673,56 +688,47 @@ struct GameDetailView: View {
             }
         case .videos:
             CollapsibleSection("Guides & Videos", icon: "play.rectangle",
-                               caption: caption(for: .videos), scope: scope) {
+                               caption: caption(for: .videos), isExpanded: expansion(.videos)) {
                 VideoListView(game: game, playing: $pagePlaying)
             }
         case .about:
             // **Yours opens; IGDB's stays closed.** See `sectionOpensByDefault`.
             CollapsibleSection("About", icon: "text.alignleft",
-                               caption: caption(for: .about),
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .about), isExpanded: expansion(.about)) {
                 Text(game.summary ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
         case .media:
             CollapsibleSection("Media", icon: "photo.stack",
-                               caption: caption(for: .media),
-                               // Closed even when full, and for a second reason
-                               // on top of the rule: the strip fetches only when
-                               // rendered, so a closed section spends no proxy
-                               // quota.
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .media), isExpanded: expansion(.media)) {
                 ScreenshotStrip(game: game)
             }
         case .info:
             CollapsibleSection("Game Info", icon: "info.circle",
-                               caption: caption(for: .info),
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .info), isExpanded: expansion(.info)) {
                 gameInfo
             }
         case .connections:
             CollapsibleSection("Connections", icon: "point.3.connected.trianglepath.dotted",
-                               caption: caption(for: .connections),
-                               defaultExpanded: false, scope: scope) {
+                               caption: caption(for: .connections), isExpanded: expansion(.connections)) {
                 RelatedGamesSection(game: game)
             }
         case .tags:
             CollapsibleSection("Tags", icon: "tag",
-                               caption: caption(for: .tags), scope: scope) {
+                               caption: caption(for: .tags), isExpanded: expansion(.tags)) {
                 tagsEditor
             }
         case .review:
             CollapsibleSection("Review", icon: "star.bubble",
-                               caption: caption(for: .review), scope: scope) {
+                               caption: caption(for: .review), isExpanded: expansion(.review)) {
                 reviewEditor
             }
         case .notes:
             // Open even when empty, like Tracker: an empty Notes is a
             // field waiting for you, not a section with nothing in it.
             CollapsibleSection("Notes", icon: "note.text",
-                               caption: caption(for: .notes),
-                               defaultExpanded: true, scope: scope) {
+                               caption: caption(for: .notes), isExpanded: expansion(.notes)) {
                 notesField
             }
         }

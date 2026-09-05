@@ -101,6 +101,20 @@ final class ThemeSettings {
     /// Synced, for the same reason `backdropIntensityRaw` is: it is a look,
     /// not a device preference. Someone who prefers the quiet header prefers
     /// it on the iPad too.
+    /// **Which game-page sections open by default, library-wide.**
+    ///
+    /// Comma-joined `GamePageSection` raw values; nil means the built-in set.
+    /// Synced, unlike section ORDER and HIDING, which stay device-local — Tim
+    /// asked for this one specifically to follow him: *"I think we let people
+    /// set their own default expanded sections that syncs across devices."*
+    ///
+    /// It replaced a rule that opened a section when it had content. That was
+    /// clever and wrong twice: on a generated tracker it opened Joule Boxes
+    /// over Story Progression, and on a game page it would have opened a wall
+    /// of IGDB prose identically on every game. What you want open is a
+    /// preference, not something to infer.
+    var expandedSectionsRaw: String?
+
     var gamePageLayoutRaw: String?
 
     /// Your own words on the five stars — JSON array of exactly five strings,

@@ -15,7 +15,18 @@ struct CollapsibleSection<Content: View>: View {
     var defaultExpanded = true
     @ViewBuilder var content: Content
 
-    @AppStorage private var expanded: Bool
+    /// Device-local fallback, for sections that are not game-page sections.
+    @AppStorage private var storedExpanded: Bool
+    /// Supplied by the game page, which resolves a synced default against a
+    /// synced per-game override. When present it wins outright.
+    private var external: Binding<Bool>?
+
+    private var expanded: Bool {
+        get { external?.wrappedValue ?? storedExpanded }
+        nonmutating set {
+            if let external { external.wrappedValue = newValue } else { storedExpanded = newValue }
+        }
+    }
 
     /// What this section holds, in a few words, for when it is closed.
     ///
@@ -27,6 +38,21 @@ struct CollapsibleSection<Content: View>: View {
     /// were just fixed for. Lit only where there is something, the colour says
     /// where this game's life is instead of decorating a menu.
     let caption: String?
+
+    /// The game page's initialiser: expansion comes from the model, not from
+    /// this device's defaults.
+    init(_ title: String, icon: String, caption: String? = nil,
+         isExpanded: Binding<Bool>,
+         @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.icon = icon
+        self.caption = caption
+        self.defaultExpanded = isExpanded.wrappedValue
+        self.external = isExpanded
+        self.content = content()
+        _storedExpanded = AppStorage(wrappedValue: isExpanded.wrappedValue,
+                                     "section.unused.\(title)")
+    }
 
     init(_ title: String, icon: String, caption: String? = nil,
          defaultExpanded: Bool? = nil,
@@ -44,7 +70,7 @@ struct CollapsibleSection<Content: View>: View {
         self.defaultExpanded = opensByDefault
         self.content = content()
         let key = scope.map { "section.\($0).\(title)" } ?? "section.\(title)"
-        _expanded = AppStorage(wrappedValue: opensByDefault, key)
+        _storedExpanded = AppStorage(wrappedValue: opensByDefault, key)
     }
 
     var body: some View {
