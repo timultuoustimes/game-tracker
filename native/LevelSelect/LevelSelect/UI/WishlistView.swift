@@ -124,20 +124,34 @@ struct WishlistTab: View {
                             .frame(width: store.isConfigured ? 380 : 260)
                     }
                 } else {
-                    VStack(spacing: 0) {
+            // **`safeAreaInset`, not a `VStack` sibling.**
+            //
+            // A navigation bar tracks ONE scroll view to decide when to
+            // collapse its large title and raise its glass. Put a non-scrolling
+            // view between the bar and the scroll view in a VStack and the bar
+            // finds nothing to track: the title stays large forever and the
+            // material never appears. That is the "hard top header that does
+            // not move" Tim recorded on Library, Wishlist and Journal — the
+            // three tabs shaped this way — while Home, whose scroll view is the
+            // direct child, had a different symptom entirely.
+            //
+            // `safeAreaInset` pins the same chrome in the same place and leaves
+            // the scroll view where the bar can see it.
+                    Group {
+                        if pane == .yours { yours } else { dekuPane }
+                    }
+                    .safeAreaInset(edge: .top, spacing: 0) {
                         Picker("Wishlist", selection: $pane) {
                             ForEach(Pane.allCases) { Text($0.label).tag($0) }
                         }
                         .pickerStyle(.segmented)
                         .padding(.horizontal)
                         .padding(.bottom, 8)
-                        if pane == .yours { yours } else { dekuPane }
                     }
                 }
             }
             .lsBackground()
             .navigationTitle("Wishlist")
-            .lsWordmarkHeader()
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
             .searchable(text: $searchText, prompt: "Search wishlist")
             .searchFocused($searchFocused)

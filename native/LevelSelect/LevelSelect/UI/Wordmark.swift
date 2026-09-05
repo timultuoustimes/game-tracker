@@ -93,19 +93,24 @@ struct Wordmark: View {
 extension View {
     /// The wordmark, pinned to the leading edge of the navigation bar.
     ///
-    /// **One fixed anchor across every tab.** It used to sit `.principal` on
-    /// Home only — centred, so its position depended on how many toolbar
-    /// buttons the tab happened to have, and it vanished entirely on the other
-    /// three. Tim: *"carry it across in the upper part of the header into every
-    /// tab, not replace what was already there with it."*
+    /// **Home only.** It was on all four tabs for a day. Fable argued against
+    /// that before it shipped — *"The wordmark on Home says 'this is the app';
+    /// on Library it would say 'this is a brand'"* — Tim asked for it anyway,
+    /// looked at it, and agreed: *"it feels weird to have the app name on every
+    /// tab, just like Fable said it would. I think it was the wrong call."*
     ///
-    /// Leading rather than principal is what lets the tab keep its own large
-    /// title: a large title collapses into the CENTRE of the bar on scroll, so
-    /// a centred wordmark would collide with it. Pinned left, the two coexist —
-    /// the mark says which app, the title says which screen.
+    /// It cost more than a word, too. On a tab with a large title the mark sits
+    /// in its own band above that title, so Library spent a row of the screen
+    /// saying something the reader already knew. Removing it lets the system do
+    /// what it does everywhere else and the gap closes — which is what Tim
+    /// asked for, pointing at Gamery.
     ///
-    /// Hidden from VoiceOver: it is the same word on every screen, and the
-    /// navigation title already names where you are.
+    /// Home keeps it because Home has no large title and its art bleeds to the
+    /// top edge, so the mark sits ON the artwork rather than in a band of its
+    /// own — no row spent, and it is the one screen where naming the app is
+    /// the point.
+    ///
+    /// Hidden from VoiceOver: the navigation title already names where you are.
     func lsWordmarkHeader() -> some View {
         #if os(macOS)
         return self

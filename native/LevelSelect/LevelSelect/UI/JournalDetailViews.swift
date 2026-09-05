@@ -263,7 +263,11 @@ struct MemoryView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     if let detail = memory.detailLine {
-                        Label(detail, systemImage: "sparkles")
+                        // `tag`, not the memory glyph: this line is the
+                        // entry's labels — kind, console, place — not the
+                        // entry itself, and the mark beside a heading should
+                        // not be the same one that marks the whole thing.
+                        Label(detail, systemImage: "tag")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }

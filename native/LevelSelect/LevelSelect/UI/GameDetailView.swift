@@ -655,24 +655,6 @@ struct GameDetailView: View {
             .background(alignment: .top) { scrollingBackdrop(topInset: topInset) }
         }
         .scrollIndicators(.hidden)
-        // Soft, not the default `.hard`. See RootView: iOS 26's scroll edge
-        // effect draws a crisp line where content meets a bar unless told
-        // otherwise, and one screen fading while the rest cut is worse than
-        // either done consistently.
-        //
-        // ⚠️ **Nothing may wrap this scroll view.** Builds 33, 34 and 35 are
-        // byte-identical here — `ScrollView` and this line, no background
-        // modifier — and that is the version with a working frosted header.
-        // `.lsBackground()` was added on 2026-09-02 to give the page a themed
-        // ground and silently took the scroll edge effect with it: the bar
-        // became a plain blur. Moving the ground into a ZStack to win the
-        // effect back was worse — a ZStack sizes to its largest child, the
-        // ground ignores the safe area, so the scroll view inherited a frame
-        // with nothing left to scroll at all.
-        //
-        // The page's light-mode ground is therefore still unsolved, and wants a
-        // mechanism that does not touch this view.
-        .scrollEdgeEffectStyle(.soft, for: .top)
         // The handoff point is the header card's own title. Below it the name
         // is on screen in full; above it, the bar takes over.
         .onScrollGeometryChange(for: CGFloat.self) { geometry in

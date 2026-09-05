@@ -49,10 +49,30 @@ struct JournalTab: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Pinned rather than scrolled with the content: this is how you
-                // move between the two halves of the tab, so it does not get to
-                // disappear once you are reading.
+            // **`safeAreaInset`, not a `VStack` sibling.**
+            //
+            // A navigation bar tracks ONE scroll view to decide when to
+            // collapse its large title and raise its glass. Put a non-scrolling
+            // view between the bar and the scroll view in a VStack and the bar
+            // finds nothing to track: the title stays large forever and the
+            // material never appears. That is the "hard top header that does
+            // not move" Tim recorded on Library, Wishlist and Journal — the
+            // three tabs shaped this way — while Home, whose scroll view is the
+            // direct child, had a different symptom entirely.
+            //
+            // `safeAreaInset` pins the same chrome in the same place and leaves
+            // the scroll view where the bar can see it.
+            Group {
+                switch lens {
+                case .timeline: JournalTimeline()
+                case .calendar: JournalCalendarView()
+                case .charts:   StatsCards()
+                }
+            }
+            // Pinned rather than scrolled with the content: this is how you
+            // move between the two halves of the tab, so it does not get to
+            // disappear once you are reading.
+            .safeAreaInset(edge: .top, spacing: 0) {
                 Picker("View", selection: Binding(
                     get: { lens },
                     set: { lensRaw = $0.rawValue })) {
@@ -64,16 +84,9 @@ struct JournalTab: View {
                 .labelsHidden()
                 .padding(.horizontal)
                 .padding(.bottom, 8)
-
-                switch lens {
-                case .timeline: JournalTimeline()
-                case .calendar: JournalCalendarView()
-                case .charts:   StatsCards()
-                }
             }
             .lsBackground()
             .navigationTitle("Journal")
-            .lsWordmarkHeader()
             // Glass, like Home — see LibraryView.
             #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
@@ -278,7 +291,8 @@ private struct JournalRow: View {
                     .fill(LSTheme.accent.opacity(0.16))
                     .frame(width: 44, height: 44)
                     .overlay {
-                        Image(systemName: "sparkles").foregroundStyle(LSTheme.accent)
+                        Image(systemName: JournalEntry.Kind.memory.icon)
+                            .foregroundStyle(LSTheme.accent)
                     }
             } else if let game = entry.game {
                 CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)

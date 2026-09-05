@@ -729,7 +729,18 @@ struct HomeTab: View {
             // is what King Kai kept showing through two toolbar-background
             // fixes: the bar's background was not drawing it, this was. `.soft`
             // is the gradual fade, which is what the art wants.
-            .scrollEdgeEffectStyle(.soft, for: .top)
+            // **Do not put `.scrollEdgeEffectStyle(.soft)` back.**
+            //
+            // Every scroll view in the app carried it, added to kill "a crisp
+            // line where content meets a bar". That line is not a defect — it
+            // is the EDGE of iOS 26's glass, and `.soft` trades the material
+            // away for a plain fade. Which is why the frosted header looked
+            // broken for three days and looked broken on every surface except
+            // Settings, the one screen that never had the modifier. Tim
+            // settled it by pointing at another app: *"It's also not the beta
+            // breaking the header turning to glass, because gamery's works."*
+            // Reproduced on the simulator by scrolling — something none of the
+            // earlier passes had done — and fixed in one line.
             // ONLY when the header paints art. Without a header, letting
             // content start under the bar would put Continue Playing behind
             // the toolbar at rest, which is a bug rather than an effect.

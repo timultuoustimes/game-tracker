@@ -466,7 +466,7 @@ private struct MonthSummary: View {
                 LSStatTile(icon: "flag.checkered", number: "\(finishes)",
                            label: finishes == 1 ? "Finish" : "Finishes")
             } else {
-                LSStatTile(icon: "sparkles", number: "\(memories)",
+                LSStatTile(icon: JournalEntry.Kind.memory.icon, number: "\(memories)",
                            label: memories == 1 ? "Memory" : "Memories")
             }
         }

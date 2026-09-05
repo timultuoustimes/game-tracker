@@ -22,7 +22,17 @@ struct JournalEntry: Identifiable {
         var icon: String {
             switch self {
             case .play:   "gamecontroller.fill"
-            case .memory: "sparkles"
+            // NOT sparkles. That glyph means "the machine made this" —
+            // platform-wide, and in this app specifically on Generate with AI,
+            // Suggest Categories and Collection from a Prompt. A memory is the
+            // opposite: the one kind of entry that only a person can write.
+            // Tim: *"It feels weird that the icon for 'generate with AI' and
+            // for a memory are the sparkles. They shouldn't be the same."*
+            //
+            // `text.quote` keeps the app's document vocabulary — a scroll for
+            // Home, a closed book for the Journal — and reads as something
+            // recounted, which is what a memory is.
+            case .memory: "text.quote"
             }
         }
     }

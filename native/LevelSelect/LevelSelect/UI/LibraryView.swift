@@ -57,10 +57,21 @@ struct LibraryTab: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                filterBar
-                content
-            }
+            // **`safeAreaInset`, not a `VStack` sibling.**
+            //
+            // A navigation bar tracks ONE scroll view to decide when to
+            // collapse its large title and raise its glass. Put a non-scrolling
+            // view between the bar and the scroll view in a VStack and the bar
+            // finds nothing to track: the title stays large forever and the
+            // material never appears. That is the "hard top header that does
+            // not move" Tim recorded on Library, Wishlist and Journal — the
+            // three tabs shaped this way — while Home, whose scroll view is the
+            // direct child, had a different symptom entirely.
+            //
+            // `safeAreaInset` pins the same chrome in the same place and leaves
+            // the scroll view where the bar can see it.
+            content
+                .safeAreaInset(edge: .top, spacing: 0) { filterBar }
             .lsBackground()
             // "See all" on a Home shelf lands here, filtered, rather than
             // pushing a list onto Home's own stack. Consumed on arrival so
@@ -85,7 +96,6 @@ struct LibraryTab: View {
                 searchText = ""
             }
             .navigationTitle("Library")
-            .lsWordmarkHeader()
             .navigationDestination(for: Game.self) { GameDetailView(game: $0) }
             .navigationDestination(for: GameFacet.self) { FacetGamesView(facet: $0) }
             // Each tab owns its stack, so a route appended here has to be
@@ -229,6 +239,14 @@ struct LibraryTab: View {
 
     private var gridView: some View {
         ScrollView {
+            // **The shelves pad themselves; everything else pads itself.**
+            //
+            // This used to put `.padding(.horizontal)` on the whole stack — and
+            // `SystemsRow` and `CollectionShelf` were built for Home, where
+            // they sit in an UNPADDED stack and carry their own inset. So they
+            // paid it twice and stood 32pt in while the chips above them and
+            // the grid below them stood at 16. Tim drew a line down the left
+            // edge of the screen to show it.
             LazyVStack(alignment: .leading, spacing: 18) {
                 systemsShelf
                 collectionShelf
@@ -236,21 +254,18 @@ struct LibraryTab: View {
                     ForEach(groups.indices, id: \.self) { i in
                         sectionHeader(title: groups[i].title, status: groups[i].status,
                                       platform: groups[i].platform, count: groups[i].items.count)
+                            .padding(.horizontal)
                         grid(groups[i].items)
+                            .padding(.horizontal)
                     }
                 } else {
                     grid(sorted)
+                        .padding(.horizontal)
                 }
             }
-            .padding(.horizontal)
             .padding(.vertical, 10)
         }
         .scrollIndicators(.hidden)
-        // Soft, not the default `.hard`. See RootView: iOS 26's scroll edge
-        // effect draws a crisp line where content meets a bar unless told
-        // otherwise, and one screen fading while the rest cut is worse than
-        // either done consistently.
-        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     /// Home's shape, brought to Library as a CHOICE rather than a duplicate.
@@ -297,7 +312,6 @@ struct LibraryTab: View {
             .padding(.vertical, 10)
         }
         .scrollIndicators(.hidden)
-        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     /// Enough to browse, few enough that the shelf below it is still reachable.
