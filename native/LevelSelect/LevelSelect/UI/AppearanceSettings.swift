@@ -51,11 +51,8 @@ struct AppearanceSettingsSection: View {
             personalization
                 .onDisappear { flushThemeCommit() }
         case .gamePages:
+            // The sheet is NOT here. See the button that raises it.
             gamePagesAndTrackers
-                .sheet(isPresented: $arrangingPages) {
-                    GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
-                        .lsSheet()
-                }
         }
     }
 
@@ -297,6 +294,23 @@ struct AppearanceSettingsSection: View {
                 arrangingPages = true
             } label: {
                 Label("Arrange game pages…", systemImage: "arrow.up.arrow.down")
+            }
+            // **On the row, not on the Section.**
+            //
+            // A `.sheet` attached to a `Section` becomes one sheet per CHILD,
+            // all bound to the same flag — so tapping this raised four or five
+            // presentations at once and they cancelled each other: the sheet
+            // slid up and shut again immediately. Tim: *"when I tap 'arrange
+            // game pages' it starts to slide up and then closes almost
+            // immediately."*
+            //
+            // A row is a single view, so the modifier stays singular — the same
+            // fix and the same reasoning as `DataSettingsSection`. It has to be
+            // an UNCONDITIONAL row: hang it on something that can disappear and
+            // the sheet goes with it.
+            .sheet(isPresented: $arrangingPages) {
+                GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)
+                    .lsSheet()
             }
         } header: {
             Text("Game pages & trackers")
