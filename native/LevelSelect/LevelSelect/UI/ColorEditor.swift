@@ -263,6 +263,30 @@ struct ColorEditor: View {
         "#5AA9E6", "#54C6C6", "#57C785", "#9BC53D",
     ]
 
+    /// **The palette, as hue and saturation rather than fixed colours.**
+    ///
+    /// Fixed hexes could not be a palette here. Each one is a single lightness,
+    /// so it reads on one ground and not the other, and the grid came back
+    /// mostly struck through — what survived was a remainder, not a set. These
+    /// resolve through `resolved(hue:saturation:)`, so every entry works on
+    /// whichever appearance is being edited.
+    ///
+    /// Twelve, evenly spaced round the wheel, because the old list was an
+    /// ad-hoc nineteen with several near-duplicates — Tim: *"some of the
+    /// background selections all read as basically the same."* Even spacing is
+    /// what makes neighbours look like different choices.
+    private static let palette: [(h: Double, s: Double)] =
+        (0..<12).map { (h: Double($0) / 12.0, s: 0.62) }
+
+    /// The app's own four, kept as hue and saturation so they resolve like the
+    /// rest. Torch orange, brand purple, the ground's own deep purple, and the
+    /// darker orange under pixel type.
+    private static let brandPalette: [(h: Double, s: Double)] =
+        ["#F5A34D", "#8A5CF6", "#4C2A8C", "#8A4B12"].map { hex in
+            let v = hsb(Color(hex: hex) ?? .gray)
+            return (h: v.h, s: v.s)
+        }
+
     private let columns = [GridItem(.adaptive(minimum: 46), spacing: 10)]
 
     var body: some View {
@@ -302,14 +326,11 @@ struct ColorEditor: View {
 
                     preview
 
-                swatchGroup("LevelSelect", Self.brandSwatches.filter(usable))
-                swatchGroup(nil, Self.swatches.filter(usable))
-                // Kept and grouped rather than scattered through the grid.
-                // Tim: *"Can we group the dark tints and group the light
-                // tints?"* Strikethroughs mixed into one list read as damage;
-                // a named group reads as an explanation.
-                swatchGroup("Not readable on this ground",
-                            (Self.brandSwatches + Self.swatches).filter { !usable($0) })
+                // No "Not readable on this ground" group any more, because
+                // there is nothing to put in it — every entry resolves for the
+                // appearance being edited.
+                hueGroup("LevelSelect", Self.brandPalette)
+                hueGroup(nil, Self.palette)
 
                 if !saved.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
@@ -327,33 +348,18 @@ struct ColorEditor: View {
 
                 hexRow
 
-                // Two ways into the same three numbers. Sliders are precise
-                // and say what they are; a wheel is faster when you are
-                // hunting rather than adjusting. Neither is a second colour
-                // model — swiping between them changes nothing but the input.
-                TabView {
-                    VStack(spacing: 10) {
-                        slider("Hue", value: $hue, track: hueTrack)
-                        slider("Saturation", value: $saturation, track: satTrack)
-                        slider("Brightness", value: $brightness, track: brightTrack)
-                        contrastReadout
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.bottom, 28)
-
-                    ColorWheel(hue: $hue, saturation: $saturation, brightness: $brightness)
-                        .padding(.horizontal, 12)
-                        // Clears the page dots, which draw over the content.
-                        .padding(.bottom, 36)
+                // **The same field the linked editor uses.**
+                //
+                // Three sliders and a colour wheel were two ways into three
+                // numbers, and one of the three is no longer the user's to set.
+                // With lightness derived, the choice is two-dimensional, and a
+                // plane is the honest shape for it — Tim: *"It should just be
+                // the hue and saturation like we had."*
+                VStack(spacing: 10) {
+                    HueSaturationField(hue: $hue, saturation: $saturation,
+                                       darkGround: ThemePalette.groundBase(dark: true))
+                    contrastReadout
                 }
-                #if !os(macOS)
-                .tabViewStyle(.page)
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
-                #endif
-                // A page view has no intrinsic height, so it needs one; the
-                // wheel is square and the sliders are shorter, so the wheel
-                // sets it.
-                .frame(height: 300)
                 }
             }
             .padding(20)
@@ -612,6 +618,46 @@ struct ColorEditor: View {
     }
 
     @ViewBuilder
+    private func hueGroup(_ title: String?, _ entries: [(h: Double, s: Double)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title {
+                Text(title).font(.caption2).foregroundStyle(.tertiary)
+            }
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(entries.indices, id: \.self) { i in
+                    hueSwatch(entries[i])
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// A swatch of the colour this hue actually becomes here.
+    private func hueSwatch(_ e: (h: Double, s: Double)) -> some View {
+        let c = resolved(hue: e.h, saturation: e.s)
+        let hs = current.lsHueSaturation
+        let selected = abs((hs?.hue ?? -1) - e.h) < 0.02
+            && abs((hs?.saturation ?? -1) - e.s) < 0.08
+        return Button {
+            hue = e.h
+            saturation = e.s
+            push()
+        } label: {
+            Circle()
+                .fill(c)
+                .frame(width: 46, height: 46)
+                .overlay {
+                    Circle().strokeBorder(selected ? Color.primary : LSTheme.hairline,
+                                          lineWidth: selected ? 3 : 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .lsTapTargetInline()
+        .accessibilityLabel("Hue \(Int((e.h * 360).rounded())) degrees")
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    @ViewBuilder
     private func swatchGroup(_ title: String?, _ hexes: [String]) -> some View {
         if !hexes.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
@@ -679,9 +725,41 @@ struct ColorEditor: View {
         }
     }
 
-    private var current: Color {
-        Color(hue: hue, saturation: saturation, brightness: brightness)
+    /// Which ground this target will be read on.
+    private var derivedDark: Bool {
+        if selectedID.hasSuffix("-dark") { return true }
+        if selectedID.hasSuffix("-light") { return false }
+        // Status colours have no appearance of their own; they are drawn on
+        // whichever ground you are looking at.
+        return deviceScheme == .dark
     }
+
+    private var editingGround: Bool { selectedID.hasPrefix("background") }
+
+    /// **Hue and saturation are the choice; lightness is derived.**
+    ///
+    /// This used to be `Color(hue:saturation:brightness:)` straight off three
+    /// sliders, which is why the palette was full of struck-through circles: a
+    /// colour readable on the dark ground is usually unreadable on the light
+    /// one, so whichever appearance you were editing rejected most of the grid.
+    /// Tim: *"we've got giant blocks of 'doesn't work here' all crossed out and
+    /// then just a few colors they can choose from... I don't think we need to
+    /// give them the brightness option."*
+    ///
+    /// Deriving instead means every hue lands, on both appearances, with no
+    /// third number to get wrong — the same model the linked editor has used
+    /// since Block C, now used everywhere.
+    private func resolved(hue h: Double, saturation sat: Double) -> Color {
+        if editingGround {
+            // A ground tint contributes hue and saturation only; `LSTheme.ground`
+            // shades its own lightness per appearance from them.
+            return Color(hue: h, saturation: sat, brightness: 0.55)
+        }
+        return LSTheme.derivedAccent(hue: h, saturation: sat, dark: derivedDark,
+                                     ground: ThemePalette.groundBase(dark: derivedDark)).color
+    }
+
+    private var current: Color { resolved(hue: hue, saturation: saturation) }
 
     private var hueTrack: LinearGradient {
         LinearGradient(colors: stride(from: 0.0, through: 1.0, by: 0.1)
