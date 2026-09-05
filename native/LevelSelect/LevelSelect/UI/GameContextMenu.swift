@@ -12,6 +12,7 @@ struct GameContextMenuModifier: ViewModifier {
     @State private var newCollection = false
     @State private var newCollectionName = ""
     @State private var confirmingDelete = false
+    @State private var browserTarget: DekuLinkTarget?
 
     private var repo: Repository { Repository(context) }
 
@@ -114,6 +115,49 @@ struct GameContextMenuModifier: ViewModifier {
 
             Divider()
 
+            // The same three links the game page carries, at the depth they
+            // are actually wanted.
+            //
+            // Tim, about the wishlist: *"you don't have to open the game page,
+            // scroll down to game info and then click it there."* Checking a
+            // price is the most repeated thing anyone does with a wishlist,
+            // and it was four interactions deep — a tap, two scrolls and a
+            // tap — for something that is one press-and-hold away from every
+            // cover in the app.
+            //
+            // Flat rather than an "Open in…" submenu on purpose: a submenu
+            // would put the tap back that this removes.
+            Button {
+                browserTarget = DekuLinkTarget(url: DekuLinks.search(for: game.name))
+            } label: {
+                Label("Deku Deals", systemImage: "tag.fill")
+            }
+
+            // Same availability rule as the game page: a slug is what makes
+            // the link land on the game rather than a search page.
+            if let slug = game.igdbSlug,
+               let url = URL(string: "https://www.igdb.com/games/\(slug)") {
+                Button {
+                    browserTarget = DekuLinkTarget(url: url)
+                } label: {
+                    Label("IGDB", systemImage: "arrow.up.right.square")
+                }
+            }
+
+            // Rare on a wishlist game and common on a tracked one — the menu
+            // is shared by every surface, so it offers what this game has.
+            if let raID = game.trackerSchema.flatMap({
+                TrackerSchemaJSON.retroAchievementsGameID(in: $0.jsonData)
+            }) {
+                Button {
+                    browserTarget = DekuLinkTarget(url: RAArt.gamePage(raID))
+                } label: {
+                    Label("RetroAchievements", systemImage: "trophy.fill")
+                }
+            }
+
+            Divider()
+
             // The identical delete was confirmed and explained as recoverable
             // from the game page and instant from here, so what "Delete" meant
             // depended on where you happened to be holding. One contract: name
@@ -144,6 +188,10 @@ struct GameContextMenuModifier: ViewModifier {
         } message: {
             Text("Adds “\(game.name)” to a new collection.")
         }
+        // The same in-app browser the game page opens, not Safari — a price
+        // check shouldn't cost leaving the app, and on Deku the signed-in
+        // session is the whole point of the shared cookie store.
+        .dekuBrowser(target: $browserTarget)
     }
 }
 
