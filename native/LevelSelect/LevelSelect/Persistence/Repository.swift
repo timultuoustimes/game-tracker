@@ -605,6 +605,20 @@ struct Repository {
     /// cascade rules were built for exactly this — and the CloudKit mirror
     /// propagates the deletion to other devices.
     func deleteForever(_ game: Game) {
+        // Take its id out of every collection on the way.
+        //
+        // The membership is a scalar id, not a relationship, so nothing
+        // cascades it — the collection kept a string pointing at a row that no
+        // longer exists. Reads filter it away, so it was invisible rather than
+        // broken, but "Comfort Games · 4 games" counting a game nobody can
+        // open is the kind of quiet wrongness that surfaces years later in an
+        // export. Codex data open question 8; Tim: *"yes"*.
+        let id = game.id.uuidString
+        for collection in (try? context.fetch(FetchDescriptor<GameCollection>())) ?? []
+        where collection.gameIDs.contains(id) {
+            collection.gameIDs.removeAll { $0 == id }
+            touch(collection)
+        }
         context.delete(game)
         persist()
     }

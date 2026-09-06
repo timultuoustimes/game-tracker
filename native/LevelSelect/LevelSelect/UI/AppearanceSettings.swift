@@ -175,7 +175,12 @@ struct AppearanceSettingsSection: View {
 
         } footer: {
             // No header any more: the page it sits on is the header now.
-            Text("Everything here syncs to your other devices through iCloud. A blank rating label keeps the built-in word.")
+            //
+            // The stars get a sentence because they are the one thing on the
+            // page that does NOT follow the accent, and an unexplained
+            // exception reads as an oversight. Tim: *"gold"* — the same
+            // answer as the wordmark's orange, and for the same reason.
+            Text("Everything here syncs to your other devices through iCloud. A blank rating label keeps the built-in word. The stars themselves are always gold, whatever your accent — like the wordmark's orange.")
         }
     }
 

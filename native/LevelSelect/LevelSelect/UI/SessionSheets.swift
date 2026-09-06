@@ -7,6 +7,7 @@ struct EndSessionSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var stopTime: Date
+    @State private var note = ""
 
     /// The earliest pickable stop: the current segment's real boundary — the
     /// last resume for a running session, the pause itself for a paused one,
@@ -51,6 +52,29 @@ struct EndSessionSheet: View {
                             .foregroundStyle(LSTheme.accent)
                     }
                 }
+
+                // **Asked here rather than after.**
+                //
+                // `SessionNotePrompt` deliberately only asks about a session
+                // that ended in the last fifteen minutes, so it never asks
+                // about your back catalogue. Ending a stale session backdates
+                // `endDate` by hours, which put it outside that window every
+                // time — so the one path where the app is already interrupting
+                // you was the one path that never asked what happened. Tim:
+                // *"It should also ask 'what happened' if I don't just
+                // outright cancel/delete the session."*
+                //
+                // Inline rather than a second alert afterwards: you are
+                // already in a sheet answering a question about this session,
+                // and one screen beats two.
+                Section {
+                    TextField("One line is plenty", text: $note, axis: .vertical)
+                        .lineLimit(1...4)
+                } header: {
+                    Text("What happened?")
+                } footer: {
+                    Text("Optional, and it lands in your Journal with the session.")
+                }
             }
             .navigationTitle("End Session")
             #if !os(macOS)
@@ -62,7 +86,15 @@ struct EndSessionSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("End") {
-                        Repository(context).endStaleSession(session, stoppedAt: stopTime)
+                        let repo = Repository(context)
+                        repo.endStaleSession(session, stoppedAt: stopTime)
+                        // Through the notes-only path, which is what the
+                        // post-session prompt uses: `updateSession` would
+                        // recompute the duration and undo the stop time just
+                        // chosen above.
+                        if let text = note.journalText {
+                            repo.setSessionNotes(session, text)
+                        }
                         dismiss()
                     }
                 }

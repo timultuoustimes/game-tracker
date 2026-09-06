@@ -91,3 +91,46 @@ struct TrashedImageTests {
         #expect(repo.trashedGames().count == 1)
     }
 }
+
+/// Permanently deleting a game takes its id out of every collection.
+///
+/// Membership is a scalar id rather than a relationship, so nothing cascaded
+/// it — a collection kept a string pointing at a row that no longer existed.
+/// Reads filtered it away, so it was invisible rather than broken, which is
+/// exactly the kind of wrongness that surfaces years later in an export.
+/// Codex data open question 8; Tim: *"yes"*.
+@MainActor
+struct CollectionScrubTests {
+
+    @Test func permanentDeletionRemovesTheGameFromItsCollections() {
+        let context = ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+        let repo = Repository(context)
+        let game = repo.addGame(name: "Hollow Knight", status: .playing)
+        let keeper = repo.addGame(name: "Hades", status: .playing)
+        let collection = repo.createCollection(name: "Comfort Games")
+        repo.setMembership(collection, game: game, member: true)
+        repo.setMembership(collection, game: keeper, member: true)
+        #expect(collection.gameIDs.count == 2)
+
+        repo.softDelete(game)
+        repo.deleteForever(game)
+
+        #expect(collection.gameIDs == [keeper.id.uuidString])
+    }
+
+    /// A soft delete must NOT scrub it: the game is coming back, and it should
+    /// come back to the collections it was in.
+    @Test func aSoftDeleteLeavesMembershipAlone() {
+        let context = ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+        let repo = Repository(context)
+        let game = repo.addGame(name: "Hollow Knight", status: .playing)
+        let collection = repo.createCollection(name: "Comfort Games")
+        repo.setMembership(collection, game: game, member: true)
+
+        repo.softDelete(game)
+
+        #expect(collection.gameIDs == [game.id.uuidString])
+        repo.restore(game)
+        #expect(collection.contains(game))
+    }
+}
