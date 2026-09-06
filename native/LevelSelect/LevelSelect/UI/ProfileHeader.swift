@@ -397,7 +397,7 @@ private enum AvatarSheet: Identifiable {
 struct ProfileEditor: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Query private var profiles: [PlayerProfile]
+    @Query(sort: \PlayerProfile.createdAt) private var profiles: [PlayerProfile]
 
     @State private var name = ""
     @State private var nameColorRaw = ""

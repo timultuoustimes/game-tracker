@@ -33,7 +33,7 @@ struct MergeReviewPresentationState {
 struct TrackerSectionView: View {
     @AppStorage("levelselect.showRAArt") private var showRAArt = true
     @State private var raBrowserTarget: DekuLinkTarget?
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
     /// "Show item hints" (synced): hints are the description and location a
     /// generator or RA wrote — clutter to some, spoilers to others. The
     /// user's own note is theirs and never hides.

@@ -7,8 +7,8 @@ struct SettingsView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }) private var games: [Game]
-    @Query private var profiles: [PlayerProfile]
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \PlayerProfile.createdAt) private var profiles: [PlayerProfile]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
 
     @State private var editingProfile = false
     /// Read here only for the word on the iCloud row. The page behind it owns

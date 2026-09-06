@@ -140,7 +140,7 @@ struct GameArrangeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
     @AppStorage("gamePageShowStats") private var showGameStats = true
 
     private var expandedDefaults: Set<GamePageSection> {

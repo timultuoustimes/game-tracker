@@ -29,7 +29,7 @@ struct AppearanceSettingsSection: View {
     var scope: Scope = .theme
 
     @Environment(\.modelContext) private var context
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
     /// Device-local, not synced: it's a display preference, like stats order.
     @AppStorage("levelselect.showRAArt") private var showRAArt = true
 

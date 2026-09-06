@@ -496,7 +496,11 @@ enum LibraryExport {
         // read the block at all, so it was decorative JSON rather than a
         // restore point. Every stored choice is written now, and
         // `LibraryImport.applyAppearance` reads it.
-        if let theme = try? context.fetch(FetchDescriptor<ThemeSettings>()).first {
+        // Sorted, like every other reader: an unsorted `.first` on a model
+        // that can legitimately have two rows exports whichever one the store
+        // happened to hand over. See `Repository.reconcileSingletons`.
+        if let theme = try? context.fetch(FetchDescriptor<ThemeSettings>(
+            sortBy: [SortDescriptor(\.createdAt)])).first {
             root["appearance"] = ([
                 "accentHex": theme.accentHex as Any,
                 "backgroundHex": theme.backgroundHex as Any,

@@ -16,7 +16,7 @@ import SwiftData
 /// beside the word "ownership" invites the other reading.
 struct OwnershipChipsView: View {
     @Environment(\.modelContext) private var context
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
 
     private var settings: ThemeSettings? { themeSettings.first }
     private var chosen: [Ownership] {

@@ -3,7 +3,7 @@ import SwiftData
 
 /// App shell: Home / Library / Stats tabs (web-app parity) on the themed accent.
 struct RootView: View {
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
@@ -468,10 +468,10 @@ struct HomeTab: View {
     @Environment(\.modelContext) private var context
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }, sort: \Game.name)
     private var games: [Game]
-    @Query private var profiles: [PlayerProfile]
+    @Query(sort: \PlayerProfile.createdAt) private var profiles: [PlayerProfile]
     /// Only to tell whether Settings actually changed the theme — see the
     /// settings sheet's `onDismiss`.
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
 
     @State private var showingAdd = false
     @State private var showingSettings = false

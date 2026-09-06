@@ -2679,7 +2679,102 @@ struct Repository {
     /// whose ONLY open sessions are contradictory merged records (state
     /// running but endDate set — invisible to the endDate==nil fetch) isn't
     /// found here; page-open reconcile normalizes those.
+    // MARK: Singletons that are not actually unique
+
+    /// **`ThemeSettings` and `PlayerProfile` say "one record" and CloudKit has
+    /// no way to enforce it.**
+    ///
+    /// Two devices offline can each create one, and once they sync the app has
+    /// two. `fetchOrCreate` resolves to the oldest, which is deterministic and
+    /// still wrong: the newer row is where the OTHER device's edits are, so
+    /// "oldest wins" quietly discards an avatar set on the phone or a palette
+    /// set on the iPad. Codex data #9; Tim, on how they should merge: *"per
+    /// field."*
+    ///
+    /// **Per field, and nil means never set.** That is what makes this safe
+    /// without new schema: an avatar the other device never touched is nil on
+    /// its row, so taking the non-nil value loses nothing. Only when BOTH rows
+    /// hold a value is there a conflict, and then the newer `updatedAt` wins.
+    ///
+    /// The one case it gets wrong, stated rather than hidden: a *reset* on one
+    /// device sets a field back to nil, and if the other row still holds the
+    /// old value, the merge restores it. That needs per-field causality to
+    /// solve properly — the trick `selectedVariantUpdatedAt` uses — and it is
+    /// not worth two more stored fields for a race inside a race. Dropping a
+    /// whole row of someone's choices, which is what happens today, is worse.
+    @discardableResult
+    func reconcileSingletons(at date: Date = .now) -> Int {
+        var merged = 0
+        merged += foldThemeSettings(at: date)
+        merged += foldProfiles(at: date)
+        if merged > 0 { persist() }
+        return merged
+    }
+
+    /// Oldest first — the winner is the row `fetchOrCreate` already returns,
+    /// so nothing that cached a reference to it is invalidated by the fold.
+    private func ordered<T: PersistentModel>(_ type: T.Type,
+                                             _ createdAt: (T) -> Date,
+                                             _ id: (T) -> UUID) -> [T] {
+        ((try? context.fetch(FetchDescriptor<T>())) ?? [])
+            .sorted { (createdAt($0), id($0).uuidString) < (createdAt($1), id($1).uuidString) }
+    }
+
+    private func foldThemeSettings(at date: Date) -> Int {
+        let rows = ordered(ThemeSettings.self, { $0.createdAt }, { _ in UUID() })
+        guard rows.count > 1, let winner = rows.first else { return 0 }
+        for loser in rows.dropFirst() {
+            let loserIsNewer = loser.updatedAt > winner.updatedAt
+            func take<V>(_ path: ReferenceWritableKeyPath<ThemeSettings, V?>) {
+                guard let value = loser[keyPath: path] else { return }
+                if winner[keyPath: path] == nil || loserIsNewer {
+                    winner[keyPath: path] = value
+                }
+            }
+            take(\.accentHex); take(\.accentHexLight); take(\.accentHexDark)
+            take(\.accentHue); take(\.accentSaturation)
+            take(\.backgroundHex); take(\.backgroundHexLight); take(\.backgroundHexDark)
+            take(\.statusColorsData); take(\.starNamesData); take(\.statusNamesData)
+            take(\.savedSwatchesData); take(\.platformIconVariantsData)
+            take(\.appearanceRaw); take(\.backdropIntensityRaw); take(\.gamePageLayoutRaw)
+            take(\.homeLayoutRaw); take(\.homeSystemsRaw); take(\.expandedSectionsRaw)
+            take(\.ownershipChipsRaw); take(\.defaultMergeModeRaw)
+            take(\.overlappingTimerPolicyRaw); take(\.dekuWishlistURLString)
+            // Non-optionals carry a default rather than "unset", so the only
+            // honest rule is the newer row.
+            if loserIsNewer {
+                winner.pageBackgroundRaw = loser.pageBackgroundRaw
+                winner.defaultTrackerDisplayRaw = loser.defaultTrackerDisplayRaw
+                winner.showItemHints = loser.showItemHints
+                winner.showGameLogos = loser.showGameLogos
+                winner.paletteLinked = loser.paletteLinked
+            }
+            context.delete(loser)
+        }
+        winner.updatedAt = date
+        return rows.count - 1
+    }
+
+    private func foldProfiles(at date: Date) -> Int {
+        let rows = ordered(PlayerProfile.self, { $0.createdAt }, { _ in UUID() })
+        guard rows.count > 1, let winner = rows.first else { return 0 }
+        for loser in rows.dropFirst() {
+            let loserIsNewer = loser.updatedAt > winner.updatedAt
+            func take<V>(_ path: ReferenceWritableKeyPath<PlayerProfile, V?>) {
+                guard let value = loser[keyPath: path] else { return }
+                if winner[keyPath: path] == nil || loserIsNewer {
+                    winner[keyPath: path] = value
+                }
+            }
+            take(\.displayName); take(\.avatarData); take(\.handlesData)
+            context.delete(loser)
+        }
+        winner.updatedAt = date
+        return rows.count - 1
+    }
+
     func reconcileLibrary(at date: Date = .now) {
+        reconcileSingletons(at: date)
         repairDetachedSessionsFromLedger()
         var seen = Set<UUID>()
         for session in unstoppedSessions() {

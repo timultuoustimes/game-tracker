@@ -17,7 +17,7 @@ struct GameDetailView: View {
     @State private var fetchedLogo: URL?
     /// Library-wide reading preference, device-local like the Stats cards.
     @State private var showingPageSettings = false
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
     @AppStorage("gameSectionOrder") private var sectionOrderRaw = ""
     @AppStorage("gameHiddenSections") private var hiddenSectionsRaw = ""
     @State private var browserTarget: DekuLinkTarget?

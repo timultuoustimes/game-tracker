@@ -109,7 +109,7 @@ struct ColorEditor: View {
     /// Colors the user has kept. Synced, so a palette built on the phone is
     /// on the iPad — it was `@AppStorage` until `savedSwatchesData` existed.
     @Environment(\.modelContext) private var context
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
 
     private var saved: [String] { themeSettings.first?.savedSwatches ?? [] }
 

@@ -64,7 +64,7 @@ struct FeedbackView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }) private var games: [Game]
     @Query(filter: #Predicate<Session> { $0.deletedAt == nil }) private var sessions: [Session]
-    @Query private var themeSettings: [ThemeSettings]
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
 
     @State private var selectedKind: Kind?
     @State private var message = ""
