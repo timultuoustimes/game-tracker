@@ -277,40 +277,6 @@ struct ColorEditor: View {
         }
     }
 
-    /// One appearance's result: the colour, its contrast, and — the point of
-    /// the whole model — whether the app had to soften the saturation to get
-    /// there. A silent compromise is what this exists to avoid.
-    private func derivedRow(dark: Bool) -> some View {
-        let d = derived(dark: dark)
-        let ground = ThemePalette.groundBase(dark: dark)
-        let ratio = ThemePalette.contrast(d.color, ground)
-        return HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9).fill(ground)
-                Text("Aa")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(d.color)
-            }
-            .frame(width: 54, height: 38)
-            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(LSTheme.hairline, lineWidth: 1))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(dark ? "Dark" : "Light")
-                    .font(.caption.weight(.semibold))
-                Text(String(format: "%.2f:1", ratio))
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                if d.softened {
-                    Text("Saturation softened to \(Int((d.saturation * 100).rounded()))% — this hue cannot be read on a dark ground at \(Int((d.requested * 100).rounded()))%.")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
     /// What the hue actually becomes in each appearance.
     private func derived(dark: Bool) -> LSTheme.DerivedAccent {
         LSTheme.derivedAccent(hue: linkedHue.wrappedValue,
@@ -472,22 +438,14 @@ struct ColorEditor: View {
                     .labelsHidden()
 
                     pickerStack(hue: linkedHue, saturation: linkedSaturation) {
-                        // Linked mode's own readout: one hue, and what each
-                        // appearance makes of it. Only meaningful for the
-                        // accent — a ground's luminance is not the user's.
-                        if linkedKind == .accent {
-                            Text("Brightness is chosen for you, per appearance, so the accent stays readable on each ground.")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            derivedRow(dark: false)
-                            derivedRow(dark: true)
-                        } else {
-                            Text("Only the hue is kept — the app supplies the lightness for each appearance, so no ground can make text unreadable.")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                        // The split card above reports both appearances now, so
+                        // this is the rule rather than a second set of numbers.
+                        Text(linkedKind == .accent
+                             ? "Brightness is chosen for you, per appearance, so the accent stays readable on each ground."
+                             : "Only the hue is kept — the app supplies the lightness for each appearance, so no ground can make text unreadable.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
                     if targets.count > 1 {
@@ -600,62 +558,102 @@ struct ColorEditor: View {
         }
     }
 
-    /// Both colours doing the jobs they will actually do.
+    /// **Both appearances, side by side, in one card.**
+    ///
+    /// This used to be one sample drawn in whichever appearance you happened
+    /// to be editing, with the other one reported underneath as two small "Aa"
+    /// chips and a contrast ratio. Tim, drawing on it: *"can the picker sample
+    /// be split like this for matched dark and light, rather than the smaller
+    /// samples popping up at the bottom?"*
+    ///
+    /// Which is the right shape, because the whole difficulty this editor
+    /// exists for is that one hue has to work on two grounds. Showing them
+    /// apart made that a comparison you had to hold in your head; showing them
+    /// touching makes it the thing you are looking at.
     ///
     /// The background used to be painted ON the button, which is the one place
     /// it never goes — so choosing a background showed a blue Play button and
     /// told you nothing. Now the ground is the ground and the accent is the
-    /// button, whichever of the two you happen to be editing.
+    /// button, in both halves.
     private var preview: some View {
-        let accent = live("accent")
-        let ground = live("background")
-        return HStack(spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "play.fill")
-                Text("Play").font(.subheadline.weight(.semibold))
-            }
-            .foregroundStyle(ThemePalette.knockoutPreview(on: accent, ground: ground))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
-            // **`accent`, not `current`.** The comment above describes this
-            // being fixed and only the knockout colour was; the fill still took
-            // whichever colour was being edited, so picking a background
-            // painted the background onto the Play button — the one place it
-            // never goes — and the preview answered a question nobody asked.
-            .background(
-                LinearGradient(colors: [accent, accent.opacity(0.82)],
-                               startPoint: .top, endPoint: .bottom),
-                in: .rect(cornerRadius: 12))
-
-            Text("Sample")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(accent)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(accent.opacity(0.16), in: .capsule)
-                .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
-
-            Spacer(minLength: 0)
+        HStack(spacing: 0) {
+            previewHalf(dark: false)
+            previewHalf(dark: true)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        // The real ground, derived exactly as the app derives it, so the two
-        // colours are judged against each other in the arrangement they will
-        // actually appear in.
-        .background(LSTheme.ground(tintedBy: ground, scheme: previewScheme ?? deviceScheme),
-                    in: .rect(cornerRadius: 14))
-        // Everything inside resolves through `lsDynamic`, which reads the
-        // environment — so the environment has to say which appearance this
-        // preview is OF, not which one the phone is in.
-        .environment(\.colorScheme, previewScheme ?? deviceScheme)
+        .clipShape(.rect(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14)
+            .strokeBorder(LSTheme.hairline, lineWidth: 1))
     }
 
-    /// A hex field and a keep button.
-    ///
-    /// Hex because a color often comes from somewhere else — a game's art, a
-    /// brand, a palette someone already has — and re-finding it by dragging
-    /// three sliders is guesswork. Keep, because having found it once, nobody
-    /// should have to find it again.
+    /// One appearance's half: its ground, its accent, and what that pair
+    /// actually measures.
+    private func previewHalf(dark: Bool) -> some View {
+        let accent = previewAccent(dark: dark)
+        let ground = ThemePalette.groundBase(dark: dark)
+        let ratio = ThemePalette.contrast(accent, ground)
+        let softened = linkedMode && linkedKind == .accent
+            ? derived(dark: dark).saturation < derived(dark: dark).requested - 0.001
+            : false
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: dark ? "moon.fill" : "sun.max.fill")
+                    .font(.caption2)
+                Text(dark ? "Dark" : "Light")
+                    .font(.caption2.weight(.semibold))
+                Spacer(minLength: 0)
+                // The number belongs beside the thing it measures, not in a
+                // separate row that has to name which appearance it means.
+                Text(String(format: "%.2f:1", ratio))
+                    .font(.caption2.monospacedDigit())
+            }
+            .foregroundStyle(dark ? Color.white.opacity(0.55) : Color.black.opacity(0.45))
+
+            HStack(spacing: 8) {
+                HStack(spacing: 5) {
+                    Image(systemName: "play.fill").font(.caption)
+                    Text("Play").font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(ThemePalette.knockoutPreview(on: accent, ground: ground))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 8)
+                .background(
+                    LinearGradient(colors: [accent, accent.opacity(0.82)],
+                                   startPoint: .top, endPoint: .bottom),
+                    in: .rect(cornerRadius: 10))
+
+                Text("Sample")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(accent.opacity(0.16), in: .capsule)
+                    .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
+
+                Spacer(minLength: 0)
+            }
+
+            if softened {
+                // The one thing the old rows said that a swatch cannot: the
+                // app had to give ground to make this hue legible here.
+                Text("Saturation softened to keep this readable.")
+                    .font(.caption2)
+                    .foregroundStyle(LSTheme.working)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+        .background(ground)
+    }
+
+    /// What the accent resolves to for one appearance, in whichever mode.
+    private func previewAccent(dark: Bool) -> Color {
+        if linkedMode { return derived(dark: dark).color }
+        let id = "accent-\(dark ? "dark" : "light")"
+        if id == selectedID { return current }
+        return targets.first { $0.id == id }?.binding.wrappedValue ?? .clear
+    }
+
     private var hexRow: some View {
         HStack(spacing: 10) {
             Text("#")
