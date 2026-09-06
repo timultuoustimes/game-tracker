@@ -608,6 +608,15 @@ struct ColorEditor: View {
             }
             .foregroundStyle(dark ? Color.white.opacity(0.55) : Color.black.opacity(0.45))
 
+            // **Centred under the label, not in the card.**
+            //
+            // Tim, drawing the axis he wanted them on: the label row belongs at
+            // the top, and the buttons belong in the middle of what is left —
+            // which is not the middle of the whole half once a heading is
+            // sitting above them. `.leading` on a `maxHeight: .infinity` frame
+            // is vertically centred, horizontally leading, which is exactly
+            // that.
+            VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 HStack(spacing: 5) {
                     Image(systemName: "play.fill").font(.caption)
@@ -640,9 +649,11 @@ struct ColorEditor: View {
                     .foregroundStyle(LSTheme.working)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
         .background(ground)
     }
 

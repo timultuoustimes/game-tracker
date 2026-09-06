@@ -1013,12 +1013,24 @@ struct Build36CalendarGridTests {
         #expect(Memory.calendar.component(.day, from: entry.date) == 25)
         #expect(Memory.calendar.component(.year, from: entry.date) == 1995)
 
-        // And it reaches the square for Christmas Day, not New Year's.
+        // And it reaches the square for Christmas Day, not New Year's —
+        // BOTH Christmases, as of build 37.
+        //
+        // This used to assert exactly one square, which pinned a rule the app
+        // had never actually decided: `JournalCalendarView`'s own comment said
+        // a memory should appear on every candidate day and this said it
+        // should appear on the first. Tim settled it: *"I feel like it should
+        // show on both candidate days."* The "not 1 January" half is
+        // untouched, because that was always the point.
         let periods = JournalBuilder.periods(from: [], standalone: [memory])
         let load = JournalCalendarView.load(from: periods, calendar: cal)
-        let christmas = JournalBuilder.square(for: first, in: Memory.calendar, grid: cal)
-        #expect(load[christmas]?.entries == 1)
-        #expect(load.keys.count == 1)
+        let christmas1995 = JournalBuilder.square(for: first, in: Memory.calendar, grid: cal)
+        let christmas1996 = JournalBuilder.square(for: second, in: Memory.calendar, grid: cal)
+        #expect(load[christmas1995]?.entries == 1)
+        #expect(load[christmas1996]?.entries == 1)
+        #expect(load.keys.count == 2)
+        // Neither of them is New Year's Day.
+        #expect(load.keys.allSatisfy { cal.component(.month, from: $0) == 12 })
     }
 
     @Test("A local session keeps the day it was played on")

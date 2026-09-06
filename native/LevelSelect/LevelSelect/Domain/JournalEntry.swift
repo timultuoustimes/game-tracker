@@ -168,11 +168,11 @@ enum JournalBuilder {
         for game in games {
             entries.append(contentsOf: playEntries(for: game))
             for memory in (game.memories ?? []) where memory.deletedAt == nil {
-                entries.append(entry(for: memory))
+                entries.append(contentsOf: candidateEntries(for: memory))
             }
         }
         // Memories with no game reach the timeline through nothing else.
-        entries.append(contentsOf: standalone.map(entry(for:)))
+        entries.append(contentsOf: standalone.flatMap(candidateEntries(for:)))
         return group(entries)
     }
 
@@ -246,11 +246,55 @@ enum JournalBuilder {
         return result
     }
 
-    static func entry(for memory: Memory) -> JournalEntry {
+    /// **"Christmas 1995 or 1996" belongs on both Christmases.**
+    ///
+    /// It used to land only on the first candidate — the day was known, the
+    /// year was not, so the app picked the earlier one and the later one had
+    /// nothing on it. That is the app quietly resolving an uncertainty its
+    /// owner deliberately left open. Tim, asked whether first-candidate was
+    /// the final rule: *"I feel like it should show on both candidate days."*
+    ///
+    /// Only when the day IS known and only the year is in doubt — which is
+    /// exactly the shape `MemorySheet` writes when "I know the day" is on:
+    /// same month and day, different years. Anything else (a vague month, a
+    /// whole year, a span with no day) has no candidate days to place, and
+    /// gets its single entry as before.
+    ///
+    /// Each copy carries the year in its id so grouping keeps them apart, and
+    /// the same `Memory` so tapping either opens the one entry that exists —
+    /// there is one memory here, shown twice, not two memories.
+    static func candidateEntries(for memory: Memory) -> [JournalEntry] {
+        let base = entry(for: memory)
+        guard memory.precision == nil else { return [base] }
+
+        let cal = Memory.calendar
+        let from = cal.dateComponents([.year, .month, .day], from: memory.earliest)
+        let to = cal.dateComponents([.year, .month, .day], from: memory.latest)
+        guard let firstYear = from.year, let lastYear = to.year,
+              lastYear > firstYear,
+              // The day is known exactly when both ends print the same one.
+              from.month == to.month, from.day == to.day,
+              // A guard against a pathological span turning one memory into a
+              // hundred squares.
+              lastYear - firstYear <= 8
+        else { return [base] }
+
+        return (firstYear...lastYear).compactMap { year in
+            guard let date = cal.date(from: DateComponents(
+                year: year, month: from.month, day: from.day)) else { return nil }
+            return entry(for: memory,
+                         id: "\(memory.id.uuidString)@\(year)",
+                         date: date)
+        }
+    }
+
+    static func entry(for memory: Memory,
+                      id: String? = nil,
+                      date: Date? = nil) -> JournalEntry {
         JournalEntry(
-            id: memory.id.uuidString,
+            id: id ?? memory.id.uuidString,
             kind: .memory,
-            date: memory.earliest,
+            date: date ?? memory.earliest,
             grain: JournalPeriod.Grain(precision: memory.precision),
             game: memory.game,
             title: memory.title,
