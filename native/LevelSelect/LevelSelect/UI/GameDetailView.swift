@@ -1436,13 +1436,44 @@ struct GameDetailView: View {
     /// grow with Dynamic Type, and a fixed wordmark beside 60pt body copy
     /// reads as broken. The navigation title stays real text regardless, so
     /// VoiceOver, the back button and the Mac window title are unaffected.
+    /// **A borrowed logo never stands alone.**
+    ///
+    /// `LogoArt` looks a logo up BY NAME, which is the only way a manually
+    /// added game gets any art at all — and also how a typo shows somebody
+    /// else's logo with your own title nowhere on the screen. A "Legend of
+    /// Heroes: Trails of Cold Steel IV" typed by hand came back wearing the
+    /// Japanese logo for a different game, and the name it was actually filed
+    /// under appeared nowhere above the fold.
+    ///
+    /// Tim, asked whether to keep fetching by name: *"yours"* — which was
+    /// fetch it, but never without the typed name visible. So a game the app
+    /// never matched to IGDB shows the logo AND the name under it. A matched
+    /// game is unchanged: its logo is its own.
+    private var logoIsBorrowed: Bool {
+        game.igdbID == nil && fetchedLogo != nil && game.resolvedArtwork(.logo).isEmpty
+    }
+
     @ViewBuilder
     private var heroTitle: some View {
         let artwork = headerLogo
         if !artwork.isEmpty {
-            ArtworkView(artwork, contentMode: .fit)
-                .frame(maxWidth: .infinity, maxHeight: Self.titleBand)
-                .accessibilityLabel(game.name)
+            VStack(spacing: 6) {
+                ArtworkView(artwork, contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: Self.titleBand)
+                    .accessibilityLabel(game.name)
+                if logoIsBorrowed {
+                    Text(game.name)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .shadow(color: .black.opacity(0.55), radius: 8, y: 2)
+                        // The logo already said a name; this one is the name
+                        // that is actually stored, so the pair is not read out
+                        // twice.
+                        .accessibilityHidden(true)
+                }
+            }
         } else {
             Text(game.name)
                 // `.largeTitle` at AX XXXL is around 55pt, and "Hollow Knight"

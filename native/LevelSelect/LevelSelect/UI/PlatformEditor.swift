@@ -114,20 +114,6 @@ struct PlatformEditor: View {
                 Text("MINE").font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(LSTheme.accent)
             }
-            Button {
-                platforms.removeAll { $0 == platform }
-                // A console you no longer list cannot be one you own it on.
-                owned.removeAll { $0 == platform }
-            } label: {
-                Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
-                    // An 8pt glyph is a caption, not a target — and then this
-                    // gave it a 22-point one, which is half the minimum. The
-                    // glyph stays 8; the target is 44 and costs no layout.
-                    .frame(width: 22, height: 22)
-            }
-            .buttonStyle(.borderless)
-            .lsTapTargetInline()
-            .accessibilityLabel("Remove \(PlatformShort.name(platform))")
         }
         .padding(.horizontal, 9).padding(.vertical, 5)
         // Accent means "mine"; not-mine is a plain surface, not a second
@@ -141,18 +127,41 @@ struct PlatformEditor: View {
                    : AnyShapeStyle(LSTheme.hairline), lineWidth: 1))
         .foregroundStyle(.primary)
         .contentShape(.capsule)
-        .onTapGesture {
-            var next = ownedNames
-            if let index = next.firstIndex(of: platform) {
-                next.remove(at: index)
-            } else {
-                next.append(platform)
+        // **One target, one gesture, and the rare action behind a hold.**
+        //
+        // This used to be a 22-point Button nested inside a tap gesture on the
+        // chip: two actions competing for the same capsule, the inner one
+        // under the 44-point minimum, and removing a console — the thing you
+        // almost never do — was the easier of the two to hit by accident.
+        // Codex A7 and open question 5. Tim: *"press and hold a console >
+        // select 'make mine'?"*
+        //
+        // So a tap does nothing, a press-and-hold offers both, and the menu
+        // says which is which in words rather than an ✕ nobody asked about.
+        .contextMenu {
+            Button {
+                var next = ownedNames
+                if let index = next.firstIndex(of: platform) {
+                    next.remove(at: index)
+                } else {
+                    next.append(platform)
+                }
+                withAnimation(.snappy(duration: 0.28)) { owned = next }
+            } label: {
+                Label(isMine ? "Not mine" : "Make mine",
+                      systemImage: isMine ? "xmark.circle" : "checkmark.circle")
             }
-            withAnimation(.snappy(duration: 0.28)) { owned = next }
+            Divider()
+            Button(role: .destructive) {
+                platforms.removeAll { $0 == platform }
+                // A console you no longer list cannot be one you own it on.
+                owned.removeAll { $0 == platform }
+            } label: {
+                Label("Remove \(PlatformShort.name(platform))", systemImage: "trash")
+            }
         }
-        .accessibilityHint(isMine
-                           ? "Double tap to unmark as a platform you own"
-                           : "Double tap to mark as a platform you own")
+        .accessibilityHint("Press and hold for options")
+        .accessibilityValue(isMine ? "Mine" : "Not marked as yours")
     }
 
     @ViewBuilder
