@@ -154,6 +154,25 @@ final class ThemeSettings {
     /// preference, not something to infer.
     var expandedSectionsRaw: String?
 
+    /// Which ownership chips a game page offers, in the app's own order —
+    /// comma-separated raw values, nil = the default five.
+    ///
+    /// Ownership is the one vocabulary in the app that is genuinely
+    /// person-specific. A PC-only library has no use for Physical; somebody
+    /// cataloguing a childhood has every use for Rented and none for
+    /// Subscription. Tim, arriving at it from a Halo 2 memory of a game he
+    /// never owned: *"maybe we let them choose what ownership options they
+    /// want displayed?"*
+    ///
+    /// **Hiding a chip never changes a game.** A game already marked Rented
+    /// keeps that mark, and it reappears the moment the chip comes back —
+    /// same contract as hiding a game-page section. Nothing here deletes.
+    ///
+    /// Synced, because it is vocabulary rather than a display preference:
+    /// choosing not to think about subscriptions is a decision about your
+    /// library, and it should not have to be made twice.
+    var ownershipChipsRaw: String?
+
     var gamePageLayoutRaw: String?
 
     /// Your own words on the five stars — JSON array of exactly five strings,

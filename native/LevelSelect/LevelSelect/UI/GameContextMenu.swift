@@ -64,7 +64,12 @@ struct GameContextMenuModifier: ViewModifier {
 
             // Ownership (multi-select toggles)
             Menu {
-                ForEach(Ownership.allCases, id: \.self) { kind in
+                // Same rule as the game page's chips: the ones this library
+                // uses, plus any this game already carries.
+                ForEach(Ownership.allCases.filter {
+                    ThemePalette.ownershipChips.contains($0)
+                        || game.ownership.contains($0.rawValue)
+                }, id: \.self) { kind in
                     let on = game.ownership.contains(kind.rawValue)
                     Button {
                         repo.edit(game) {

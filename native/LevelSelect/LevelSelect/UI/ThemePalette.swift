@@ -32,6 +32,10 @@ enum ThemePalette {
     private(set) static var gamePageLayout: GamePageLayout = .showcase
     /// Whether a game's logo stands in for its name.
     private(set) static var showGameLogos = true
+    /// Which ownership chips a game page offers. Never empty — an empty set
+    /// would be a game page with no way to say you own the game at all, so a
+    /// stored value that decodes to nothing falls back to the default five.
+    private(set) static var ownershipChips: [Ownership] = Ownership.shownByDefault
 
     /// The label a rating wears: the user's word if set, the built-in if not.
     static func starLabel(for rating: Int) -> String {
@@ -278,6 +282,17 @@ enum ThemePalette {
         gamePageLayout = settings?.gamePageLayoutRaw
             .flatMap(GamePageLayout.init(rawValue:)) ?? .showcase
         showGameLogos = settings?.showGameLogos ?? true
+        ownershipChips = Self.chips(from: settings?.ownershipChipsRaw)
+    }
+
+    /// Stored order is ignored: the app's own `allCases` order is what keeps
+    /// the chips in the same places on every game page, whatever order they
+    /// were toggled in.
+    static func chips(from raw: String?) -> [Ownership] {
+        guard let raw else { return Ownership.shownByDefault }
+        let chosen = Set(raw.split(separator: ",").map(String.init))
+        let resolved = Ownership.allCases.filter { chosen.contains($0.rawValue) }
+        return resolved.isEmpty ? Ownership.shownByDefault : resolved
     }
 
     /// The single settings record (created on first use). Duplicates from a

@@ -308,6 +308,11 @@ struct AppearanceSettingsSection: View {
             } label: {
                 Label("Sections…", systemImage: "arrow.up.arrow.down")
             }
+            NavigationLink {
+                OwnershipChipsView()
+            } label: {
+                Label("Ownership chips", systemImage: "shippingbox")
+            }
             // On the row, not on the Section — see the note in `trackers`.
             .sheet(isPresented: $arrangingPages) {
                 GameArrangeSheet(orderRaw: $sectionOrderRaw, hiddenRaw: $hiddenSectionsRaw)

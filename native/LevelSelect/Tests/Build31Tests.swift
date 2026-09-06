@@ -114,14 +114,19 @@ struct Build31Tests {
         for o in Ownership.allCases {
             #expect(!o.label.contains(" "), Comment(rawValue: "\(o.rawValue) → \"\(o.label)\""))
         }
-        #expect(Ownership.allCases.count == 5)
+        // Six since build 37: Rented joined, because a weekend rental from a
+        // shop that no longer exists is not a subscription. Tim: *"that's not
+        // the same as having walked into a Blockbuster and picking a game off
+        // the shelf."*
+        #expect(Ownership.allCases.count == 6)
     }
 
     /// Adding a case must never renumber or rename the existing ones — an old
     /// library decodes by raw value, not position.
     @Test func theStoredOwnershipNamesAreStable() {
         let raw = Set(Ownership.allCases.map(\.rawValue))
-        #expect(raw == ["physical", "digital", "emulated", "subscription", "previouslyOwned"])
+        #expect(raw == ["physical", "digital", "emulated", "subscription",
+                        "rented", "previouslyOwned"])
     }
 
     // MARK: Game page sections

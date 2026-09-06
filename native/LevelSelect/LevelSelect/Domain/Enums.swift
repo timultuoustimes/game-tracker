@@ -77,15 +77,26 @@ enum SessionState: String, Codable, Sendable {
 enum Ownership: String, Codable, CaseIterable, Sendable {
     // `previouslyOwned` keeps its raw value forever — it is what is stored in
     // every library already. Only the LABEL changed.
-    case physical, digital, emulated, subscription, previouslyOwned
+    case physical, digital, emulated, subscription, rented, previouslyOwned
 
-    /// **Five chips, five single words, and they all finish the same sentence.**
+    /// **Six chips, six single words, and they all finish the same sentence.**
     ///
     /// Each label is an adjective modifying an implied "copy" — a physical
-    /// copy, a digital copy, an emulated copy, a subscription copy, a former
-    /// copy. That is what makes them a set rather than four of one kind and one
-    /// of another, and it is why "Previously owned" had to go: it was the only
-    /// one that was a sentence about you instead of a description of the copy.
+    /// copy, a digital copy, an emulated copy, a subscription copy, a rented
+    /// copy, a former copy. That is what makes them a set rather than four of
+    /// one kind and one of another, and it is why "Previously owned" had to
+    /// go: it was the only one that was a sentence about you instead of a
+    /// description of the copy.
+    ///
+    /// **Rented is not subscription**, and Tim is right that the difference is
+    /// worth a chip: *"Rented is something people can't do now, since those
+    /// places are all closed... Closest analog now is subscription, but that's
+    /// not the same as having walked into a Blockbuster and picking a game off
+    /// the shelf to rent for the weekend."* A subscription is a catalogue you
+    /// pay for monthly; a rental was one game, for a weekend, that you took
+    /// back. For a library that reaches back thirty years, that is a real
+    /// distinction and not a nostalgic one — and it is off by default, because
+    /// most people's libraries will never need it.
     ///
     /// "Former" over "Past", which reads as *past games* — finished ones — in
     /// an app that also tracks whether you beat something. Over "Sold", which
@@ -97,9 +108,17 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
         case .digital:  "Digital"
         case .emulated: "Emulated"
         case .subscription: "Subscription"
+        case .rented: "Rented"
         case .previouslyOwned: "Former"
         }
     }
+
+    /// Shown unless someone turns them off. Rented is the exception — a
+    /// weekend rental is a real thing that happened to a lot of libraries and
+    /// a thing most libraries will never record, so it is opt-in rather than a
+    /// sixth chip everyone has to look past.
+    static let shownByDefault: [Ownership] =
+        [.physical, .digital, .emulated, .subscription, .previouslyOwned]
 
     var systemImage: String {
         switch self {
@@ -110,6 +129,8 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
         // difference between this and `digital`, and the reason it earns its
         // own chip rather than hiding inside one.
         case .subscription: "arrow.triangle.2.circlepath"
+        // A ticket: you had it for a while and it went back.
+        case .rented: "ticket"
         case .previouslyOwned: "shippingbox"
         }
     }

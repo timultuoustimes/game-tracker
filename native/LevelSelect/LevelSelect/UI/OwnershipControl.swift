@@ -46,9 +46,23 @@ struct OwnershipControl: View {
         }
     }
 
+    /// The chips this library uses, plus any this game already carries.
+    ///
+    /// The second half is the contract: hiding a chip is a vocabulary choice,
+    /// not an edit. A game marked Rented before Rented was turned off still
+    /// shows it — otherwise turning a chip off would silently strip a fact
+    /// from every game that had it, and turning it back on would look like the
+    /// app had remembered something it never lost.
+    private var visibleKinds: [Ownership] {
+        let chosen = ThemePalette.ownershipChips
+        return Ownership.allCases.filter {
+            chosen.contains($0) || ownership.contains($0.rawValue)
+        }
+    }
+
     @ViewBuilder
     private func chips(font: Font, hPad: CGFloat) -> some View {
-        ForEach(Ownership.allCases, id: \.self) { kind in
+        ForEach(visibleKinds, id: \.self) { kind in
             chip(kind, font: font, hPad: hPad)
         }
     }
