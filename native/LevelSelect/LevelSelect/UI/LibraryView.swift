@@ -104,7 +104,7 @@ struct LibraryTab: View {
             //
             // The default for a stack root is `.large`: a full-size title on
             // its OWN row under the toolbar, collapsing to a small CENTRED one
-            // on scroll. That is the row Tim asked to reclaim, and the centring
+            // on scroll. That is the row Tim asked to reclaim, and the centering
             // is the jump he objected to. Dropping the mode entirely got the
             // title onto the toolbar row but about a fifth smaller.
             //
@@ -411,7 +411,7 @@ struct LibraryTab: View {
     /// shelf label looks like — but one step down (`.headline`, not
     /// `.title3`). Home has four shelves and you scan between them; Library's
     /// status sort can run to six sections plus systems and collections, and
-    /// at Home's size the labels start eating the grid they are labelling.
+    /// at Home's size the labels start eating the grid they are labeling.
     private func sectionHeader(title: String, status: GameStatus?, platform: String? = nil,
                                count: Int, onSeeAll: (() -> Void)? = nil) -> some View {
         HStack(spacing: 8) {
@@ -421,7 +421,7 @@ struct LibraryTab: View {
                 // `status.color`, with no special case for `.playing`.
                 //
                 // This used to hand `.playing` the ACCENT and every other
-                // status its own colour — the same exception Home had, removed
+                // status its own color — the same exception Home had, removed
                 // there with Fable's 5.3. Fixing one and not the other is what
                 // Tim caught: Now Playing was green on Home and the accent in
                 // Library, in the same session, for the same games. Library's

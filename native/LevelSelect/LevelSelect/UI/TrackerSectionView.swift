@@ -1242,7 +1242,7 @@ struct TrackerSectionView: View {
                     .font(.body)
                     // The glyph is ~22pt; the thing you have to hit shouldn't
                     // be. Top-aligned so it still lines up with the first line
-                    // of a multi-line row rather than centring against it.
+                    // of a multi-line row rather than centering against it.
                     .frame(width: 36, height: 44, alignment: .top)
                     .contentShape(.rect)
             }

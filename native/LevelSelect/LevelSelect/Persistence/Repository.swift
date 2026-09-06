@@ -2833,7 +2833,7 @@ struct Repository {
         // The keeper must still be running. If the conflict was resolved
         // elsewhere first — the other device answered, and this device is
         // acting on a sheet describing a conflict that has already gone —
-        // then honouring the choice would stop whichever timer survived
+        // then honoring the choice would stop whichever timer survived
         // instead, leaving the game with none. Do nothing; the surviving
         // state is already an answer.
         guard keeper.state == .running else { return 0 }

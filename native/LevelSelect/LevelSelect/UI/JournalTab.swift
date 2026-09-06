@@ -95,7 +95,7 @@ struct JournalTab: View {
             //
             // The default for a stack root is `.large`: a full-size title on
             // its OWN row under the toolbar, collapsing to a small CENTRED one
-            // on scroll. That is the row Tim asked to reclaim, and the centring
+            // on scroll. That is the row Tim asked to reclaim, and the centering
             // is the jump he objected to. Dropping the mode entirely got the
             // title onto the toolbar row but about a fifth smaller.
             //

@@ -148,7 +148,7 @@ struct RootView: View {
         .animation(.spring(duration: 0.35), value: generation.notice?.id)
         .animation(.spring(duration: 0.35), value: nav.deletedGame?.id)
         // Was hard-pinned to .dark for thirty-six builds — the one line that
-        // made every other colour decision moot. `.system` resolves to nil,
+        // made every other color decision moot. `.system` resolves to nil,
         // which is exactly what this modifier wants for "follow the phone".
         .preferredColorScheme(ThemePalette.appearance.colorScheme)
         .onOpenURL { route($0) }
@@ -568,7 +568,7 @@ struct HomeTab: View {
             .toolbar {
                 #if !os(macOS)
                 ToolbarItem(placement: .topBarLeading) {
-                    // Leading, not principal. Centred, it drifted with the
+                    // Leading, not principal. Centered, it drifted with the
                     // number of buttons beside it; pinned, it is the same
                     // anchor on every tab. See `lsWordmarkHeader`.
                     Wordmark(size: 13)

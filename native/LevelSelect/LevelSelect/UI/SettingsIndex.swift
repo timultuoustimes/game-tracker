@@ -184,7 +184,7 @@ struct StatusSettingsPage: View {
     var body: some View {
         SettingsPage(title: "Statuses",
                      icon: "circle.grid.2x1.left.filled",
-                     blurb: "The ten words the app uses for where a game stands with you — in your colours, and your words if you disagree with mine.") {
+                     blurb: "The ten words the app uses for where a game stands with you — in your colors, and your words if you disagree with mine.") {
             AppearanceSettingsSection(scope: .statuses)
         }
     }

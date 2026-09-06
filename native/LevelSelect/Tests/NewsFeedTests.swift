@@ -79,13 +79,13 @@ struct NewsFeedTests {
         #expect(!feed.notPlanned.isEmpty)
     }
 
-    /// The dots beside Now / Next / Exploring are the site's own colours, and
+    /// The dots beside Now / Next / Exploring are the site's own colors, and
     /// `Color(hex:)` has to accept them as written.
     @Test func everyHorizonColourParses() throws {
         let feed = try decode(Self.roadmapJSON, as: NewsFeeds.Roadmap.self)
         for horizon in feed.horizons {
             #expect(Color(hex: horizon.color) != nil,
-                    Comment(rawValue: "unparseable horizon colour: \(horizon.color)"))
+                    Comment(rawValue: "unparseable horizon color: \(horizon.color)"))
         }
     }
 
@@ -111,7 +111,7 @@ struct NewsFeedTests {
       "build": 36,
       "date": "2026-09-03T00:00:00.000Z",
       "title": "The part that already happened",
-      "summary": "The Stats tab becomes the Journal \\u2014 everything you've written down, in order, with room for the thirty years that happened before you installed this. And the whole app can be light now, in whatever colour you like.",
+      "summary": "The Stats tab becomes the Journal \\u2014 everything you've written down, in order, with room for the thirty years that happened before you installed this. And the whole app can be light now, in whatever color you like.",
       "items": [
         {
           "title": "Everything you've written, in order",

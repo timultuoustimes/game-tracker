@@ -75,7 +75,7 @@ struct JournalCalendarView: View {
     /// **Keyed to the year, not to an empty library.** A `ContentUnavailableView`
     /// over a pristine install would cover the very grid it is explaining, and
     /// would never fire in the case that actually needs it: scrubbing back to
-    /// 1995 to write down a Christmas, and finding twelve months of grey with
+    /// 1995 to write down a Christmas, and finding twelve months of gray with
     /// nothing saying they can be tapped. Backfilling is the whole point of
     /// the year strip, so the hint belongs on every empty year.
     private var emptyYearHint: some View {
@@ -212,7 +212,7 @@ private struct YearStrip: View {
     /// but still letting me click into the year to view it and tap to add
     /// things."* A year with nothing in it is precisely the year you are about
     /// to put something in, so it stays reachable — the same mistake the
-    /// greyed-out memory row made by looking unavailable when it was not.
+    /// grayed-out memory row made by looking unavailable when it was not.
     private func chip(_ year: Int) -> some View {
         let has = populated.contains(year)
         let isSelected = year == selected
@@ -276,8 +276,8 @@ private struct MiniMonth: View {
                 Text(month.formatted(.dateTime.month(.abbreviated)))
                     .font(.caption.weight(.semibold))
                 // **Always six rows, even when the month needs five.** A grid
-                // sized to its own weeks makes neighbouring months different
-                // heights, which the enclosing LazyVGrid then centres — the
+                // sized to its own weeks makes neighboring months different
+                // heights, which the enclosing LazyVGrid then centers — the
                 // middle column visibly sagging below the outer two. It also
                 // stops the whole year twitching as you scrub between them.
                 LazyVGrid(columns: columns, spacing: 1.5) {
@@ -321,10 +321,10 @@ private struct MiniMonth: View {
         return "\(name), \(active.count) \(dayWord), \(Format.spokenDuration(seconds))"
     }
 
-    /// Accent at a strength, rather than a second colour ramp.
+    /// Accent at a strength, rather than a second color ramp.
     ///
     /// The app is themeable, so a fixed green-to-red heat scale would be the
-    /// one part of the calendar that ignored the colour you picked. Opacity on
+    /// one part of the calendar that ignored the color you picked. Opacity on
     /// the accent keeps the ramp readable on both grounds for free.
     private func fill(for day: Date) -> Color {
         guard let entry = load[day] else { return LSTheme.cardFill }
@@ -549,7 +549,7 @@ private struct MonthGrid: View {
 }
 
 private struct DayCell: View {
-    /// **Portrait, because cover art is.** A square cell centre-cropped every
+    /// **Portrait, because cover art is.** A square cell center-cropped every
     /// cover in the month — Tim, on the month getting its own page: *"the tap
     /// into the month view could do the full game art on the days, instead of
     /// it being so compact."* 3:4 is the shape box art has always been, so the
@@ -701,7 +701,7 @@ private struct DayCell: View {
             .overlay {
                 // The scrim exists to keep the number readable over bright
                 // cover art. With no art there is nothing to darken, and
-                // laying it on anyway made a photo-less memory a murky grey
+                // laying it on anyway made a photo-less memory a murky gray
                 // box — darker than an empty day, which read as *less* there
                 // rather than more.
                 //

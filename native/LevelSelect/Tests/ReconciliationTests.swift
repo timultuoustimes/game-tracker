@@ -925,7 +925,7 @@ struct ReconciliationTests {
 
     /// Both devices raise the prompt for the same conflict, so one of them is
     /// always acting a moment later than the other. Answering a conflict that
-    /// has already been resolved must do NOTHING — honouring it would stop
+    /// has already been resolved must do NOTHING — honoring it would stop
     /// whichever timer survived and leave the game with none.
     @Test func resolvingAnAlreadyResolvedOverlapIsANoOp() {
         let (repo, game) = self.game(named: "Hades")

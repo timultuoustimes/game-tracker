@@ -25,7 +25,7 @@ struct OverlappingTimerGuard: ViewModifier {
     /// ONE presentation slot for both prompts.
     ///
     /// Two `.sheet` modifiers on the same view is a SwiftUI trap: only one is
-    /// honoured, so adding the retrospective prompt silently swallowed the
+    /// honored, so adding the retrospective prompt silently swallowed the
     /// live one — the guard looked fine, ran its detection correctly, and
     /// simply never appeared. A single slot with a case per prompt makes that
     /// impossible to reintroduce.

@@ -17,7 +17,7 @@ export const shipped = [
     d: 'Memories, dated as vaguely as you actually remember them — an exact day, a month, a year, or "Christmas 1995 or 1996" in your own words. Pictures included.' },
   { t: 'A year of play in one screen', build: 36,
     d: 'Twelve small months and a heat map, and any month opens into full box art on every day you played.' },
-  { t: 'Light mode, in your colour', build: 36,
+  { t: 'Light mode, in your color', build: 36,
     d: 'The whole app light or dark, with a background you choose and the contrast the app keeps for you.' },
   { t: 'Ten statuses that say what they mean', build: 36,
     d: 'Old Favorite for the ones you replay forever, a line of explanation where you pick each one, and rename any of them.' },
@@ -78,7 +78,7 @@ export const horizons = [
       { t: 'Scanning a written list', d: 'Point a camera at a checklist you wrote by hand and turn it into a tracker.' },
       { t: 'More ways to bring a library in', d: 'Beyond CSV.' },
       { t: 'Game news, in its own place', d: 'A reader for releases and news you choose to follow — a separate tab, not a feed bolted onto the shelf you came to look at.' },
-      { t: 'More of your own notebook', d: 'Light and dark and your own background colour landed in 36. Icons, covers, and the rest of the personality a paper journal has.' },
+      { t: 'More of your own notebook', d: 'Light and dark and your own background color landed in 36. Icons, covers, and the rest of the personality a paper journal has.' },
     ],
   },
 ];

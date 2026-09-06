@@ -176,7 +176,7 @@ final class ThemeSettings {
     var gamePageLayoutRaw: String?
 
     /// Your own words on the five stars — JSON array of exactly five strings,
-    /// index 0 = one star. Nil = plain stars. Vocabulary, not modelling: a
+    /// index 0 = one star. Nil = plain stars. Vocabulary, not modeling: a
     /// rating that says "comfort game" instead of "3" reads like the
     /// notebook's owner wrote it. Synced, because your words for your shelf
     /// should follow you between devices.

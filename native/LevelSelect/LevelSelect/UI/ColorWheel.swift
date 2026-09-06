@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// The second way into the *same* three numbers the sliders already drive —
 /// `ColorEditor` keeps one hue/saturation/brightness model and this is another
-/// input onto it, not a second colour system. Everything downstream (the hex
+/// input onto it, not a second color system. Everything downstream (the hex
 /// field, saved swatches, the live preview) carries on unchanged.
 ///
 /// **A square rather than Affinity's triangle**, which was Tim's reference.
@@ -29,7 +29,7 @@ struct ColorWheel: View {
             // corners do not touch — a corner that overlaps the ring steals
             // touches meant for the hue.
             let inner = side - ring * 2
-            // 0.68 rather than the geometric fit: the knob is drawn centred on
+            // 0.68 rather than the geometric fit: the knob is drawn centered on
             // the square's edge, so it needs room to sit outside without
             // landing on the ring and stealing its touches.
             let square = inner * 0.68
@@ -68,7 +68,7 @@ struct ColorWheel: View {
                         guard dx != 0 || dy != 0 else { return }
                         // **No quarter turn.** `AngularGradient` starts at 3
                         // o'clock, not 12 — correcting for a top start put the
-                        // knob 90° from its own colour, orange sitting in the
+                        // knob 90° from its own color, orange sitting in the
                         // magenta. atan2 measures from the same positive
                         // x-axis, so the two already agree.
                         var angle = atan2(dy, dx)

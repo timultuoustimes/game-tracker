@@ -105,9 +105,9 @@ struct StatusCarousel: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned)
-            // **The shelf's colour, on the shelf.**
+            // **The shelf's color, on the shelf.**
             //
-            // The status glyph has carried its colour in the header for a
+            // The status glyph has carried its color in the header for a
             // while, but a title is a line of text — the shelf itself stayed
             // neutral, so Home below the hero read as generic rows. Fable's
             // 5.3: carry it onto the row "so a Paused shelf is orange as a
@@ -124,7 +124,7 @@ struct StatusCarousel: View {
                     .padding(.leading, 6)
                     .padding(.vertical, 4)
                     // Decorative twice over — the header names the shelf, and
-                    // the colour repeats what the glyph beside it already says.
+                    // the color repeats what the glyph beside it already says.
                     .accessibilityHidden(true)
             }
             }
@@ -179,7 +179,7 @@ struct ContinueHeroCard: View {
         }
         .padding(14)
         // Follows the chosen background — it is the ground's hue lifted off
-        // it, not a fixed purple panel sitting on someone else's colour.
+        // it, not a fixed purple panel sitting on someone else's color.
         .background(LSTheme.hero(tintedBy: ThemePalette.backgroundOverride),
                     in: .rect(cornerRadius: 16))
         .overlay(
@@ -336,7 +336,7 @@ struct ContinueHeroCard: View {
                     // thing pixel art never has. A solid offset in a darkened
                     // accent reads as the button standing on its own shadow —
                     // which is also more legible on a light ground, where a
-                    // soft black blur turns into grey haze.
+                    // soft black blur turns into gray haze.
                     //
                     // The glow above stays: it does the lifting, this does the
                     // shape.

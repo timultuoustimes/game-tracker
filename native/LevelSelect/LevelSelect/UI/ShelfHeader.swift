@@ -3,7 +3,7 @@ import SwiftUI
 /// One way to title a group of games.
 ///
 /// **There were five.** The build 37 UX assessment counted them: Home had a
-/// chevron, the status's own glyph in its own colour, a count and a "See all";
+/// chevron, the status's own glyph in its own color, a count and a "See all";
 /// Library had a generic layered-stack glyph tinted accent, no chevron and no
 /// way in; Wishlist had the same stack glyph in green; the Journal had bare
 /// date words with a naked number on the right; the game page put its chevron
@@ -13,7 +13,7 @@ import SwiftUI
 /// one.
 ///
 /// Home's was the right one, because it is the only one that says what the
-/// block is *for* — the thing's own glyph, in its own colour — and offers a way
+/// block is *for* — the thing's own glyph, in its own color — and offers a way
 /// in. This is that header, extracted so it can be the only one.
 ///
 /// The game page's `CollapsibleSection` keeps its own right-hand chevron on
@@ -28,7 +28,7 @@ struct ShelfHeader<Trailing: View>: View {
     /// **The glyph that means this block**, not a generic stack. A console tile
     /// for systems, the bag for the wishlist, the status's own symbol on Home.
     let systemImage: String
-    /// The glyph's colour. Carrying the block's own colour is what makes the
+    /// The glyph's color. Carrying the block's own color is what makes the
     /// row say something rather than decorate.
     var tint: Color = .secondary
     /// Nil when the shelf does not collapse.

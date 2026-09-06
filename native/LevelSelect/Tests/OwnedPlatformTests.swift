@@ -78,7 +78,7 @@ struct OwnedPlatformTests {
         #expect(game.platforms == ["Xbox 360", "PlayStation 3"])
     }
 
-    /// No answer given: nothing to honour, so the list stays as IGDB sent it
+    /// No answer given: nothing to honor, so the list stays as IGDB sent it
     /// and `owned` reports its head rather than inventing a preference.
     @Test func withNoChosenPlatformTheListIsLeftAlone() {
         let repo = self.repo()

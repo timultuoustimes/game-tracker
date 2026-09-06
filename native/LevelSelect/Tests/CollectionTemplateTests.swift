@@ -40,7 +40,7 @@ struct CollectionTemplateTests {
         repo.stopSession(session, at: .now)
     }
 
-    // MARK: The catalogue itself
+    // MARK: The catalog itself
 
     /// Ids are what a collection would ever be traced back to, and duplicates
     /// would make two different prompts indistinguishable.

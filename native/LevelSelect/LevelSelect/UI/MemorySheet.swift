@@ -237,7 +237,7 @@ struct MemorySheet: View {
 
                 // **"What kind — Just a memory"** was the row, and it read
                 // as a form arguing with itself: a header asking a question, a
-                // label repeating it, and an answer apologising for being the
+                // label repeating it, and an answer apologizing for being the
                 // default. Fable's 3.4. The header now names the group, the
                 // label names the control, and the default kind is just what
                 // it is — an entry that is a memory rather than an acquisition

@@ -52,12 +52,12 @@ struct TrackerListParserTests {
         #expect(second.source == "Found in Boat Bog, south of the tower.")
     }
 
-    @Test func aBareIndexColumnIsNotReportedAsUnrecognised() {
+    @Test func aBareIndexColumnIsNotReportedAsUnrecognized() {
         let result = TrackerListParser.parse(minaTable)
         #expect(result.warnings.isEmpty)
     }
 
-    @Test func unrecognisedColumnsAreReportedNotFatal() {
+    @Test func unrecognizedColumnsAreReportedNotFatal() {
         let table = """
         | Item | Rarity | Location |
         | --- | --- | --- |

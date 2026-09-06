@@ -78,7 +78,7 @@ struct CalendarDayAgreementTests {
         #expect(reachable != all, "a single entry silently omits the rest of the day")
     }
 
-    /// The day view must not spill into neighbouring days.
+    /// The day view must not spill into neighboring days.
     @Test func aDayShowsOnlyItsOwnEntries() throws {
         let (context, day) = libraryWithASharedDay()
         let games = try context.fetch(FetchDescriptor<Game>())

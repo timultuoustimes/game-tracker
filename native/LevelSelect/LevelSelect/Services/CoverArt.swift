@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The logo already had this: `LogoArt` falls back to SteamGridDB **by name**,
 /// which was built for exactly this shape of game. Covers had no equivalent,
-/// so a hand-added game stayed a grey rectangle in every grid it appeared in —
+/// so a hand-added game stayed a gray rectangle in every grid it appeared in —
 /// and a library is mostly covers, so one blank tile in a wall of art reads as
 /// a mistake rather than as missing data.
 ///

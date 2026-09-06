@@ -109,7 +109,7 @@ final class Memory {
 
     /// "Sega Genesis". A plain string rather than a hardware entity, on
     /// purpose: it earns the console artwork for free, and it defers the
-    /// question of modelling individual copies, which is a much larger thing
+    /// question of modeling individual copies, which is a much larger thing
     /// than it looks. Ship the chain, not the inventory.
     var platform: String?
 

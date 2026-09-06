@@ -104,7 +104,7 @@ enum TrackerListParser {
             result.warnings.append("No name column recognized — used the first column.")
         }
         // Quote the header as the user actually wrote it, not lowercased.
-        for unknown in map.unrecognised(rawHeaders) {
+        for unknown in map.unrecognized(rawHeaders) {
             result.warnings.append("Column “\(unknown)” wasn't recognized and was ignored.")
         }
 
@@ -162,7 +162,7 @@ enum TrackerListParser {
             }
         }
 
-        func unrecognised(_ headers: [String]) -> [String] {
+        func unrecognized(_ headers: [String]) -> [String] {
             let claimed = Set([name, location, detail, source].compactMap { $0 })
             return headers.enumerated().compactMap { i, h in
                 let trimmed = h.trimmingCharacters(in: .whitespaces)

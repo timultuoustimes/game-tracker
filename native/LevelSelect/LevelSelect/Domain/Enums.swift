@@ -92,7 +92,7 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
     /// worth a chip: *"Rented is something people can't do now, since those
     /// places are all closed... Closest analog now is subscription, but that's
     /// not the same as having walked into a Blockbuster and picking a game off
-    /// the shelf to rent for the weekend."* A subscription is a catalogue you
+    /// the shelf to rent for the weekend."* A subscription is a catalog you
     /// pay for monthly; a rental was one game, for a weekend, that you took
     /// back. For a library that reaches back thirty years, that is a real
     /// distinction and not a nostalgic one — and it is off by default, because

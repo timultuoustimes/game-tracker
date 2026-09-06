@@ -8,7 +8,7 @@ import SwiftUI
 /// The user picks a hue and a saturation; the app derives brightness per
 /// appearance. The promise that makes this worth building is that the hue
 /// wheel never has to be restricted — *every* hue has a brightness that reads
-/// on both grounds, so the app can solve it instead of greying out half the
+/// on both grounds, so the app can solve it instead of graying out half the
 /// spectrum. These tests exist to find out whether that promise is true, not
 /// to assert that it is.
 @MainActor
@@ -130,7 +130,7 @@ struct DerivedAccentTests {
                                               dark: true, ground: darkGround)
                 let actual = d.color.lsHueSaturation?.saturation ?? -1
                 #expect(abs(actual - d.saturation) < 0.02,
-                        Comment(rawValue: "reported \(d.saturation) but the colour is \(actual)"))
+                        Comment(rawValue: "reported \(d.saturation) but the color is \(actual)"))
                 #expect(d.softened == (d.saturation < saturation - 0.005),
                         Comment(rawValue: "softened flag disagrees at h=\(hue) s=\(saturation)"))
                 if !d.softened {
@@ -141,7 +141,7 @@ struct DerivedAccentTests {
         }
     }
 
-    /// A grey pick has no hue to preserve, and must still be legible.
+    /// A gray pick has no hue to preserve, and must still be legible.
     @Test func agreyPickStillLands() {
         ThemePalette.refresh(from: nil)
         let light = LSTheme.derivedAccent(hue: 0, saturation: 0, dark: false, ground: lightGround).color
@@ -157,7 +157,7 @@ struct LegibleAccentTests {
     private var lightGround: Color { ThemePalette.groundBase(dark: false) }
     private var darkGround: Color { ThemePalette.groundBase(dark: true) }
 
-    /// A colour that already reads must come back untouched. Anything else
+    /// A color that already reads must come back untouched. Anything else
     /// would move the accent of every user whose choice was already fine.
     @Test func aPassingColourIsReturnedUnchanged() {
         ThemePalette.refresh(from: nil)
@@ -177,6 +177,6 @@ struct LegibleAccentTests {
 
         let before = purple.lsHueSaturation?.hue ?? -1
         let after = fixed.lsHueSaturation?.hue ?? -2
-        #expect(abs(before - after) < 0.03, "correction must keep the colour recognisably theirs")
+        #expect(abs(before - after) < 0.03, "correction must keep the color recognizably theirs")
     }
 }

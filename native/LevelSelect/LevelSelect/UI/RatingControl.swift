@@ -94,7 +94,7 @@ struct RatingControl: View {
                 if i == 5 && value == 5 && !reduceMotion { SparkleBurst(trigger: burst) }
             }
             // Vertical only. Five stars sit side by side, so a 44-point
-            // square around each would overlap its neighbours and the wrong
+            // square around each would overlap its neighbors and the wrong
             // star would win the tap — worse than a small target. Height is
             // free here because nothing sits above or below.
             .frame(minHeight: 44)

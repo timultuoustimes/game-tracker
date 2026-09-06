@@ -33,9 +33,9 @@ struct CollapsibleSection<Content: View>: View {
     /// **Nil means empty**, and that one signal does three jobs: the caption
     /// appears, the glyph takes the accent, and the section opens the first
     /// time you see the game. Fable's 5.6 asked for the caption; the tint is a
-    /// change to their proposal, which coloured every glyph — eight accent
+    /// change to their proposal, which colored every glyph — eight accent
     /// glyphs in a column is the "everything shouts" problem Home's shelves
-    /// were just fixed for. Lit only where there is something, the colour says
+    /// were just fixed for. Lit only where there is something, the color says
     /// where this game's life is instead of decorating a menu.
     let caption: String?
 

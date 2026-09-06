@@ -7,7 +7,7 @@ import PhotosUI
 ///
 /// Theirs come first deliberately. A photo someone took of the cartridge they
 /// owned is worth more to them than a press screenshot, and a section that
-/// opens with stock art reads as a catalogue rather than a notebook.
+/// opens with stock art reads as a catalog rather than a notebook.
 struct ScreenshotStrip: View {
     let game: Game
 

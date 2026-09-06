@@ -26,9 +26,9 @@ extension LSTheme {
     /// sat closer to its backdrop than it should. Tim: "The purple doesn't
     /// have enough contrast on the dark purple background."
     ///
-    /// Torch orange is already the brand's own colour -- it is what the
+    /// Torch orange is already the brand's own color -- it is what the
     /// wordmark has always been lit with -- and being the ground's
-    /// complement rather than its neighbour, it separates from it at every
+    /// complement rather than its neighbor, it separates from it at every
     /// size. Anyone who has chosen an accent keeps theirs; this is only what
     /// the app reaches for when nobody has said otherwise.
     /// Torch, dropped in value until it clears 4.5:1 on the light ground.
@@ -52,7 +52,7 @@ extension LSTheme {
     ///
     /// It used to follow a custom accent, on the same rule as `working` below.
     /// That rule is right for anything reading as *the app doing something*
-    /// and wrong for the logotype: an app whose name changes colour with a
+    /// and wrong for the logotype: an app whose name changes color with a
     /// preference has a name that means less each time it changes. Every other
     /// piece of chrome still follows the accent — this one stopped, so that
     /// there is one fixed point.
@@ -78,7 +78,7 @@ extension LSTheme {
 extension View {
     /// Full-bleed themed background.
     func lsBackground() -> some View {
-        // A picked colour tints the ground rather than replacing it — see
+        // A picked color tints the ground rather than replacing it — see
         // LSTheme.ground(tintedBy:). Either way it is one gradient, so nothing
         // downstream has to ask which theme is on or whether one was chosen.
         background(LSTheme.ground(lightTint: ThemePalette.backgroundOverrideLight,
@@ -95,7 +95,7 @@ extension View {
     ///
     /// This grows the LAYOUT, which is right for a standalone control: a close
     /// button or a chevron should occupy 44 points. Use `lsTapTargetInline`
-    /// where neighbours are close enough that growing would overlap them.
+    /// where neighbors are close enough that growing would overlap them.
     func lsTapTarget(_ side: CGFloat = 44) -> some View {
         frame(minWidth: side, minHeight: side).contentShape(.rect)
     }

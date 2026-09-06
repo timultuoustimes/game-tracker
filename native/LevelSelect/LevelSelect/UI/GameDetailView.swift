@@ -608,10 +608,10 @@ struct GameDetailView: View {
 
     /// **What a closed section holds, in a few words.**
     ///
-    /// Fable's 5.6: the page below the hero was twelve identical grey rows, so
+    /// Fable's 5.6: the page below the hero was twelve identical gray rows, so
     /// the only way to learn whether a section had anything in it was to open
     /// all twelve. Nil here means genuinely empty — and `CollapsibleSection`
-    /// reads that one signal three ways: no caption, a grey glyph instead of
+    /// reads that one signal three ways: no caption, a gray glyph instead of
     /// an accent one, and closed on first sight.
     private func caption(for section: GamePageSection) -> String? {
         func plural(_ n: Int, _ one: String, _ many: String) -> String? {
@@ -1243,7 +1243,7 @@ struct GameDetailView: View {
                 coverThumb(width: 138)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    // Honours the same "Use game logos" switch as showcase, at
+                    // Honors the same "Use game logos" switch as showcase, at
                     // the size this column can actually carry. A wordmark
                     // needs width to read and there isn't much beside a 138pt
                     // cover, so it gets a modest band rather than the full
@@ -1375,7 +1375,7 @@ struct GameDetailView: View {
             // This line sets the panel's width, so it must not be willing to
             // wrap: a wrapping Text answers a narrow proposal by growing
             // taller instead of asking for more room, so the panel settled
-            // small and the centring spacers pocketed the difference — which
+            // small and the centering spacers pocketed the difference — which
             // is how "Now Playing" ended up on two lines inside a panel with
             // space to spare. One line makes its ideal width honest, which is
             // what `layoutPriority` on the panel then acts on.
@@ -1818,8 +1818,8 @@ struct GameDetailView: View {
                         .background(LSTheme.accent.opacity(0.18), in: .capsule)
                         .overlay(Capsule().strokeBorder(LSTheme.accent.opacity(0.55), lineWidth: 1))
                     } else {
-                        // Grey, not blue. Accent means "mine" on the row above;
-                        // a second saturated colour beside it read as a second
+                        // Gray, not blue. Accent means "mine" on the row above;
+                        // a second saturated color beside it read as a second
                         // kind of selected, and stayed blue whatever the app's
                         // accent was. Codex K5, the editor's other half.
                         Chip(text: platform, tint: .secondary)

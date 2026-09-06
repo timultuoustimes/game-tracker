@@ -16,7 +16,7 @@ import SwiftUI
 /// **What is deliberately NOT here:** cover art, console icons and
 /// `coverGloss`. Tim, looking at the TurboGrafx render on white: *"Game art
 /// carries across theme… Consoles are the colors of the consoles, and look
-/// good on anything I've seen behind them, including just a light grey."*
+/// good on anything I've seen behind them, including just a light gray."*
 /// Artwork is artwork on any ground.
 enum LSTheme {
     static let purple = Color(red: 0.58, green: 0.36, blue: 0.98)
@@ -36,36 +36,36 @@ enum LSTheme {
     /// room before it goes muddy, so it travels less — but it has to travel.
     static var background: LinearGradient { ground(tintedBy: nil) }
 
-    /// The ground, optionally wearing a colour the user picked.
+    /// The ground, optionally wearing a color the user picked.
     ///
     /// **The tint supplies hue and saturation; the theme keeps luminance.**
     /// That is the whole safety property. A background is the one surface
     /// where a bad choice makes text unreadable, and letting someone drop a
     /// near-black into Light mode would do exactly that — dark ground, dark
-    /// text, nothing legible, no warning. Taking only the *colour* of their
-    /// choice means the app is still recognisably theirs and cannot be made
+    /// text, nothing legible, no warning. Taking only the *color* of their
+    /// choice means the app is still recognizably theirs and cannot be made
     /// unreadable by picking wrong.
     ///
     /// It also matches what the default already is. The shipped gradient is
-    /// not two colours; it is one hue at two brightnesses — so deriving the
+    /// not two colors; it is one hue at two brightnesses — so deriving the
     /// second stop reproduces the look that was already tuned, rather than
     /// inventing a new one.
     /// - Parameter scheme: nil resolves per the environment. **A widget must
     ///   pass one explicitly**: WidgetKit hoists `containerBackground` out of
-    ///   the view's environment, so a dynamic colour there never sees a
+    ///   the view's environment, so a dynamic color there never sees a
     ///   `.environment(\.colorScheme,)` override and resolves against the
     ///   system instead. That produced the exact bug it looks like — a Light
     ///   app on a Dark phone drawing dark-mode ground under light-mode text.
     /// One tint for both appearances — the widget and preview path, where only
-    /// a single stored colour is available.
+    /// a single stored color is available.
     static func ground(tintedBy tint: Color?, scheme: ColorScheme? = nil) -> LinearGradient {
         ground(lightTint: tint, darkTint: tint, scheme: scheme)
     }
 
     /// A tint per appearance. Build 37.
     ///
-    /// The app stores light and dark grounds separately, because a colour that
-    /// reads on one is rarely the colour you want on the other — the same
+    /// The app stores light and dark grounds separately, because a color that
+    /// reads on one is rarely the color you want on the other — the same
     /// reason the accent is now a pair. Each branch shades from its OWN hue,
     /// so a warm light ground and a cool dark one do not have to compromise.
     static func ground(lightTint: Color?, darkTint: Color?,
@@ -95,13 +95,13 @@ enum LSTheme {
     }
 
     /// One stop: the picked hue at the brightness this theme allows, or the
-    /// built-in colour when nothing was picked.
+    /// built-in color when nothing was picked.
     private static func shade(_ hue: (hue: Double, saturation: Double)?,
                               brightness: Double,
                               saturation: Double,
                               fallback: Color) -> Color {
         guard let hue else { return fallback }
-        // A grey pick has no hue worth keeping — honour it as grey rather
+        // A gray pick has no hue worth keeping — honor it as gray rather
         // than snapping to whatever arbitrary hue the picker reported.
         let sat = hue.saturation < 0.05 ? 0 : saturation
         return Color(hue: hue.hue, saturation: sat, brightness: brightness)
@@ -116,19 +116,19 @@ enum LSTheme {
     /// like torch lands exactly where it does today and nothing moves.
     static let preferredAccentBrightness = (light: 0.60, dark: 0.96)
 
-    /// A stored colour, made legible on the ground it will be read on.
+    /// A stored color, made legible on the ground it will be read on.
     ///
     /// **This is what makes accent-as-ink safe everywhere**, and it is why the
     /// 59 sites that use the accent as a foreground did not have to be swept
-    /// to semantic colours. A colour chosen through the picker already clears
+    /// to semantic colors. A color chosen through the picker already clears
     /// the floor — the picker refuses anything that does not. What this catches
     /// is the LEGACY value: an accent stored before build 37 was never checked
     /// against anything, and the developer's own `#8A5CF6` sits at 4.22:1 on
     /// the dark ground.
     ///
-    /// A passing colour is returned untouched, so nothing moves for anyone
+    /// A passing color is returned untouched, so nothing moves for anyone
     /// whose accent was already fine. A failing one is re-derived from its own
-    /// hue and saturation, which keeps the colour recognisably theirs rather
+    /// hue and saturation, which keeps the color recognizably theirs rather
     /// than replacing it with a default.
     static func legible(_ color: Color, on ground: Color, floor: Double = 4.5) -> Color {
         if LSContrast.ratio(color, ground) >= floor { return color }
@@ -163,7 +163,7 @@ enum LSTheme {
     /// against green's 0.7152, so a saturated blue at FULL brightness is still
     /// luminance-dark and nothing reaches 4.5:1 on a dark ground.
     ///
-    /// So saturation is a last resort, not a second dial: it is honoured
+    /// So saturation is a last resort, not a second dial: it is honored
     /// whenever brightness can do the job, and softened only where physics
     /// forbids otherwise — with `softened` set so the UI can say it happened.
     /// Tim chose this over hard-restricting the region: *"Go with softening
@@ -173,7 +173,7 @@ enum LSTheme {
                               dark: Bool,
                               ground: Color,
                               floor: Double = 4.5) -> DerivedAccent {
-        // Honour the chosen saturation if any brightness works at it.
+        // Honor the chosen saturation if any brightness works at it.
         if let color = solveBrightness(hue: hue, saturation: saturation,
                                        dark: dark, ground: ground, floor: floor) {
             return DerivedAccent(color: color, saturation: saturation, requested: saturation)
@@ -187,7 +187,7 @@ enum LSTheme {
                 return DerivedAccent(color: color, saturation: candidate, requested: saturation)
             }
         }
-        // Grey at this brightness always clears a themed ground, so this is
+        // Gray at this brightness always clears a themed ground, so this is
         // unreachable in practice; returning the honest last try beats a crash.
         let fallback = Color(hue: hue, saturation: 0,
                              brightness: dark ? 1 : preferredAccentBrightness.light)
@@ -198,7 +198,7 @@ enum LSTheme {
     ///
     /// Starts at the brightness each appearance prefers — the values the
     /// shipped defaults already use — and walks toward more contrast only if
-    /// it has to. Contrast rises as a colour brightens on a dark ground and
+    /// it has to. Contrast rises as a color brightens on a dark ground and
     /// darkens on a light one, so the walk goes opposite ways; this is not a
     /// symmetric formula and should not be "simplified" into one.
     private static func solveBrightness(hue: Double, saturation: Double,
@@ -226,13 +226,13 @@ enum LSTheme {
     /// Hero card gradient (Continue Playing).
     static var heroGradient: LinearGradient { hero(tintedBy: nil) }
 
-    /// The hero, wearing the same colour the ground does.
+    /// The hero, wearing the same color the ground does.
     ///
     /// It is the ground's own hue lifted off it — brighter than the ground in
     /// the dark theme, deeper in the light one, because "raised" points in
     /// opposite directions depending on which way the ground goes. Leaving it
     /// fixed while the ground moved made the most prominent card on Home the
-    /// one thing that ignored your colour.
+    /// one thing that ignored your color.
     static func hero(tintedBy tint: Color?) -> LinearGradient {
         let hue = tint?.lsHueSaturation
         return LinearGradient(
@@ -252,7 +252,7 @@ enum LSTheme {
 
     // MARK: Surfaces raised off the ground
     //
-    // These were `.white.opacity(…)` everywhere, which is not a colour so much
+    // These were `.white.opacity(…)` everywhere, which is not a color so much
     // as an instruction: *lighten whatever is behind you*. On a light ground
     // that instruction is backwards — a card lifted off white has to go
     // darker — so each one becomes a token that knows which way "up" is.
@@ -282,7 +282,7 @@ enum LSTheme {
     /// **The amount has to change with the ground, because darkening has no
     /// headroom on a dark one.** A step 55% toward black measures 10.9:1
     /// against the light ground and 1.5:1 against the dark one — the same
-    /// colour, disappearing into the exact background it exists to stand out
+    /// color, disappearing into the exact background it exists to stand out
     /// from. Going *darker* makes it worse, not better: at 70% it is 1.2:1 and
     /// at 85% it is 1.0:1, because the ground is already near black and there
     /// is nowhere below it to go.
@@ -334,7 +334,7 @@ enum LSTheme {
     /// `artScrim`, carrying a hint of a tint — same weight, different hue.
     ///
     /// The Journal's month page uses this with the accent, so the year strip's
-    /// pill fill and the month grid's day cells share a colour and the zoom
+    /// pill fill and the month grid's day cells share a color and the zoom
     /// between them reads as one idea (Fable 5.4).
     ///
     /// **The mix happens before the alpha, not after.** `Color.mix` interpolates
@@ -364,9 +364,9 @@ extension Color {
         #endif
     }
 
-    /// One colour that resolves differently in each theme.
+    /// One color that resolves differently in each theme.
     ///
-    /// Done in code rather than as asset-catalog colour sets so the *reasoning*
+    /// Done in code rather than as asset-catalog color sets so the *reasoning*
     /// can sit beside the values — an `.xcassets` entry has nowhere to say why
     /// a scrim stays dark while a card fill flips.
     static func lsDynamic(light: Color, dark: Color) -> Color {

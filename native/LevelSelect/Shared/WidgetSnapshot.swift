@@ -151,7 +151,7 @@ struct WidgetSnapshot: Codable, Hashable {
     /// app's own store — so the accent travels here with everything else the
     /// app already tells them.
     var accentHex: String? = nil
-    /// Light / dark / system, and a chosen background, travelling the same
+    /// Light / dark / system, and a chosen background, traveling the same
     /// road as the accent and for the same reason: a widget cannot read
     /// ThemeSettings.
     ///

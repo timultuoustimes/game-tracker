@@ -502,7 +502,7 @@ struct ArtworkPickerView: View {
 
         // After IGDB, and never instead of it: IGDB is the app's source of
         // record for what a game IS, and its art is the publisher's. This
-        // fills the gap, which for logos is most of the catalogue.
+        // fills the gap, which for logos is most of the catalog.
         let found = await SteamGridDBService.artwork(for: game, role: role)
         sgdbFailed = found == nil
         sgdbArt = found ?? []

@@ -6,7 +6,7 @@ extension View {
     /// There used to be three answers. Arrange Stats opened part-way and
     /// glassy; Add Game painted its own 62% tint and went straight to full
     /// height; Settings took the platform default and went full height and
-    /// grey. Tim: *"None of the other sheets only come up part way as glass,
+    /// gray. Tim: *"None of the other sheets only come up part way as glass,
     /// which is an inconsistency across menu sheets. They need to all open
     /// like arrange stats, or they need to all open like home's settings."*
     ///

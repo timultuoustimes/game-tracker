@@ -2,9 +2,9 @@ import SwiftUI
 
 /// The surface a row on the add screen sits on.
 ///
-/// `.ultraThinMaterial` alone was flat: a single grey tone with nothing
+/// `.ultraThinMaterial` alone was flat: a single gray tone with nothing
 /// happening across it, which is what Tim was reacting to — *"I think the
-/// cards should be a little more interesting than the flat grey as well."*
+/// cards should be a little more interesting than the flat gray as well."*
 ///
 /// Three cheap layers instead. The material still does the frosting, a faint
 /// top-to-bottom lift gives the card a light source, and a hairline that is

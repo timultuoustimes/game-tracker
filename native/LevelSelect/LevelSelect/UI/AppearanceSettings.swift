@@ -12,7 +12,7 @@ struct AppearanceSettingsSection: View {
     /// badges are about your games. They still share this view's state and
     /// helpers, so the split is a parameter rather than a second type.
     /// **Three groups, not two.** They were split by whether a setting was
-    /// about colour or about content — a real distinction, and not one anybody
+    /// about color or about content — a real distinction, and not one anybody
     /// has in mind when they want to change how a game page works. Tim:
     /// *"Things are oddly split here."*
     ///
@@ -22,7 +22,7 @@ struct AppearanceSettingsSection: View {
     ///
     /// **Four now.** Personalization split again when Settings became an
     /// index: a page per destination, and statuses earned one of their own —
-    /// they were six colour rows and ten name fields folded into two
+    /// they were six color rows and ten name fields folded into two
     /// disclosure groups inside a section about something else. Tim, on the
     /// same question: *"its own page."*
     enum Scope { case theme, statuses, gamePages, trackers }
@@ -186,8 +186,8 @@ struct AppearanceSettingsSection: View {
 
     /// Statuses get a page rather than two disclosure groups.
     ///
-    /// Colour and name are the same decision made twice — you rename
-    /// "Abandoned" for the same reason you recolour it — and they were folded
+    /// Color and name are the same decision made twice — you rename
+    /// "Abandoned" for the same reason you recolor it — and they were folded
     /// away in separate collapsed groups inside a section about the app's
     /// theme. On their own page the ten statuses are just a list, one row
     /// each, which is also the shape the show/hide switch will need.
@@ -198,7 +198,7 @@ struct AppearanceSettingsSection: View {
                 colorRow(status.sectionTitle, icon: status.systemImage,
                          swatch: status.color,
                          isCustom: settings?.statusColors[status.rawValue] != nil) {
-                    // A single target: a status colour is chosen on its
+                    // A single target: a status color is chosen on its
                     // own, so there is nothing to compare it against and
                     // the picker stays hidden.
                     ColorEditor(title: status.sectionTitle, targets: [
@@ -218,7 +218,7 @@ struct AppearanceSettingsSection: View {
                 }
             }
         } footer: {
-            Text("Tap a status to change its colour. Colours and names sync through iCloud, and a blank name keeps the built-in word.")
+            Text("Tap a status to change its color. Colors and names sync through iCloud, and a blank name keeps the built-in word.")
         }
 
         Section {
@@ -319,7 +319,7 @@ struct AppearanceSettingsSection: View {
                     .lsSheet()
             }
         } footer: {
-            Text("Applies to every game page. Colours and layout sync through iCloud; section order and hiding are set per device.")
+            Text("Applies to every game page. Colors and layout sync through iCloud; section order and hiding are set per device.")
         }
     }
 
@@ -441,7 +441,7 @@ struct AppearanceSettingsSection: View {
             // it in place — a chosen ground survived every reset the UI
             // offered, with no way back to the default short of matching the
             // original purple by eye. Found in the build 37 UX assessment,
-            // whose entire walkthrough ran on a grey ground because of it.
+            // whose entire walkthrough ran on a gray ground because of it.
             || anyBackgroundChosen
     }
 
@@ -454,7 +454,7 @@ struct AppearanceSettingsSection: View {
     /// user chooses, rather than one value the app second-guesses at render
     /// time. `accentHex(dark:)` reads whichever belongs to the appearance on
     /// screen; the legacy `accentHex` is still read as the dark value so
-    /// existing libraries keep the colour they had.
+    /// existing libraries keep the color they had.
     private func accentBinding(dark: Bool) -> Binding<Color> {
         Binding(
             get: {

@@ -130,7 +130,7 @@ private struct GameArtGrid: View {
             // `Color.clear` sets the cell's shape and the image fills it from
             // behind. Constraining only the HEIGHT of a `.fill` image leaves
             // its width intrinsic, so a wide SteamGridDB hero grew past its
-            // grid cell and painted over its neighbours — `clipShape` hides
+            // grid cell and painted over its neighbors — `clipShape` hides
             // pixels but does not shrink the layout.
             ZStack {
                 Color.clear

@@ -163,7 +163,7 @@ struct WishlistTab: View {
             //
             // The default for a stack root is `.large`: a full-size title on
             // its OWN row under the toolbar, collapsing to a small CENTRED one
-            // on scroll. That is the row Tim asked to reclaim, and the centring
+            // on scroll. That is the row Tim asked to reclaim, and the centering
             // is the jump he objected to. Dropping the mode entirely got the
             // title onto the toolbar row but about a fifth smaller.
             //
@@ -389,10 +389,10 @@ struct WishlistTab: View {
         return WishlistShelf.releaseLabel(date)
     }
 
-    /// A year with no day behind it. Drawn in the quieter colour, because
+    /// A year with no day behind it. Drawn in the quieter color, because
     /// Tim's note is exactly right: *"'by December 31' is technically correct,
-    /// but it just reads as a definitive date."* A bare year in secondary grey
-    /// does not make that promise; an accent-coloured day does.
+    /// but it just reads as a definitive date."* A bare year in secondary gray
+    /// does not make that promise; an accent-colored day does.
     private func isApproximate(_ game: Game) -> Bool {
         guard let date = game.effectiveReleaseDate else { return true }
         return WishlistShelf.isYearOnly(date)

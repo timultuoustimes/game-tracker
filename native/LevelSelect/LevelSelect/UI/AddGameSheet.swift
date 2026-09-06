@@ -58,12 +58,12 @@ struct AddGameSheet: View {
         // The whole sheet, not just its rows. Tim: "Can the entire menu be
         // slightly translucent, like a frosted glass?" — the library behind it
         // staying faintly visible is what makes this read as a layer over your
-        // games rather than a separate grey screen.
+        // games rather than a separate gray screen.
         // **No `presentationBackground` here any more.**
         //
         // This used to paint a 62% fill of the app's own ground, because
         // `.ultraThinMaterial` on a full-height sheet had nothing behind it to
-        // sample and read as flat grey — Tim wanted to "see through a little
+        // sample and read as flat gray — Tim wanted to "see through a little
         // bit to the app page behind it" and a tint was the only way to get
         // anything at all.
         //
@@ -135,7 +135,7 @@ struct AddGameSheet: View {
             #else
             .listStyle(.insetGrouped)
             #endif
-            // The search results list painted its own opaque grey over the
+            // The search results list painted its own opaque gray over the
             // frosted sheet, which is why only the strip around the search
             // field looked translucent and everything below it did not.
             .scrollContentBackground(.hidden)
@@ -531,12 +531,12 @@ private struct ConfirmAddView: View {
         }
         // The app's own ground, with the rows as glass on top of it. A system
         // grouped Form reads as Settings, and this is the screen where you
-        // look at a game — Tim: "It's also a boring default grey, like the
+        // look at a game — Tim: "It's also a boring default gray, like the
         // settings menu... Can it be a slight glass?"
         // No `lsBackground()` here on purpose. An opaque ground painted
         // inside the sheet sits ON TOP of `presentationBackground`, so the
         // frosting had nothing to frost — the sheet was translucent in name
-        // and grey on screen. The material is the background now.
+        // and gray on screen. The material is the background now.
         .scrollContentBackground(.hidden)
         .listRowBackground(AddSheetCard())
                 .sheet(item: $zoomed) { RemoteImageViewer(url: $0.url) }

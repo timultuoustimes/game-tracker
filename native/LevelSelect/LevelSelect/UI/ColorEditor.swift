@@ -15,20 +15,20 @@ import SwiftData
 /// Everything here is a draft until Done. Cancel restores what was there when
 /// the sheet opened, including the live theme, so nothing is committed by
 /// looking.
-/// One colour this editor can change.
+/// One color this editor can change.
 struct ColorTarget: Identifiable {
     let id: String
     let label: String
-    /// The colour this reverts to. Nil when there is no default to go back to.
+    /// The color this reverts to. Nil when there is no default to go back to.
     let defaultColor: Color?
     /// Whether a custom value is currently stored — Reset is pointless without.
     let isCustomised: Bool
     let binding: Binding<Color>
     let onReset: () -> Void
-    /// The ground this colour will be read ON, when it has to stay legible.
+    /// The ground this color will be read ON, when it has to stay legible.
     ///
     /// Set for accents, which are ink. Nil for backgrounds, which are not:
-    /// `LSTheme.ground` takes only hue and saturation from a picked colour and
+    /// `LSTheme.ground` takes only hue and saturation from a picked color and
     /// fixes brightness per appearance (0.97 light, 0.16 dark), so a ground
     /// cannot be dialled into illegibility no matter what is picked.
     var contrastGround: Color? = nil
@@ -38,7 +38,7 @@ struct ColorTarget: Identifiable {
 
 struct ColorEditor: View {
     let title: String
-    /// Every colour editable here. More than one gets a picker at the top.
+    /// Every color editable here. More than one gets a picker at the top.
     ///
     /// Accent and background arrive together because they are chosen against
     /// each other. Tim: *"you should be able to choose accent and background
@@ -60,10 +60,10 @@ struct ColorEditor: View {
         targets.first { $0.id == selectedID } ?? targets[0]
     }
 
-    /// The two colours the preview needs, live — whichever one is being
+    /// The two colors the preview needs, live — whichever one is being
     /// edited comes from the sliders, the other from its stored binding.
     ///
-    /// Resolved for the appearance being edited. Build 37 split each colour in
+    /// Resolved for the appearance being edited. Build 37 split each color in
     /// two, so the ids became `accent-light`/`accent-dark` and this matched
     /// neither: every lookup fell through to `.clear` and the preview stopped
     /// responding to the picker entirely. Editing the light accent must
@@ -84,7 +84,7 @@ struct ColorEditor: View {
     /// Tim: *"Background preview for light is showing as dark (system is
     /// currently dark)."*
     ///
-    /// nil for the single-target editors (the status colours), which have no
+    /// nil for the single-target editors (the status colors), which have no
     /// light/dark split and should stay in the appearance you are actually
     /// looking at.
     private var previewScheme: ColorScheme? {
@@ -118,7 +118,7 @@ struct ColorEditor: View {
     /// One hue for both appearances, or two independent choices.
     ///
     /// Only offered where there is something to link — the Colors editor with
-    /// its accent pair. A single-target editor (status colours) has no second
+    /// its accent pair. A single-target editor (status colors) has no second
     /// appearance to match.
     private var offersLinking: Bool { targets.contains { $0.id.hasPrefix("accent-") } }
 
@@ -159,7 +159,7 @@ struct ColorEditor: View {
     /// The ground needs no new stored fields to be "linked".
     ///
     /// `LSTheme.ground(tintedBy:)` keeps only hue and saturation and supplies
-    /// the luminance per appearance, so writing one colour to BOTH stored
+    /// the luminance per appearance, so writing one color to BOTH stored
     /// grounds already produces a matched pair. The accent is different — it
     /// has a real linked hue of its own, because its brightness is derived
     /// rather than fixed.
@@ -214,9 +214,9 @@ struct ColorEditor: View {
     /// Brightness is arbitrary and discarded downstream, so it is set to
     /// something mid-range rather than pretending to be meaningful.
     private func writeLinkedGround(hue h: Double, saturation sat: Double) {
-        let colour = Color(hue: h, saturation: sat, brightness: 0.6)
+        let color = Color(hue: h, saturation: sat, brightness: 0.6)
         for t in targets where t.id.hasPrefix("background-") {
-            t.binding.wrappedValue = colour
+            t.binding.wrappedValue = color
         }
     }
 
@@ -233,7 +233,7 @@ struct ColorEditor: View {
         offersLinking && linked && themeSettings.first?.accentHue != nil
     }
 
-    /// Preview, palette, your own colours, a hex field, the plane, and
+    /// Preview, palette, your own colors, a hex field, the plane, and
     /// whatever readout the mode wants — in that order, in both modes.
     @ViewBuilder
     private func pickerStack<Readout: View>(
@@ -265,7 +265,7 @@ struct ColorEditor: View {
 
         hexRow
 
-        // Three sliders and a colour wheel were two ways into three numbers,
+        // Three sliders and a color wheel were two ways into three numbers,
         // and one of the three is no longer the user's to set. With lightness
         // derived, the choice is two-dimensional, and a plane is the honest
         // shape for it — Tim: *"It should just be the hue and saturation like
@@ -290,12 +290,12 @@ struct ColorEditor: View {
     /// The app is near-black everywhere, so pale washes and muddy mid-tones
     /// are choices nobody can use — a grid that offers them mostly offers
     /// disappointment. These are picked to read on the ground they land on.
-/// The app's own colours, first and together.
+/// The app's own colors, first and together.
     ///
     /// They were in the grid already — torch orange, the two purples — but
     /// scattered among two dozen hues, so there was no way to tell they were a
     /// set rather than a coincidence. Tim: *"I can't tell if they're part of
-    /// the same brand palette."* A palette you cannot recognise is not a
+    /// the same brand palette."* A palette you cannot recognize is not a
     /// palette, so these lead and the rest follow.
     private static let brandSwatches: [String] = [
         "#F5A34D",   // torch orange — the wordmark, and the default accent
@@ -308,11 +308,11 @@ struct ColorEditor: View {
     /// brand four above**. Tim: *"if they're in the top 4 brand colors, they
     /// shouldn't also be in the other color circles below."*
     ///
-    /// Three were within a hair of a brand colour and are gone: `#A66BFF` and
+    /// Three were within a hair of a brand color and are gone: `#A66BFF` and
     /// `#7A5CFF` sat 0.017 and 0.019 in hue from the brand purple, and
     /// `#FF9F1C` sat 0.011 from torch orange. `#B36BFF` and `#FF8A5B` stay —
     /// a lighter purple and a coral read as their own hues rather than as the
-    /// brand colour repeated.
+    /// brand color repeated.
     private static let swatches: [String] = [
         "#FF8A5B", "#FF6B6B", "#F2547D", "#D65DB1", "#B36BFF",
         "#6C7BFF", "#4D9BFF", "#37C6E0", "#2FD4B6", "#3FD07A",
@@ -320,7 +320,7 @@ struct ColorEditor: View {
         "#5AA9E6", "#54C6C6", "#57C785", "#9BC53D",
     ]
 
-    /// **The palette, as hue and saturation rather than fixed colours.**
+    /// **The palette, as hue and saturation rather than fixed colors.**
     ///
     /// Fixed hexes could not be a palette here. Each one is a single lightness,
     /// so it reads on one ground and not the other, and the grid came back
@@ -334,10 +334,10 @@ struct ColorEditor: View {
     /// arithmetic and uneven to the eye: HSB hue is not perceptually uniform.
     /// Green sprawls across a third of the wheel with every step looking like
     /// the same green, while the teal-to-blue arc changes fast and got two
-    /// entries to cover four distinguishable colours. Tim, looking at the
+    /// entries to cover four distinguishable colors. Tim, looking at the
     /// result: *"a few variations of similar colors that give basically the
     /// same end result as each other."* He was describing a measurable fact
-    /// about the colour space, not a matter of taste.
+    /// about the color space, not a matter of taste.
     ///
     /// So the ring is fourteen hues spaced 360/14 apart in **OKLCH**, which is
     /// built to be perceptually uniform, then converted to the (hue,
@@ -361,7 +361,7 @@ struct ColorEditor: View {
     /// its own transform on top: `derivedAccent` softens the saturation of any
     /// hue that cannot be read on a dark ground. Cyan cannot be dark, so the
     /// ring's teal, cyan and blue-cyan all got pulled toward the same muted
-    /// teal and arrived as three circles of one colour — the exact complaint,
+    /// teal and arrived as three circles of one color — the exact complaint,
     /// reintroduced by the fix for it. Seen on the simulator, not reasoned
     /// about: the grid had to be looked at after resolution, not before.
     ///
@@ -466,7 +466,7 @@ struct ColorEditor: View {
             // `Spacer` that a ScrollView gives no room to, so it landed exactly
             // at the sheet's edge and drew half-sliced — Tim: *"'Use the default
             // background' and 'use the default accent' are off the bottom."*
-            // A reset is the one control you go looking for when the colour is
+            // A reset is the one control you go looking for when the color is
             // wrong, so it should not be a scroll away from the thing that made
             // it wrong.
             .safeAreaInset(edge: .bottom) { resetControl }
@@ -501,9 +501,9 @@ struct ColorEditor: View {
                 for t in targets { originals[t.id] = t.binding.wrappedValue }
                 setFromColor(target.binding.wrappedValue)
             }
-            // Switching target loads ITS colour without writing — otherwise
+            // Switching target loads ITS color without writing — otherwise
             // the sliders' current position would immediately overwrite the
-            // colour you just switched to with the one you switched from.
+            // color you just switched to with the one you switched from.
             .onChange(of: selectedID) { _, _ in
                 loading = true
                 setFromColor(target.binding.wrappedValue)
@@ -608,13 +608,13 @@ struct ColorEditor: View {
             }
             .foregroundStyle(dark ? Color.white.opacity(0.55) : Color.black.opacity(0.45))
 
-            // **Centred under the label, not in the card.**
+            // **Centered under the label, not in the card.**
             //
             // Tim, drawing the axis he wanted them on: the label row belongs at
             // the top, and the buttons belong in the middle of what is left —
             // which is not the middle of the whole half once a heading is
             // sitting above them. `.leading` on a `maxHeight: .infinity` frame
-            // is vertically centred, horizontally leading, which is exactly
+            // is vertically centered, horizontally leading, which is exactly
             // that.
             VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
@@ -763,13 +763,13 @@ struct ColorEditor: View {
                       Int(round(r * 255)), Int(round(g * 255)), Int(round(b * 255)))
     }
 
-    /// The one swatch that counts as "the colour you are on".
+    /// The one swatch that counts as "the color you are on".
     ///
     /// **Singular by construction, because selection is.** `matches` is a
     /// tolerance test — 0.02 in hue, 0.05 in saturation and brightness — so
     /// picking the brand purple lit three circles at once: `#A66BFF` and
     /// `#7A5CFF` both fall inside it. Tightening the tolerance would only move
-    /// the problem, since any two neighbouring swatches can be closer to each
+    /// the problem, since any two neighboring swatches can be closer to each
     /// other than to the value you dragged the sliders to. So the ring goes to
     /// the *nearest* swatch across every row, and only if it is near at all.
     private var selectedSwatch: String? {
@@ -782,9 +782,9 @@ struct ColorEditor: View {
             .min { $0.1 < $1.1 }?.0
     }
 
-    /// How far `current` is from a colour, in the same three axes `matches`
+    /// How far `current` is from a color, in the same three axes `matches`
     /// uses. Hue counts most: two purples of different brightness still read
-    /// as the same colour, two hues apart do not.
+    /// as the same color, two hues apart do not.
     private func distance(to other: Color) -> Double {
         let a = ColorEditor.hsb(current), b = ColorEditor.hsb(other)
         let dh = min(abs(a.h - b.h), 1 - abs(a.h - b.h))
@@ -813,14 +813,14 @@ struct ColorEditor: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// A swatch of the colour this hue actually becomes here.
+    /// A swatch of the color this hue actually becomes here.
     ///
     /// **Writes the bindings it was handed, not this view's `hue`/`saturation`
     /// state.** Those two belong to the unlinked editor; in linked mode the
     /// value lives on the settings record. Tapping a swatch used to set the
     /// unlinked state and call `push()` regardless, so in linked mode — the
     /// mode almost everyone is in — nothing moved and the ring settled on a
-    /// colour nobody had chosen. Tim: *"Picking a color here isn't changing
+    /// color nobody had chosen. Tim: *"Picking a color here isn't changing
     /// the previews."* The selection ring reads the same bindings back, so it
     /// can no longer disagree with what is on screen.
     private func hueSwatch(_ e: (h: Double, s: Double),
@@ -867,7 +867,7 @@ struct ColorEditor: View {
     private func swatch(_ hex: String, removable: Bool = false) -> some View {
         let c = Color(hex: hex) ?? .gray
         let selected = (hex == selectedSwatch)
-        // Shown and struck through rather than hidden: "this colour exists and
+        // Shown and struck through rather than hidden: "this color exists and
         // will not work here" is more use than a palette that silently differs
         // between the light and dark tabs.
         let usable = passes(c)
@@ -919,7 +919,7 @@ struct ColorEditor: View {
     private var derivedDark: Bool {
         if selectedID.hasSuffix("-dark") { return true }
         if selectedID.hasSuffix("-light") { return false }
-        // Status colours have no appearance of their own; they are drawn on
+        // Status colors have no appearance of their own; they are drawn on
         // whichever ground you are looking at.
         return deviceScheme == .dark
     }
@@ -930,7 +930,7 @@ struct ColorEditor: View {
     ///
     /// This used to be `Color(hue:saturation:brightness:)` straight off three
     /// sliders, which is why the palette was full of struck-through circles: a
-    /// colour readable on the dark ground is usually unreadable on the light
+    /// color readable on the dark ground is usually unreadable on the light
     /// one, so whichever appearance you were editing rejected most of the grid.
     /// Tim: *"we've got giant blocks of 'doesn't work here' all crossed out and
     /// then just a few colors they can choose from... I don't think we need to
@@ -949,8 +949,8 @@ struct ColorEditor: View {
                                      ground: ThemePalette.groundBase(dark: derivedDark)).color
     }
 
-    /// The colour being edited, wherever this mode keeps it. Used by the hex
-    /// field, "keep this colour", and the contrast readout — all of which
+    /// The color being edited, wherever this mode keeps it. Used by the hex
+    /// field, "keep this color", and the contrast readout — all of which
     /// reported the unlinked state regardless of mode before.
     private var current: Color {
         linkedMode
@@ -1000,10 +1000,10 @@ struct ColorEditor: View {
 
     private func push() {
         guard !loading else { return }
-        // **A failing colour is never committed.**
+        // **A failing color is never committed.**
         //
         // Build 37: an accent has to be legible on the ground of the
-        // appearance it belongs to, and no single colour manages both — torch
+        // appearance it belongs to, and no single color manages both — torch
         // is 8.74:1 on dark and 1.90:1 on light. Rather than let someone pick
         // an unreadable app and fix it at render time, the choice itself is
         // constrained. Dragging into a failing region shows the readout and

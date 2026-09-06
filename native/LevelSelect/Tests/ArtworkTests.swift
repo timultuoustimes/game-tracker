@@ -396,7 +396,7 @@ struct AccentContrastTests {
     /// user's to choose, so both extremes must work: white on a deep color,
     /// black on a pale one. Getting this wrong makes the most important
     /// control on Home unreadable for whoever picked yellow.
-    /// **Asserts the property, not the colour.**
+    /// **Asserts the property, not the color.**
     ///
     /// Build 36 made `onAccent` a knockout — the ground showing through the
     /// button rather than ink laid on it — so the answer is no longer one of
@@ -434,7 +434,7 @@ struct AccentContrastTests {
     /// it is a visible change to the default look and it is the correct one.
     /// Checked in BOTH appearances explicitly.
     ///
-    /// Build 37 made `accent` and `onAccent` dynamic colours, so sampling them
+    /// Build 37 made `accent` and `onAccent` dynamic colors, so sampling them
     /// tests whichever trait the test process happens to resolve under — which
     /// is not a property worth asserting. `knockoutPreview(on:ground:)` takes
     /// both sides, so the pair being asked about is the pair that will actually
@@ -489,11 +489,11 @@ struct AccentContrastTests {
         ThemePalette.refresh(from: settings)
         let ink = ThemePalette.knockoutPreview(
             on: try! #require(Color(hex: "#F5A34D")), ground: paleGround)
-        // Not pure black, and not pure grey: it still carries a hue.
+        // Not pure black, and not pure gray: it still carries a hue.
         #expect(ThemePalette.luminance(of: ink) > 0)
         if let inkHS = ink.lsHueSaturation, let groundHS = paleGround.lsHueSaturation {
             #expect(inkHS.saturation > 0.05,
-                    "A darkened ground should stay tinted, not collapse to grey.")
+                    "A darkened ground should stay tinted, not collapse to gray.")
             #expect(abs(inkHS.hue - groundHS.hue) < 0.05,
                     "It should be the ground's hue, not some other one.")
         }

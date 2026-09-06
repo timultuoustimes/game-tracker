@@ -1246,7 +1246,7 @@ struct StatsArrangeSheet: View {
                 // because the page sorts by group first.
                 //
                 // So a card moves WITHIN its group, which is the only
-                // movement the page can honour.
+                // movement the page can honor.
                 Section {
                     Toggle(isOn: visibilityBinding(.overview)) {
                         Label(StatsCard.overview.displayName, systemImage: StatsCard.overview.icon)

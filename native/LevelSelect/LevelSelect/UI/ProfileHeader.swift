@@ -122,7 +122,7 @@ struct ProfileHeader: View {
                         // other pixel-type string in the app, and the only
                         // other place the treatment belongs — the rest of the
                         // interface is ordinary text and would just get loud.
-                        // The ink darkened, so a custom name colour gets a
+                        // The ink darkened, so a custom name color gets a
                         // shadow that belongs to it rather than a fixed brown
                         // — the rule `Wordmark.shadowTint` already follows.
                         // The hard-coded y:2 that used to sit here was right,

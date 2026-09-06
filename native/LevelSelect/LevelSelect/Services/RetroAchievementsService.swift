@@ -289,7 +289,7 @@ enum RetroAchievementsService {
     /// So the server is removed from the path entirely for anything carrying a
     /// user's credential. The key still rides in the query string, because
     /// that is RA's own API contract and unavoidable for any client, but our
-    /// infrastructure never sees it. The proxy keeps the catalogue lookups,
+    /// infrastructure never sees it. The proxy keeps the catalog lookups,
     /// which use the app's own key and no user data.
     private static func callRA(_ endpoint: String, _ parameters: [String: String],
                                apiKey: String) async throws -> [String: Any] {

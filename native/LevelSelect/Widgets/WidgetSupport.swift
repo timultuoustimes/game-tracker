@@ -57,7 +57,7 @@ extension LSWidget {
     }
 
     /// The same ground the app draws, from the same function — so a widget
-    /// beside the app is the same colour rather than a good match.
+    /// beside the app is the same color rather than a good match.
     static var ground: LinearGradient {
         // The scheme is passed EXPLICITLY, never inherited. See
         // LSTheme.ground(tintedBy:scheme:) — a container background cannot

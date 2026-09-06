@@ -287,8 +287,8 @@ struct CoverThumb: View {
     /// six call sites with no game in scope — the artwork picker, the profile
     /// backdrop, recently deleted — which keep the old glyph.
     var name: String? = nil
-    /// Colours the mark, the way every other status glyph in the app is
-    /// coloured. Nil falls back to secondary ink.
+    /// Colors the mark, the way every other status glyph in the app is
+    /// colored. Nil falls back to secondary ink.
     var status: GameStatus? = nil
     /// Fill is right for box art, which is meant to be cropped to a shelf
     /// tile. It is wrong for a wordmark: a wide logo in a 2.2 tile gets its
@@ -316,13 +316,13 @@ struct CoverThumb: View {
 
     /// **A missing cover says which game it is.**
     ///
-    /// It used to be a grey field and one `gamecontroller.fill`, which is the
+    /// It used to be a gray field and one `gamecontroller.fill`, which is the
     /// same object for every game in the library — four unmatched games on a
     /// shelf read as four copies of one thing. Now it carries the title as a
-    /// short mark in the app's own face, in the game's status colour, with the
+    /// short mark in the app's own face, in the game's status color, with the
     /// hard step the wordmark and the profile name already wear.
     ///
-    /// Fable's 5.7 proposed the full name in the status colour. Two things
+    /// Fable's 5.7 proposed the full name in the status color. Two things
     /// sent it here instead. The name is already printed under the card on
     /// shelves and in rows — so drawing it inside repeats it exactly where the
     /// card is biggest — and at the 44pt calendar cell a name is not readable

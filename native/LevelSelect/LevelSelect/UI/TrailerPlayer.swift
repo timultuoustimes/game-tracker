@@ -6,7 +6,7 @@ import WebKit
 ///
 /// The first attempt pointed the in-app browser at a YouTube embed URL and got
 /// **Error 153** — YouTube refuses a bare `/embed/` load whose referrer it does
-/// not recognise. The app already had the answer: `YouTubePlayerView` loads the
+/// not recognize. The app already had the answer: `YouTubePlayerView` loads the
 /// IFrame API from HTML with a `youtube-nocookie.com` base URL, which is what
 /// makes the referrer valid, and it has played guides and videos for builds.
 ///

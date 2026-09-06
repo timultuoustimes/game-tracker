@@ -72,7 +72,7 @@ enum ImageIngest {
 
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,   // honour EXIF rotation
+            kCGImageSourceCreateThumbnailWithTransform: true,   // honor EXIF rotation
             kCGImageSourceShouldCacheImmediately: true,
             kCGImageSourceThumbnailMaxPixelSize: limit,
         ]

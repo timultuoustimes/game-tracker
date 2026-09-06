@@ -158,7 +158,7 @@ enum CSVImport {
         case "shelved", "backlog?", "someday":              .shelved
         // Build 36. The words people actually use for it, including the ones
         // other trackers export.
-        case "old favorite", "old favourite", "oldfavorite",
+        case "old favorite", "old favorite", "oldfavorite",
              "played to death", "childhood", "retro favorite":  .oldFavorite
         case "abandoned", "dropped", "quit", "unfinished":  .abandoned
         case "wishlist", "wish list", "wanted":             .wishlist

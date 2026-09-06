@@ -24,7 +24,7 @@ enum LSWidget {
     ///
     /// Widgets used a fixed purple, so choosing an accent changed the app and
     /// left the Home Screen alone — and once the default became torch, a Lock
-    /// Screen timer was a different colour from the app that started it. The
+    /// Screen timer was a different color from the app that started it. The
     /// snapshot carries the chosen accent now, and `nil` means "no choice",
     /// which resolves to the same default the app uses rather than to a stale
     /// copy of whatever that default was on the day this shipped.
@@ -43,9 +43,9 @@ enum LSWidget {
                   .attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
         else { return torch }
         if let cached = cachedAccent, cached.stamp == stamp { return cached.color }
-        let colour = WidgetSnapshot.load()?.accentHex.flatMap { Color(hex: $0) } ?? torch
-        cachedAccent = (stamp, colour)
-        return colour
+        let color = WidgetSnapshot.load()?.accentHex.flatMap { Color(hex: $0) } ?? torch
+        cachedAccent = (stamp, color)
+        return color
     }
     static let navy = Color(red: 0.094, green: 0.075, blue: 0.176)
     static let navyDeep = Color(red: 0.043, green: 0.031, blue: 0.098)

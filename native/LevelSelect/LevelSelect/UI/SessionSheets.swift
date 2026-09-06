@@ -47,7 +47,7 @@ struct EndSessionSheet: View {
                                in: Self.earliestStop(for: session) ... .now)
                     LabeledContent("Records") {
                         // The same calculation the save performs, so the
-                        // preview can't promise a number the write won't honour.
+                        // preview can't promise a number the write won't honor.
                         Text(Format.duration(session.elapsed(asOf: stopTime)))
                             .foregroundStyle(LSTheme.accent)
                     }
@@ -57,7 +57,7 @@ struct EndSessionSheet: View {
                 //
                 // `SessionNotePrompt` deliberately only asks about a session
                 // that ended in the last fifteen minutes, so it never asks
-                // about your back catalogue. Ending a stale session backdates
+                // about your back catalog. Ending a stale session backdates
                 // `endDate` by hours, which put it outside that window every
                 // time — so the one path where the app is already interrupting
                 // you was the one path that never asked what happened. Tim:

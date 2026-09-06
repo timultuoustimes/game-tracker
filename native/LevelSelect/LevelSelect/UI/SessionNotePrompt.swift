@@ -26,7 +26,7 @@ struct SessionNotePrompt: ViewModifier {
     /// The value is doing real work. "What happened?" is a good question about
     /// the thing you were doing ten minutes ago and a bad one about last
     /// Tuesday, so the window is what stops a helpful prompt becoming an
-    /// interrogation about your back catalogue. It is generous enough to catch
+    /// interrogation about your back catalog. It is generous enough to catch
     /// a session stopped on the watch or from the Live Activity, which is most
     /// of the ways a session ends without the app in front of you.
     static let window: TimeInterval = 15 * 60

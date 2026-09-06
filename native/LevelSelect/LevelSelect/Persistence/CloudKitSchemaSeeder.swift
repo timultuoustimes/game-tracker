@@ -49,7 +49,7 @@ enum CloudKitSchemaSeeder {
     static let seededAccent = marker
 
     /// A hue no picker offers, for the same reason `seededAccent` is not a
-    /// colour: purge must be able to tell what it wrote from what you chose.
+    /// color: purge must be able to tell what it wrote from what you chose.
     /// The wheel is 0…1, so this is out of range and unreachable by hand.
     static let seededHue: Double = -1
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Hue and saturation in one gesture, with the region that cannot be honoured
+/// Hue and saturation in one gesture, with the region that cannot be honored
 /// drawn on it.
 ///
 /// Two skinny sliders could not express this. The constraint on a linked
@@ -75,8 +75,8 @@ struct HueSaturationField: View {
         )
     }
 
-    /// A diagonal tick on every cell whose saturation cannot be honoured in
-    /// dark mode — the same language the swatches use for a colour that cannot
+    /// A diagonal tick on every cell whose saturation cannot be honored in
+    /// dark mode — the same language the swatches use for a color that cannot
     /// be read, so "struck through" means one thing across the picker.
     private func marks(width w: CGFloat, height h: CGFloat) -> some View {
         Canvas { context, _ in

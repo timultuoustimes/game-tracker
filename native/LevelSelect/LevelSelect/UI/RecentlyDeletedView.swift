@@ -245,7 +245,7 @@ struct RecentlyDeletedView: View {
     }
 
     /// Where it came from, what it costs, and when it went — a removed
-    /// picture is hard to recognise from a thumbnail alone.
+    /// picture is hard to recognize from a thumbnail alone.
     private func imageDetail(_ image: GameImage) -> String {
         var parts: [String] = []
         if let game = image.game {

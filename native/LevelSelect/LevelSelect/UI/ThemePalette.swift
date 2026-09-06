@@ -66,7 +66,7 @@ enum ThemePalette {
         case .completed: .blue
         case .queued:    .purple
         case .backlog:   .gray
-        // Warm, and deliberately not near .abandoned's colour: the whole
+        // Warm, and deliberately not near .abandoned's color: the whole
         // point of the status is that it is not a failure.
         case .oldFavorite: .pink
         case .shelved:   .brown
@@ -131,7 +131,7 @@ enum ThemePalette {
     /// should maybe be the color of the background… so it looks like it's cut
     /// out of the button."* The ground is the right answer because a knockout
     /// is literally the shape of the thing behind showing through — which is
-    /// also why it has to be the ground and not white: white is a colour, the
+    /// also why it has to be the ground and not white: white is a color, the
     /// ground is an absence.
     ///
     /// **Falls back to plain contrast when the ground is too close to the
@@ -143,7 +143,7 @@ enum ThemePalette {
         knockoutPreview(on: accent, ground: groundBase)
     }
 
-    /// The same rule against a ground you name, so the colour editor can show
+    /// The same rule against a ground you name, so the color editor can show
     /// a candidate pair before either is stored. The preview has to answer the
     /// question the button will, and the button's answer depends on both.
     static func knockoutPreview(on accent: Color, ground rawGround: Color) -> Color {
@@ -163,9 +163,9 @@ enum ThemePalette {
         // light-accent corner.
         guard let hs = ground.lsHueSaturation else { return onColor(for: accent) }
         for brightness in stride(from: 0.45, through: 0.10, by: -0.05) {
-            // A much lower grey threshold than `groundBase` uses. The
+            // A much lower gray threshold than `groundBase` uses. The
             // default light ground is (0.97, 0.96, 1.00) — saturation 0.04,
-            // deliberately barely purple — and treating that as grey threw
+            // deliberately barely purple — and treating that as gray threw
             // away the exact hue that makes this read as the ground rather
             // than as ink. Only a genuinely neutral pick stays neutral.
             let candidate = Color(hue: hs.hue,
@@ -183,7 +183,7 @@ enum ThemePalette {
     /// The ground a piece of ink will actually sit on, resolved concretely.
     ///
     /// Concrete, not dynamic, on purpose: every contrast decision below is
-    /// arithmetic on colour components, and a dynamic colour resolves against
+    /// arithmetic on color components, and a dynamic color resolves against
     /// whatever trait happens to be current when it is sampled — which is how
     /// you get a light-mode answer applied to a dark-mode screen.
     static func groundBase(dark: Bool) -> Color {
@@ -211,7 +211,7 @@ enum ThemePalette {
     static func refresh(from settings: ThemeSettings?) {
         // **One accent per appearance, both chosen by the user.**
         //
-        // No single colour serves both grounds: torch is 8.74:1 on dark and
+        // No single color serves both grounds: torch is 8.74:1 on dark and
         // 1.90:1 on light. Deriving a fallback at render time was the other
         // option and was worse — the same label would be orange in dark and
         // near-black in light, changing character at sunset with "Follow
@@ -228,7 +228,7 @@ enum ThemePalette {
         // assignment last, a change of accent AND background in one save
         // measured the new accent against the OLD ground. It usually stayed
         // safe, because the fallback ink is conservative, but it made the
-        // committed colours disagree with the editor's own preview, which
+        // committed colors disagree with the editor's own preview, which
         // computes against the candidate ground. Codex K1.
         backgroundOverrideLight = settings?.backgroundHex(dark: false).flatMap(Color.init(hex:))
         backgroundOverrideDark = settings?.backgroundHex(dark: true).flatMap(Color.init(hex:))
@@ -247,7 +247,7 @@ enum ThemePalette {
             ?? settings?.accentHex(dark: false).flatMap { Color(hex: $0) }
         let darkCustom = linkedDark
             ?? settings?.accentHex(dark: true).flatMap { Color(hex: $0) }
-        // Corrected only if it fails. A colour picked through the build 37
+        // Corrected only if it fails. A color picked through the build 37
         // picker already clears the floor; this catches the ones stored before
         // it existed, which were never checked against anything.
         let lightAccent = LSTheme.legible(lightCustom ?? LSTheme.torchInk,
@@ -259,8 +259,8 @@ enum ThemePalette {
         // A knockout, not simply a contrasting ink — see `knockout(on:)`.
         //
         // Computed per appearance against that appearance's ACTUAL ground,
-        // rather than letting a dynamic colour resolve itself: the arithmetic
-        // needs real components, and sampling a dynamic colour picks whichever
+        // rather than letting a dynamic color resolve itself: the arithmetic
+        // needs real components, and sampling a dynamic color picks whichever
         // trait is current when it is read.
         onAccent = .lsDynamic(
             light: knockoutPreview(on: lightAccent, ground: groundBase(dark: false)),
