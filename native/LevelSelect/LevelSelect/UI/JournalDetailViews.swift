@@ -37,15 +37,24 @@ struct JournalDayView: View {
                 if !entry.runs.isEmpty {
                     section("Runs") {
                         ForEach(entry.runs) { run in
+                            let at = (run.endedAt ?? run.startedAt)
+                                .formatted(date: .omitted, time: .shortened)
                             HStack(spacing: 8) {
-                                Image(systemName: "dice.fill").foregroundStyle(.secondary)
+                                Image(systemName: "dice.fill")
+                                    .foregroundStyle(.secondary)
+                                    // The glyph repeats the word beside it.
+                                    .accessibilityHidden(true)
                                 Text(run.outcome.journalText)
                                 Spacer()
-                                Text((run.endedAt ?? run.startedAt)
-                                    .formatted(date: .omitted, time: .shortened))
-                                    .foregroundStyle(.tertiary)
+                                Text(at).foregroundStyle(.tertiary)
                             }
                             .font(.subheadline)
+                            // One element, one sentence. Swiping through three
+                            // fragments — a glyph, "Run lost", "8:22 PM" — is
+                            // how a row that IS on screen reads as if it were
+                            // not there.
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("\(run.outcome.journalText), \(at)")
                             if let note = run.notes?.journalText {
                                 Text(note).font(.callout).padding(.bottom, 4)
                             }
@@ -134,15 +143,21 @@ struct JournalDayView: View {
     }
 
     private func sessionRow(_ session: Session) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let started = session.startDate.formatted(date: .omitted, time: .shortened)
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Image(systemName: "timer").foregroundStyle(.secondary)
+                Image(systemName: "timer")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text(Format.duration(session.elapsed()))
                 Spacer()
-                Text(session.startDate.formatted(date: .omitted, time: .shortened))
-                    .foregroundStyle(.tertiary)
+                Text(started).foregroundStyle(.tertiary)
             }
             .font(.subheadline)
+            // "17m 25s, started 9:15 PM" rather than a duration and a time
+            // arriving as two unrelated announcements.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(Format.duration(session.elapsed())), started \(started)")
             if let note = session.notes?.journalText {
                 Text(note).font(.callout)
             }
@@ -160,7 +175,12 @@ struct JournalDayView: View {
     private func section<Content: View>(_ title: String,
                                         @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
+            // A heading, so rotor navigation can reach "Sessions" and "Runs"
+            // instead of only finding their contents by swiping past
+            // everything above them.
+            Text(title)
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)

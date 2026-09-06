@@ -226,7 +226,15 @@ targets:
 
   LevelSelectTests:
     type: bundle.unit-test
-    supportedDestinations: [macOS]
+    # macOS AND iOS. It was macOS-only for thirty-seven builds, which is how a
+    # suite of 800+ green tests could sit beside a platform-specific break —
+    # Codex named enabling this "the prerequisite for preventing another
+    # platform-specific build/UI regression".
+    #
+    # The only thing that made it macOS-only was the host path: a Mac app keeps
+    # its binary in Contents/MacOS, an iOS app at the bundle root. Both spelled
+    # out per-SDK rather than one guess that works on one platform.
+    supportedDestinations: [macOS, iOS]
     sources:
       - path: Tests
     dependencies:
@@ -234,7 +242,9 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/LevelSelect.app/Contents/MacOS/LevelSelect"
+        "TEST_HOST[sdk=macosx*]": "$(BUILT_PRODUCTS_DIR)/LevelSelect.app/Contents/MacOS/LevelSelect"
+        "TEST_HOST[sdk=iphoneos*]": "$(BUILT_PRODUCTS_DIR)/LevelSelect.app/LevelSelect"
+        "TEST_HOST[sdk=iphonesimulator*]": "$(BUILT_PRODUCTS_DIR)/LevelSelect.app/LevelSelect"
         BUNDLE_LOADER: "$(TEST_HOST)"
       configs:
         # Mirror the app target so tests can cover the developer-only code
