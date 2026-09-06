@@ -1453,6 +1453,29 @@ struct GameDetailView: View {
         game.igdbID == nil && fetchedLogo != nil && game.resolvedArtwork(.logo).isEmpty
     }
 
+    /// Whether the hero is actually drawing artwork behind its title.
+    ///
+    /// A5. The title's own comment has said "white text" for builds, and its
+    /// shadow was tuned for white — but nothing ever SET white, so it
+    /// inherited `.primary` and rendered near-black over the art in the light
+    /// appearance. Tim left the call to me; the answer is white, because the
+    /// title sits on a photograph rather than on the page.
+    ///
+    /// It is conditional rather than unconditional for the case that answer
+    /// skips over: the backdrop can be turned off, and the page background can
+    /// be a plain, accent or status ground instead of the cover. Then the
+    /// title is on the THEME, not on art, and forcing white would be white on
+    /// a light ground — invisible, which is a worse bug than the one being
+    /// fixed. Over the theme it goes back to theme ink.
+    private var heroSitsOnArtwork: Bool {
+        switch ThemePalette.pageBackground {
+        case .cover, .keyArt, .screenshot:
+            return ThemePalette.backdropIntensity != .off && !backdropArtwork.isEmpty
+        case .plain, .accent, .status:
+            return false
+        }
+    }
+
     @ViewBuilder
     private var heroTitle: some View {
         let artwork = headerLogo
@@ -1467,7 +1490,12 @@ struct GameDetailView: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .fixedSize(horizontal: false, vertical: true)
-                        .shadow(color: .black.opacity(0.55), radius: 8, y: 2)
+                        // On the art, so it takes the same ink as the title
+                        // below. See `heroSitsOnArtwork`.
+                        .foregroundStyle(heroSitsOnArtwork ? AnyShapeStyle(.white)
+                                                           : AnyShapeStyle(.primary))
+                        .shadow(color: .black.opacity(heroSitsOnArtwork ? 0.55 : 0),
+                                radius: 8, y: 2)
                         // The logo already said a name; this one is the name
                         // that is actually stored, so the pair is not read out
                         // twice.
@@ -1491,11 +1519,19 @@ struct GameDetailView: View {
                 // the app's own accessibility pattern, used here for the first
                 // time on the hero.
                 .fixedSize(horizontal: false, vertical: true)
-                // Unlike the panel's copy, this sits directly on the art. It
-                // survives there because it's large and heavy — but a bright
+                // Unlike the panel's copy, this sits directly on the art —
+                // so it is white there, not theme ink (A5). It survives on a
+                // photograph because it's large and heavy, but a bright
                 // screenshot can still swallow white text, so it carries its
                 // own shadow rather than trusting the backdrop to be dark.
-                .shadow(color: .black.opacity(0.55), radius: 8, y: 2)
+                //
+                // With no art behind it there is nothing to knock out of and
+                // nothing to hide from: theme ink, and no shadow to smear it
+                // against the page's own ground.
+                .foregroundStyle(heroSitsOnArtwork ? AnyShapeStyle(.white)
+                                                   : AnyShapeStyle(.primary))
+                .shadow(color: .black.opacity(heroSitsOnArtwork ? 0.55 : 0),
+                        radius: 8, y: 2)
         }
     }
 
