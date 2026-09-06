@@ -268,6 +268,11 @@ enum WidgetBridge {
             accentHex: ThemePalette.accentIsCustom ? ThemePalette.accent.hexString() : nil,
             appearanceRaw: ThemePalette.appearance.rawValue,
             backgroundHex: ThemePalette.backgroundOverride?.hexString(),
+            // Same rule as the accent: only CHOSEN colors travel. A status
+            // the user never touched sends nothing, so the widgets keep the
+            // color they already drew instead of inheriting a copy of today's
+            // default that would go stale the next time the default changes.
+            statusColors: ThemePalette.statusColorHexes,
             upcoming: upcoming
         )
         return BuildResult(snapshot: snapshot, covers: covers)

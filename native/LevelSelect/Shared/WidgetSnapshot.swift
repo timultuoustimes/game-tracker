@@ -161,6 +161,11 @@ struct WidgetSnapshot: Codable, Hashable {
     /// app pinned to dark would sit beside light widgets on the same screen.
     var appearanceRaw: String? = nil
     var backgroundHex: String? = nil
+    /// Status colors the user has actually changed, `GameStatus.rawValue` →
+    /// "#RRGGBB". Absent keys mean "never touched it", NOT "use this default":
+    /// the widgets keep their own built-in colors for those, so nobody's Home
+    /// Screen changes because this field arrived. A4.
+    var statusColors: [String: String] = [:]
     /// Wishlist games with a real date still ahead, soonest first.
     var upcoming: [WidgetUpcomingGame] = []
     /// Average seconds per week over the four *finished* weeks before this
@@ -225,9 +230,11 @@ struct WidgetSnapshot: Codable, Hashable {
         accentHex: String? = nil,
         appearanceRaw: String? = nil,
         backgroundHex: String? = nil,
+        statusColors: [String: String] = [:],
         upcoming: [WidgetUpcomingGame] = []
     ) {
         self.accentHex = accentHex
+        self.statusColors = statusColors
         self.appearanceRaw = appearanceRaw
         self.backgroundHex = backgroundHex
         self.upcoming = upcoming
@@ -281,6 +288,7 @@ struct WidgetSnapshot: Codable, Hashable {
         // on disk simply has no key, and must still decode.
         appearanceRaw = try c.decodeIfPresent(String.self, forKey: .appearanceRaw)
         backgroundHex = try c.decodeIfPresent(String.self, forKey: .backgroundHex)
+        statusColors = try c.decodeIfPresent([String: String].self, forKey: .statusColors) ?? [:]
         upcoming = try c.decodeIfPresent([WidgetUpcomingGame].self, forKey: .upcoming) ?? []
         weeklyAverageSeconds = try c.decodeIfPresent(Double.self, forKey: .weeklyAverageSeconds) ?? 0
         completedCount = try c.decodeIfPresent(Int.self, forKey: .completedCount) ?? 0

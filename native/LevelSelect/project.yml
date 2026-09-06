@@ -170,6 +170,9 @@ targets:
       # Foundation only — the rest of Shared/ imports WidgetKit and has no
       # business on a watch, so this is the one file rather than the folder.
       - path: Shared/ReleaseCountdown.swift
+      # The watch reads ThemeSettings directly and needs to turn its stored
+      # hex strings into Colors. See WatchTheme.
+      - path: Shared/ColorHex.swift
       # Foundation-only value types Repository references (no UI).
       - path: LevelSelect/Services/IGDBService.swift
       - path: LevelSelect/Services/YouTubeService.swift

@@ -80,6 +80,19 @@ enum ThemePalette {
         statusOverrides[status] ?? defaultColor(for: status)
     }
 
+    /// Only the statuses whose color the user actually changed, as hex.
+    ///
+    /// This is what rides to the widgets and, through them, to the Lock Screen
+    /// and Live Activity (A4). Deliberately the OVERRIDES rather than every
+    /// status's resolved color: an untouched status sends nothing, so the
+    /// widget keeps its own built-in color rather than being handed a frozen
+    /// copy of whatever the default happened to be today.
+    static var statusColorHexes: [String: String] {
+        statusOverrides.reduce(into: [:]) { out, pair in
+            out[pair.key.rawValue] = pair.value.hexString()
+        }
+    }
+
     /// Text and glyphs drawn ON the accent, black or white by contrast.
     ///
     /// The accent is the user's to choose, and a pale yellow one makes white

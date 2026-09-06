@@ -106,14 +106,15 @@ struct CommandBoardView: View {
     @ViewBuilder
     private func bigResume(_ s: WidgetSnapshot) -> some View {
         if s.isPlaying {
+            let playing = LSWidget.status("playing", fallback: LSWidget.green)
             HStack(spacing: 6) {
                 Image(systemName: "waveform").font(.system(size: 12, weight: .bold))
                 Text("Live").font(.system(size: 13, weight: .bold))
             }
-            .foregroundStyle(LSWidget.green)
+            .foregroundStyle(playing)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
-            .background(LSWidget.green.opacity(0.16), in: RoundedRectangle(cornerRadius: 11))
+            .background(playing.opacity(0.16), in: RoundedRectangle(cornerRadius: 11))
         } else {
             Button(intent: StartSessionIntent(gameID: s.gameID)) {
                 HStack(spacing: 6) {
@@ -246,9 +247,11 @@ struct ShelfXLView: View {
 
     private var legend: some View {
         HStack(spacing: 10) {
-            legendDot(LSWidget.green, "playing")
-            legendDot(LSWidget.torch, "paused")
-            legendDot(LSWidget.purple, "up next")
+            // The legend and the dots it explains read the same function,
+            // so a custom color can never reach one and not the other.
+            legendDot(dotColor("playing"), "playing")
+            legendDot(dotColor("paused"), "paused")
+            legendDot(dotColor("queued"), "up next")
         }
     }
 
@@ -262,10 +265,14 @@ struct ShelfXLView: View {
     }
 
     private func dotColor(_ game: WidgetShelfGame) -> Color {
-        switch game.statusRaw {
-        case "paused": LSWidget.torch
-        case "queued": LSWidget.purple
-        default: LSWidget.green
+        dotColor(game.statusRaw ?? "playing")
+    }
+
+    private func dotColor(_ raw: String) -> Color {
+        switch raw {
+        case "paused": LSWidget.status("paused", fallback: LSWidget.torch)
+        case "queued": LSWidget.status("queued", fallback: LSWidget.purple)
+        default: LSWidget.status("playing", fallback: LSWidget.green)
         }
     }
 }

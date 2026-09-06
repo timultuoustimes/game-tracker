@@ -47,6 +47,38 @@ enum LSWidget {
         cachedAccent = (stamp, color)
         return color
     }
+    /// A status's color, honoring the one the user picked in the app.
+    ///
+    /// A4: status colors reach the Home Screen and the Lock Screen now, not
+    /// just the app. Someone who makes Paused red and then sees an orange
+    /// Paused pill on their Home Screen has been told the theme applies and
+    /// then shown that it does not.
+    ///
+    /// `fallback` is the widget's OWN built-in color, passed by the call site
+    /// rather than looked up here, and that is the whole design: the snapshot
+    /// only carries statuses the user actually changed, so a widget keeps
+    /// exactly the color it has always drawn until someone picks another one.
+    /// Nobody's Home Screen shifts because this function arrived.
+    static func status(_ raw: String, fallback: Color) -> Color {
+        customStatusColors()[raw].flatMap { Color(hex: $0) } ?? fallback
+    }
+
+    /// Cached against the snapshot file's modification date, exactly like
+    /// `accent` — a render costs one `stat`, and changing a status color in
+    /// the app invalidates it the moment the app rewrites the file.
+    nonisolated(unsafe) private static var cachedStatusColors: (stamp: Date, colors: [String: String])?
+
+    private static func customStatusColors() -> [String: String] {
+        guard let url = WidgetShared.snapshotURL,
+              let stamp = (try? FileManager.default
+                  .attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+        else { return [:] }
+        if let cached = cachedStatusColors, cached.stamp == stamp { return cached.colors }
+        let colors = WidgetSnapshot.load()?.statusColors ?? [:]
+        cachedStatusColors = (stamp, colors)
+        return colors
+    }
+
     static let navy = Color(red: 0.094, green: 0.075, blue: 0.176)
     static let navyDeep = Color(red: 0.043, green: 0.031, blue: 0.098)
     static let green = Color(red: 0.29, green: 0.87, blue: 0.50)
@@ -98,8 +130,10 @@ struct StatusPill: View {
     let snapshot: WidgetSnapshot
     var body: some View {
         let (text, color): (String, Color) =
-            snapshot.isPlaying ? ("Playing", LSWidget.green)
-            : snapshot.isPaused ? ("Paused", LSWidget.torch)
+            snapshot.isPlaying ? ("Playing", LSWidget.status("playing", fallback: LSWidget.green))
+            : snapshot.isPaused ? ("Paused", LSWidget.status("paused", fallback: LSWidget.torch))
+            // "Continue" is a prompt, not a status — it keeps the accent-ish
+            // torch it has always had rather than borrowing a status color.
             : ("Continue", LSWidget.torch)
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 5, height: 5)
@@ -182,11 +216,12 @@ struct ContinuePlayingSmall: View {
     @ViewBuilder
     private func control(_ s: WidgetSnapshot) -> some View {
         if s.isPlaying {
+            let playing = LSWidget.status("playing", fallback: LSWidget.green)
             Image(systemName: "waveform")
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(LSWidget.green)
+                .foregroundStyle(playing)
                 .frame(width: 34, height: 34)
-                .background(LSWidget.green.opacity(0.16), in: Circle())
+                .background(playing.opacity(0.16), in: Circle())
         } else {
             Button(intent: StartSessionIntent(gameID: s.gameID)) {
                 Image(systemName: "play.fill")
@@ -206,7 +241,7 @@ struct ContinuePlayingSmall: View {
     }
 
     private func statusColor(_ s: WidgetSnapshot) -> Color {
-        if s.isPlaying { return LSWidget.green }
+        if s.isPlaying { return LSWidget.status("playing", fallback: LSWidget.green) }
         return s.playtimeSeconds > 0 ? Color.secondary : LSWidget.torch
     }
 }
@@ -345,13 +380,14 @@ struct ContinuePlayingMedium: View {
             }
             .buttonStyle(.plain)
         } else {
+            let playing = LSWidget.status("playing", fallback: LSWidget.green)
             HStack(spacing: 4) {
                 Image(systemName: "waveform").font(.system(size: 10, weight: .bold))
                 Text("Live").font(.system(size: 11, weight: .bold))
             }
-            .foregroundStyle(LSWidget.green)
+            .foregroundStyle(playing)
             .padding(.horizontal, 11).padding(.vertical, 5)
-            .background(LSWidget.green.opacity(0.16), in: Capsule())
+            .background(playing.opacity(0.16), in: Capsule())
         }
     }
 }

@@ -1,7 +1,44 @@
 import SwiftUI
 import SwiftData
 
-private let watchAccent = Color(red: 0.58, green: 0.36, blue: 0.98)
+/// The theme, on the wrist.
+///
+/// The watch used to hold a single `Color(red: 0.58, green: 0.36, blue: 0.98)`
+/// — a purple that stopped being the app's default two builds before this, so
+/// the watch tinted itself a color that existed nowhere else in the product
+/// (Codex K2). And status colors never reached it at all: a Paused game showed
+/// a fixed orange dot however the user had recolored Paused (A4).
+///
+/// Both are fixed the same way, and the fix is not a copy of the phone's
+/// palette — the watch runs the same `Repository` against the same SwiftData
+/// store, so `ThemeSettings` is simply *there* to be read. `ThemePalette`
+/// itself is not: it lives in the app target's UI layer, which the watch does
+/// not build. So this is the small part of it the watch actually needs.
+private enum WatchTheme {
+    static let fallbackAccent = Color(red: 0.96, green: 0.64, blue: 0.30)
+
+    /// The watch is always dark, so it reads the dark side of the palette.
+    /// Asking for the light accent here would hand back a color chosen to sit
+    /// on white.
+    static func accent(_ settings: ThemeSettings?) -> Color {
+        settings?.accentHex(dark: true).flatMap { Color(hex: $0) } ?? fallbackAccent
+    }
+
+    /// Defaults match `ThemePalette.defaultColor(for:)` for the two statuses
+    /// the watch can show. They are duplicated rather than shared because the
+    /// watch does not build the file they live in — if a default changes there
+    /// and not here, the dot is wrong, so keep them together.
+    static func color(_ status: GameStatus, _ settings: ThemeSettings?) -> Color {
+        if let hex = settings?.statusColors[status.rawValue], let color = Color(hex: hex) {
+            return color
+        }
+        switch status {
+        case .playing: return .green
+        case .paused:  return .orange
+        default:       return .secondary
+        }
+    }
+}
 
 enum WFormat {
     static func clock(_ t: TimeInterval) -> String {
@@ -20,6 +57,11 @@ enum WFormat {
 struct WatchRootView: View {
     @Query(filter: #Predicate<Game> { $0.deletedAt == nil }, sort: \Game.name)
     private var games: [Game]
+    /// Oldest wins, the same rule the phone uses to settle a sync race that
+    /// left two settings records behind.
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
+
+    private var settings: ThemeSettings? { themeSettings.first }
 
     var body: some View {
         NavigationStack {
@@ -29,7 +71,7 @@ struct WatchRootView: View {
                         NavigationLink {
                             WatchGameView(game: cp)
                         } label: {
-                            WatchGameRow(game: cp, prominent: true)
+                            WatchGameRow(game: cp, settings: settings, prominent: true)
                         }
                     }
                 }
@@ -39,7 +81,7 @@ struct WatchRootView: View {
                             NavigationLink {
                                 WatchGameView(game: game)
                             } label: {
-                                WatchGameRow(game: game)
+                                WatchGameRow(game: game, settings: settings)
                             }
                         }
                     }
@@ -59,7 +101,7 @@ struct WatchRootView: View {
             }
             .navigationTitle("LevelSelect")
         }
-        .tint(watchAccent)
+        .tint(WatchTheme.accent(settings))
     }
 
     private var nowPlaying: [Game] {
@@ -78,21 +120,25 @@ struct WatchRootView: View {
 
 private struct WatchGameRow: View {
     let game: Game
+    let settings: ThemeSettings?
     var prominent = false
+
+    private var statusColor: Color { WatchTheme.color(game.status, settings) }
 
     var body: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(game.status == .playing ? Color.green : Color.orange)
+                .fill(statusColor)
                 .frame(width: 7, height: 7)
             VStack(alignment: .leading, spacing: 1) {
                 Text(game.name)
                     .font(prominent ? .headline : .body)
                     .lineLimit(2)
                 if game.activePlaythrough?.activeSession != nil {
-                    Text(game.activePlaythrough?.activeSession?.state == .running ? "In session" : "Paused")
+                    let running = game.activePlaythrough?.activeSession?.state == .running
+                    Text(running ? "In session" : "Paused")
                         .font(.caption2)
-                        .foregroundStyle(game.activePlaythrough?.activeSession?.state == .running ? .green : .orange)
+                        .foregroundStyle(WatchTheme.color(running ? .playing : .paused, settings))
                 }
             }
         }
@@ -104,6 +150,8 @@ private struct WatchGameRow: View {
 struct WatchGameView: View {
     let game: Game
     @Environment(\.modelContext) private var context
+    @Query(sort: \ThemeSettings.createdAt) private var themeSettings: [ThemeSettings]
+    private var accent: Color { WatchTheme.accent(themeSettings.first) }
     private var repo: Repository { Repository(context) }
     private var playthrough: Playthrough? { game.activePlaythrough }
 
@@ -118,7 +166,7 @@ struct WatchGameView: View {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
                         Text(WFormat.clock(active.elapsed(asOf: ctx.date)))
                             .font(.system(.title2, design: .rounded).monospacedDigit())
-                            .foregroundStyle(active.state == .running ? watchAccent : .primary)
+                            .foregroundStyle(active.state == .running ? accent : .primary)
                     }
                     HStack(spacing: 10) {
                         Button {
@@ -129,7 +177,7 @@ struct WatchGameView: View {
                             Image(systemName: active.state == .running ? "pause.fill" : "play.fill")
                                 .frame(maxWidth: .infinity)
                         }
-                        .tint(watchAccent)
+                        .tint(accent)
                         Button(role: .destructive) {
                             repo.stopSession(active); save()
                         } label: {
@@ -150,7 +198,9 @@ struct WatchGameView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.green)
+                    // Green because it starts a session and the game becomes
+                    // Playing — so it follows the Playing color, not a literal.
+                    .tint(WatchTheme.color(.playing, themeSettings.first))
                 }
             }
             .padding(.horizontal, 4)

@@ -82,7 +82,7 @@ struct SessionLiveActivity: Widget {
                         .frame(maxWidth: 44)
                 } else {
                     Image(systemName: "pause.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(LSWidget.status("paused", fallback: .orange))
                 }
             } minimal: {
                 Image(systemName: "gamecontroller.fill")
@@ -123,7 +123,9 @@ struct LockScreenSessionView: View {
                     .lineLimit(1)
                 Text(context.state.isRunning ? "Session in progress" : "Paused")
                     .font(.caption)
-                    .foregroundStyle(context.state.isRunning ? .green : .orange)
+                    .foregroundStyle(context.state.isRunning
+                                     ? LSWidget.status("playing", fallback: .green)
+                                     : LSWidget.status("paused", fallback: .orange))
             }
 
             Spacer()
