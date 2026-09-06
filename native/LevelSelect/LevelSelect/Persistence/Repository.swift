@@ -479,6 +479,37 @@ struct Repository {
         }
     }
 
+    /// Removed pictures, newest first — with the memory or game they came
+    /// from, so the list can say where each one was.
+    ///
+    /// **They had nowhere to go.** `restore(_ image:)` existed and nothing
+    /// called it, so a removed picture was tombstoned, invisible, excluded
+    /// from the app's own storage figure, and kept its full-size bytes on the
+    /// device and in iCloud forever. The only thing that ever freed them was
+    /// deleting a whole game forever, which does nothing for a picture on a
+    /// memory that has no game. Tim: *"Photos need to show up in recently
+    /// deleted and have a way to be actually deleted."* Codex data #4.
+    ///
+    /// Pictures under a trashed game are left out: they come back with it, and
+    /// listing them separately would offer to restore a picture onto a game
+    /// that is not there.
+    func trashedImages() -> [GameImage] {
+        let d = FetchDescriptor<GameImage>(predicate: #Predicate { $0.deletedAt != nil })
+        return ((try? context.fetch(d)) ?? [])
+            .filter { $0.game?.deletedAt == nil && $0.memory?.deletedAt == nil }
+            .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+    }
+
+    /// Gone, and the bytes with it.
+    ///
+    /// The only hard delete for a picture that isn't "delete the whole game".
+    /// `GameImage.data` is `.externalStorage`, so this is what actually
+    /// reclaims the file rather than leaving it beside the store.
+    func deleteForever(_ image: GameImage) {
+        context.delete(image)
+        persist()
+    }
+
     /// Un-delete. The record was never gone — deletion is soft everywhere —
     /// so restore is exactly one field, plus the recompute the reappearing
     /// data deserves.
