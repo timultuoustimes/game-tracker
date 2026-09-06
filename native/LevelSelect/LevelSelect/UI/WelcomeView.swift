@@ -41,17 +41,13 @@ struct WelcomeView: View {
                 .multilineTextAlignment(.center)
                 .padding(.top, 10)
 
+            // The promises live in `AppPromise`, not here, because Home says
+            // three of them again on its empty shelves and the two screens
+            // have to be saying the same sentence. See F1.
             VStack(alignment: .leading, spacing: 18) {
-                row("gamecontroller", "A shelf, not a spreadsheet",
-                    "Add the games you're actually playing.")
-                row("clock", "Sessions time themselves",
-                    "Start from the app, a widget, your watch, or the Lock Screen.")
-                // Real lists first, generation last — pasting beats
-                // generating, and the welcome shouldn't imply otherwise.
-                row("checklist", "The game's real checklist",
-                    "Import real achievements, paste a guide you trust, or plan it a piece at a time.")
-                row("lock", "Yours, privately",
-                    "Your device and your own iCloud. No account, no ads, no tracking.")
+                ForEach(AppPromise.allCases, id: \.self) { promise in
+                    row(promise.symbol, promise.title, promise.body)
+                }
             }
             .padding(.horizontal, 6)
             .padding(.top, 26)

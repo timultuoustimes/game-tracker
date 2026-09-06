@@ -399,3 +399,58 @@ struct RecentlyBeatenShelf: View {
         }
     }
 }
+
+/// An empty Home shelf, drawn rather than skipped, while the library is new.
+///
+/// Home hides shelves with nothing on them, which is right for a full library
+/// and wrong for the ten minutes after the welcome: someone who has added one
+/// game sees a single cover floating in a screen that gives no hint what the
+/// rest of it is for. F1's answer was to carry the welcome's promises inside,
+/// so the shelf that keeps a promise is the thing that states it.
+///
+/// It is deliberately NOT a call to action. There is no button and nothing to
+/// dismiss — the shelf fills itself the moment a game lands in that status,
+/// and until then it is a label on an empty space, the way a real shelf in a
+/// room is still a shelf. `StatusCarousel`'s color rule runs down the left of
+/// the caption for the same reason, so the empty shelf and the full one are
+/// visibly the same object in two states.
+struct PromiseShelf: View {
+    let status: GameStatus
+    let caption: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // No count and no chevron: zero is not worth printing, and there
+            // is nothing to collapse. `ShelfHeader` already treats both as
+            // optional, which is why this reads as the same header rather
+            // than a lookalike.
+            ShelfHeader(
+                title: status.sectionTitle,
+                count: nil,
+                systemImage: status.systemImage,
+                tint: status.color,
+                collapsed: nil,
+                onSeeAll: nil)
+
+            Text(caption)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 18)
+                .padding(.trailing)
+                .padding(.vertical, 4)
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(status.color.opacity(0.55))
+                        .frame(width: 3)
+                        .padding(.leading, 6)
+                        .accessibilityHidden(true)
+                }
+        }
+        // One object to VoiceOver: the shelf's name, then what will be on it.
+        // Read apart, "Up Next" and a sentence about checklists sound like two
+        // unrelated things on a screen that is mostly empty.
+        .accessibilityElement(children: .combine)
+    }
+}

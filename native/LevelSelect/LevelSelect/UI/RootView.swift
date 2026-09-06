@@ -776,6 +776,16 @@ struct HomeTab: View {
                 // live in Library. Wishlist has its own tab.
                 ForEach(GameStatus.homeOrder, id: \.self) { status in
                     let items = grouped[status] ?? []
+                    // A new library draws its empty shelves instead of hiding
+                    // them, captioned with the welcome's own promises. See
+                    // `AppPromise` and F1: one game in a screen of nothing
+                    // teaches nobody what the screen is, and the shelves are
+                    // the part of the app that keeps the promises.
+                    if items.isEmpty, showsPromiseShelves,
+                       !hiddenStatuses.contains(status.rawValue),
+                       let caption = status.emptyShelfCaption {
+                        PromiseShelf(status: status, caption: caption)
+                    }
                     if !items.isEmpty, !hiddenStatuses.contains(status.rawValue) {
                         StatusCarousel(
                             status: status, games: items,
@@ -799,6 +809,12 @@ struct HomeTab: View {
                     RecentlyBeatenShelf(games: recentlyBeaten) { path.append($0) }
                 }
                 hiddenStatusesFooter
+                // The fourth promise, in the one place it fits.
+                //
+                // Privacy has no shelf — it is about the whole app — so on a
+                // new library it closes the page, which is where the welcome
+                // puts it too. It leaves with the captions.
+                if showsPromiseShelves { privacyPromiseFooter }
                 // After the shelves, not above them: an ask, never a nag.
                 BetaQuestionCard()
             }
@@ -853,6 +869,38 @@ struct HomeTab: View {
                 scrolledUnderBar = moved
             }
         }
+    }
+
+    /// Whether Home is still in the stretch just after the welcome, where an
+    /// empty shelf is worth drawing.
+    ///
+    /// Tied to the size of the library rather than to a "seen it" flag, so it
+    /// answers the question that actually matters — is there enough here to
+    /// explain itself? — and so it comes back for anyone who clears their
+    /// library out and starts again.
+    private var showsPromiseShelves: Bool {
+        games.count <= AppPromise.newLibraryLimit
+    }
+
+    /// The privacy promise, repeated verbatim from the welcome.
+    private var privacyPromiseFooter: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: AppPromise.privacy.symbol)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(AppPromise.privacy.title)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(AppPromise.privacy.body)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .accessibilityElement(children: .combine)
     }
 
     /// Finished in the last month. See `RecentlyBeaten`.
