@@ -183,6 +183,17 @@ struct ColorEditor: View {
 
             derivedRow(dark: false)
             derivedRow(dark: true)
+
+            // **The palette belongs here too — in fact mostly here.**
+            //
+            // `paletteLinked` defaults true, so this is the editor almost
+            // everyone sees, and it had no presets at all: a plane to drag on
+            // and nothing to pick. The grid lived only in the unlinked branch,
+            // which is the one nobody is in. A swatch is a (hue, saturation)
+            // pair and this editor edits exactly a hue and a saturation, so
+            // they are the same thing said two ways.
+            Divider().padding(.top, 2)
+            hueGroup(nil, Self.palette)
         }
     }
 
@@ -271,21 +282,66 @@ struct ColorEditor: View {
     /// resolve through `resolved(hue:saturation:)`, so every entry works on
     /// whichever appearance is being edited.
     ///
-    /// Twelve, evenly spaced round the wheel, because the old list was an
-    /// ad-hoc nineteen with several near-duplicates — Tim: *"some of the
-    /// background selections all read as basically the same."* Even spacing is
-    /// what makes neighbours look like different choices.
-    private static let palette: [(h: Double, s: Double)] =
-        (0..<12).map { (h: Double($0) / 12.0, s: 0.62) }
-
-    /// The app's own four, kept as hue and saturation so they resolve like the
-    /// rest. Torch orange, brand purple, the ground's own deep purple, and the
-    /// darker orange under pixel type.
-    private static let brandPalette: [(h: Double, s: Double)] =
-        ["#F5A34D", "#8A5CF6", "#4C2A8C", "#8A4B12"].map { hex in
-            let v = hsb(Color(hex: hex) ?? .gray)
-            return (h: v.h, s: v.s)
-        }
+    /// **Spaced evenly in OKLCH, not in HSB — that is the whole point.**
+    ///
+    /// The previous set was twelve hues at `Double(i) / 12`, which is even
+    /// arithmetic and uneven to the eye: HSB hue is not perceptually uniform.
+    /// Green sprawls across a third of the wheel with every step looking like
+    /// the same green, while the teal-to-blue arc changes fast and got two
+    /// entries to cover four distinguishable colours. Tim, looking at the
+    /// result: *"a few variations of similar colors that give basically the
+    /// same end result as each other."* He was describing a measurable fact
+    /// about the colour space, not a matter of taste.
+    ///
+    /// So the ring is fourteen hues spaced 360/14 apart in **OKLCH**, which is
+    /// built to be perceptually uniform, then converted to the (hue,
+    /// saturation) this pipeline stores. In HSB terms they look bunched —
+    /// four entries between 0.45 and 0.57 — and that is exactly right: those
+    /// four are green-teal, teal, cyan and blue, and a person can tell them
+    /// apart. Meanwhile the yellow-to-green span that used to eat four slots
+    /// now takes three.
+    ///
+    /// Anchored on the app's own two so they are members of the ring rather
+    /// than a separate row above it. Tim: *"I don't think we need the row
+    /// labeled level select. I think that any of the level select colors we
+    /// offer can just be the first 2 colors in the options."* Torch sits at
+    /// OKLCH 64.3° and brand purple at 292.4°; a fourteen-step ring from torch
+    /// lands on 295.7°, 3.3° away, so purple takes that slot exactly and
+    /// nothing in the set is a near-copy of either.
+    ///
+    /// **Twelve, not fourteen — and the two that went are the lesson.**
+    ///
+    /// A perceptually even ring is even in OKLCH, and then this app applies
+    /// its own transform on top: `derivedAccent` softens the saturation of any
+    /// hue that cannot be read on a dark ground. Cyan cannot be dark, so the
+    /// ring's teal, cyan and blue-cyan all got pulled toward the same muted
+    /// teal and arrived as three circles of one colour — the exact complaint,
+    /// reintroduced by the fix for it. Seen on the simulator, not reasoned
+    /// about: the grid had to be looked at after resolution, not before.
+    ///
+    /// So the two that collided are gone and the arc from green-teal to blue
+    /// is a single step. Tim, sizing this: *"Even if that narrows what we have
+    /// there as just 7 or 14 colors."*
+    ///
+    /// Derived once, offline, and written down: an OKLCH conversion in the app
+    /// would be a lot of arithmetic to produce twelve constants that never
+    /// change.
+    private static let palette: [(h: Double, s: Double)] = [
+        // The app's own two, first.
+        (h: 0.0853, s: 0.69),   // #F5A34D torch orange — the wordmark's
+        (h: 0.7165, s: 0.63),   // #8A5CF6 brand purple
+        // The rest of the ring, in wheel order from torch.
+        (h: 0.1310, s: 0.65),   // gold
+        (h: 0.1812, s: 0.65),   // olive
+        (h: 0.3146, s: 0.65),   // green
+        (h: 0.4567, s: 0.65),   // green-teal
+        (h: 0.5640, s: 0.65),   // blue
+        (h: 0.6294, s: 0.65),   // indigo
+        (h: 0.8088, s: 0.65),   // violet
+        (h: 0.9057, s: 0.65),   // magenta
+        (h: 0.9734, s: 0.65),   // pink
+        (h: 0.0414, s: 0.65),   // coral
+    ]
 
     private let columns = [GridItem(.adaptive(minimum: 46), spacing: 10)]
 
@@ -326,10 +382,10 @@ struct ColorEditor: View {
 
                     preview
 
-                // No "Not readable on this ground" group any more, because
-                // there is nothing to put in it — every entry resolves for the
-                // appearance being edited.
-                hueGroup("LevelSelect", Self.brandPalette)
+                // One grid, no headed rows. There is no "Not readable on this
+                // ground" group — every entry resolves for the appearance being
+                // edited — and no "LevelSelect" group either, because the app's
+                // own two are now the first two circles in the ring.
                 hueGroup(nil, Self.palette)
 
                 if !saved.isEmpty {
