@@ -171,7 +171,11 @@ struct GameContextMenuModifier: ViewModifier {
         .confirmationDialog("Delete “\(game.name)”?",
                             isPresented: $confirmingDelete,
                             titleVisibility: .visible) {
-            Button("Delete Game", role: .destructive) { repo.softDelete(game) }
+            Button("Delete Game", role: .destructive) {
+                let undo = AppNavigator.DeletedGame(id: game.id, name: game.name)
+                repo.softDelete(game)
+                AppNavigator.shared.deletedGame = undo
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("It moves to Recently Deleted in Settings, with its sessions and progress. You can put it back for 30 days.")

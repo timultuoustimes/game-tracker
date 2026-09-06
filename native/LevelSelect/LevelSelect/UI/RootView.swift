@@ -96,6 +96,31 @@ struct RootView: View {
                 }
             }
 
+            // Deleting a game is confirmed and recoverable, but recovery was
+            // three taps away in Settings. This is the same banner surface the
+            // shuffle and generation notices use.
+            if let deleted = nav.deletedGame {
+                VStack {
+                    Spacer()
+                    UndoDeleteToast(deleted: deleted) {
+                        Repository(context).restoreGame(id: deleted.id)
+                        nav.deletedGame = nil
+                    } dismiss: {
+                        nav.deletedGame = nil
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, persistence.lastErrorMessage != nil ? 128 : 64)
+                }
+                .transition(slideIn)
+                .zIndex(3)
+                .task(id: deleted.id) {
+                    // Long enough to notice and act, short enough not to sit
+                    // over the shelf you are trying to look at.
+                    try? await Task.sleep(for: .seconds(8))
+                    if nav.deletedGame?.id == deleted.id { nav.deletedGame = nil }
+                }
+            }
+
             if let notice = generation.notice {
                 VStack {
                     Spacer()
@@ -121,6 +146,7 @@ struct RootView: View {
         }
         .animation(.spring(duration: 0.35), value: persistence.lastErrorMessage == nil)
         .animation(.spring(duration: 0.35), value: generation.notice?.id)
+        .animation(.spring(duration: 0.35), value: nav.deletedGame?.id)
         // Was hard-pinned to .dark for thirty-six builds — the one line that
         // made every other colour decision moot. `.system` resolves to nil,
         // which is exactly what this modifier wants for "follow the phone".
@@ -326,6 +352,47 @@ private struct ShuffleToast: View {
             }
             Spacer(minLength: 6)
             Button("Re-roll") { reroll() }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.bordered)
+                .tint(LSTheme.accent)
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .lsTapTarget()
+            .accessibilityLabel("Dismiss")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(LSTheme.hairline))
+    }
+}
+
+/// "Deleted — Undo", for the eight seconds after a game goes.
+private struct UndoDeleteToast: View {
+    let deleted: AppNavigator.DeletedGame
+    var undo: () -> Void
+    var dismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trash")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Deleted")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(deleted.name)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Button("Undo") { undo() }
                 .font(.footnote.weight(.semibold))
                 .buttonStyle(.bordered)
                 .tint(LSTheme.accent)

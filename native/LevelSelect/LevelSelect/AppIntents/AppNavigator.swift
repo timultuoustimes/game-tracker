@@ -79,6 +79,24 @@ final class AppNavigator {
     }
     var shuffleRoll: ShuffleRoll?
 
+    /// A game just moved to Recently Deleted, and can be put back from here.
+    ///
+    /// Deleting is confirmed and recoverable, but recovery lived three taps
+    /// away in Settings — true, and no help at the moment you realise you
+    /// tapped the wrong row. Tim, asked whether Delete Game should have an
+    /// inline undo: *"yours"* — a toast, on the surface the app already has
+    /// for exactly this.
+    ///
+    /// The id rather than the object: the row is tombstoned, and holding a
+    /// model object across a toast's lifetime is how a deleted-object crash
+    /// happens. The name is captured because the toast has to say it after
+    /// the game has left every live query.
+    struct DeletedGame: Identifiable {
+        let id: UUID
+        let name: String
+    }
+    var deletedGame: DeletedGame?
+
     func open(gameID: UUID) {
         selectedTab = .home
         pendingGameID = gameID

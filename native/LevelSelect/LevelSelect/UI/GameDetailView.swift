@@ -392,12 +392,16 @@ struct GameDetailView: View {
         }
         .confirmationDialog("Delete \(game.name)?", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                // Captured BEFORE the delete: after it, the row is tombstoned
+                // and this view is being dismissed.
+                let undo = AppNavigator.DeletedGame(id: game.id, name: game.name)
                 Repository(context).softDelete(game)
+                AppNavigator.shared.deletedGame = undo
                 dismiss()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Moves it to trash (recoverable).")
+            Text("It moves to Recently Deleted, with its sessions and progress. You can put it back for 30 days — or undo right away.")
         }
     }
 

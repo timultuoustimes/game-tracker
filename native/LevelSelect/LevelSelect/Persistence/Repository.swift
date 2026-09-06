@@ -633,6 +633,19 @@ struct Repository {
         persist()
     }
 
+    /// Restore by id — what the undo toast has to work with.
+    ///
+    /// It cannot hold the `Game`: the row is tombstoned the moment the toast
+    /// appears, and keeping a model object alive across that is how a
+    /// deleted-object crash happens.
+    @discardableResult
+    func restoreGame(id: UUID) -> Bool {
+        let d = FetchDescriptor<Game>(predicate: #Predicate { $0.id == id })
+        guard let game = (try? context.fetch(d))?.first else { return false }
+        restore(game)
+        return true
+    }
+
     func softDelete(_ game: Game, at date: Date = .now) {
         // A hidden game must not keep timing.
         //

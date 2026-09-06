@@ -20,6 +20,8 @@ struct OverlappingTimerGuard: ViewModifier {
     /// Games the user chose to leave alone this launch, so declining doesn't
     /// re-ask on every foreground.
     @State private var dismissed: Set<UUID> = []
+    /// Sets of games the user has said "keep both" to, this launch.
+    @State private var dismissedCrossGame: Set<String> = []
     /// ONE presentation slot for both prompts.
     ///
     /// Two `.sheet` modifiers on the same view is a SwiftUI trap: only one is
@@ -78,13 +80,71 @@ struct OverlappingTimerGuard: ViewModifier {
     enum ActivePrompt: Identifiable {
         case live(OverlapTarget)
         case finished(Repository.SessionOverlap)
+        case crossGame([Session])
 
         var id: String {
             switch self {
             case .live(let target): "live-\(target.id.uuidString)"
             case .finished(let pair): "finished-\(pair.id)"
+            case .crossGame(let sessions):
+                "cross-" + sessions.map(\.id.uuidString).sorted().joined(separator: "+")
             }
         }
+    }
+
+    /// **Two games at once, on this device.**
+    ///
+    /// The guard above is about ONE game timed on TWO devices — a sync
+    /// problem. This is the everyday mistake: you start Hades without having
+    /// stopped Hollow Knight, and both accrue. Tim, when it went unremarked:
+    /// *"starting a second timer prompts something like 'you have a timer
+    /// running for x game at y amount of time. Stop timer before starting this
+    /// one? Keep other timer running?'"*
+    ///
+    /// Detected here rather than hooked into `startSession`, for the same
+    /// reason every other guard in this app is a guard: a timer starts from
+    /// the game page, the context menu, the timers strip, an App Intent, the
+    /// Live Activity, a widget and the watch, and a hook would have to be
+    /// added to each and remembered at the eighth. A device that starts one on
+    /// the watch gets asked here the moment the phone is opened.
+    ///
+    /// Not forced: two games at once is unusual rather than wrong, so "Keep
+    /// both" is a real answer and the prompt does not return this launch.
+    private var crossGame: [Session]? {
+        Self.crossGameSessions(among: unstopped, dismissed: dismissedCrossGame)
+    }
+
+    /// Static so it can be tested without a view. Same reason
+    /// `SessionNotePrompt.candidate` is: the rule is the part that can be
+    /// wrong, and it should not need a running app to check.
+    static func crossGameSessions(among sessions: [Session],
+                                  dismissed: Set<String>) -> [Session]? {
+        let running = sessions.filter {
+            $0.state == .running
+                && $0.endDate == nil
+                && $0.deletedAt == nil
+                && $0.playthrough?.deletedAt == nil
+                && $0.playthrough?.game?.deletedAt == nil
+        }
+        let byGame = Dictionary(grouping: running) { $0.playthrough?.game?.id }
+        // The same-game conflict above owns that case; this one is only about
+        // DIFFERENT games, so a game timed twice is left to it.
+        guard byGame.values.allSatisfy({ $0.count == 1 }), byGame.count > 1 else {
+            return nil
+        }
+        guard !dismissed.contains(key(for: running)) else { return nil }
+        // Oldest first: the one you forgot leads, because it is the one being
+        // asked about.
+        return running.sorted { $0.startDate < $1.startDate }
+    }
+
+    /// The set of games, as one stable string — so "keep both" is remembered
+    /// for THIS pair and a third game asks again.
+    static func key(for sessions: [Session]) -> String {
+        sessions
+            .compactMap { $0.playthrough?.game?.id.uuidString }
+            .sorted()
+            .joined(separator: "+")
     }
 
     /// Changes whenever the set of running timers does — including a state
@@ -120,6 +180,10 @@ struct OverlappingTimerGuard: ViewModifier {
                     FinishedOverlapSheet(pair: pair) { resolution in
                         applyFinished(resolution, to: pair)
                     }
+                case .crossGame(let sessions):
+                    CrossGameTimerSheet(sessions: sessions) { stopping in
+                        applyCrossGame(stopping, among: sessions)
+                    }
                 }
             }
     }
@@ -135,8 +199,26 @@ struct OverlappingTimerGuard: ViewModifier {
            repo.runningSessions(in: showing.game).count < 2 {
             prompt = nil
         }
-        guard prompt == nil, let target = overlap else { return }
-        prompt = .live(target)
+        if case .crossGame = prompt, crossGame == nil { prompt = nil }
+        guard prompt == nil else { return }
+        // Same-game first: it is a data problem, and the cross-game question
+        // is only interesting once each game is timed once.
+        if let target = overlap {
+            prompt = .live(target)
+        } else if let sessions = crossGame {
+            prompt = .crossGame(sessions)
+        }
+    }
+
+    /// `nil` means keep both — remembered for this launch so the answer is
+    /// taken as an answer rather than re-asked on every foreground.
+    private func applyCrossGame(_ stopping: Session?, among sessions: [Session]) {
+        if let stopping {
+            repo.stopSession(stopping)
+        } else {
+            dismissedCrossGame.insert(Self.key(for: sessions))
+        }
+        prompt = nil
     }
 
     private func applyFinished(_ resolution: FinishedOverlapResolution,
@@ -382,5 +464,77 @@ private struct FinishedOverlapSheet: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+
+/// Two games timing at once, on this device.
+///
+/// Deliberately not a three-button alert: the useful information is WHICH
+/// game and HOW LONG, and an alert cannot carry two rows of that. Stopping
+/// one credits its time normally — the same stop as any other, so the
+/// post-session "What happened?" follows it.
+private struct CrossGameTimerSheet: View {
+    let sessions: [Session]
+    /// nil = keep both.
+    let onResolve: (Session?) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text("Two games are timing at once. Both are counting, so their playtime is being recorded separately until you stop one.")
+                        .font(.subheadline)
+                }
+
+                Section {
+                    ForEach(sessions) { session in
+                        Button {
+                            onResolve(session)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 11) {
+                                CoverThumb(urlString: session.playthrough?.game?.displayCoverURLString,
+                                           name: session.playthrough?.game?.name ?? "",
+                                           status: session.playthrough?.game?.status ?? .playing)
+                                    .frame(width: 34, height: 46)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(session.playthrough?.game?.name ?? "A game")
+                                        .font(.subheadline.weight(.semibold))
+                                    Text("\(Format.duration(session.elapsed())) · started \(session.startDate.formatted(date: .omitted, time: .shortened))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "stop.fill")
+                                    .foregroundStyle(LSTheme.accent)
+                            }
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("Stop one")
+                } footer: {
+                    Text("Its time is credited the way any stop is.")
+                }
+
+                Section {
+                    Button("Keep both running") {
+                        onResolve(nil)
+                        dismiss()
+                    }
+                } footer: {
+                    Text("Sometimes two at once is the truth. You won't be asked again until the next launch.")
+                }
+            }
+            .navigationTitle("Two timers running")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+        }
+        .lsSheet()
     }
 }
