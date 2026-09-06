@@ -19,9 +19,14 @@ import SwiftData
 /// with no game. Tim: *"Photos need to show up in recently deleted and have a
 /// way to be actually deleted."*
 ///
-/// No auto-purge, on purpose: nothing here is deleted until the owner says
-/// so, and the copy says exactly that. A retention window is a policy
-/// decision to make with testers, not a default to guess at.
+/// **Thirty days**, the number Photos, Files, Mail and Notes all use, so
+/// nobody has to learn a new contract. This screen shipped with no window at
+/// all and a comment saying a retention policy was "a decision to make with
+/// testers, not a default to guess at" — which was true, and then went
+/// undecided for ten builds. Tim decided it: *"I don't see why we have to
+/// have an endless buildup of data that they already said they wanted to
+/// delete. Especially because this is in their personal iCloud."* The sweep
+/// is `Repository.purgeExpiredTrash`, run on foreground.
 struct RecentlyDeletedView: View {
     @Environment(\.modelContext) private var context
 
@@ -97,7 +102,7 @@ struct RecentlyDeletedView: View {
                 ContentUnavailableView {
                     Label("Nothing deleted", systemImage: "trash.slash")
                 } description: {
-                    Text("Anything you delete lands here first, and stays until you restore it or delete it forever.")
+                    Text("Anything you delete lands here first and stays for 30 days, unless you restore it or delete it forever sooner.")
                 }
             }
 
@@ -154,7 +159,7 @@ struct RecentlyDeletedView: View {
                     // The one number the app was getting wrong: Settings →
                     // Library → Game images counts live pictures only, so
                     // these were costing space nothing reported.
-                    Text("\(images.count) removed \(images.count == 1 ? "picture is" : "pictures are") still using \(ImageIngest.formattedBytes(images.reduce(0) { $0 + $1.byteCount })). Deleting one forever is what frees it.")
+                    Text("\(images.count) removed \(images.count == 1 ? "picture is" : "pictures are") still using \(ImageIngest.formattedBytes(images.reduce(0) { $0 + $1.byteCount })), here and in iCloud. They free themselves after 30 days.")
                 }
             }
         }

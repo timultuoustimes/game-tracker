@@ -183,6 +183,12 @@ struct RootView: View {
     private func repairSyncedData() {
         let repo = Repository(context)
         repo.reconcileLibrary()
+        // Recently Deleted empties itself after thirty days. Here rather than
+        // on a timer because there is nothing to do while the app is closed,
+        // and a sweep on foreground is the same moment sync repair already
+        // runs — one fetch of rows that have a `deletedAt`, which on a healthy
+        // library is none.
+        repo.purgeExpiredTrash()
         LiveActivityManager.sync(unstopped: repo.unstoppedSessions())
         WidgetBridge.refresh()
     }

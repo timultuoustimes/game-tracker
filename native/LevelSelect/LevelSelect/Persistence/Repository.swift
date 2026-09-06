@@ -479,6 +479,73 @@ struct Repository {
         }
     }
 
+    // MARK: Trash retention
+
+    /// How long Recently Deleted keeps something before it goes for good.
+    ///
+    /// **Thirty days, because that is the number people already know.** Photos,
+    /// Files, Mail and Notes all use it; a person who deletes a game and wants
+    /// it back next week does not have to learn a new contract.
+    ///
+    /// This used to be "never", and that was my call rather than a decision —
+    /// the commit that added Recently Deleted (3a3d177) said "a retention
+    /// window is a policy to decide with testers, not a default to guess at"
+    /// and then nobody came back to it. Tim did: *"I don't see why we have to
+    /// have an endless buildup of data that they already said they wanted to
+    /// delete. Especially because this is in their personal iCloud."*
+    ///
+    /// That last part is the argument. The rows are small, but a picture is
+    /// up to 2200px at 82% JPEG — a few hundred KB each, and they ride to
+    /// iCloud like everything else. Free iCloud is 5GB, and someone hunting
+    /// for space deletes the app, not forty individual pictures.
+    static let trashRetention: TimeInterval = 30 * 24 * 60 * 60
+
+    /// Hard-delete everything that has sat in Recently Deleted past the
+    /// window. Returns how many rows went.
+    ///
+    /// Games first, so their cascade takes playthroughs and pictures with it
+    /// rather than this sweep visiting rows that are already gone.
+    ///
+    /// **Restoring resets the clock by construction:** `restore` clears
+    /// `deletedAt`, and this only ever looks at rows that have one. The one
+    /// race it cannot close is a device that has been offline longer than the
+    /// window — it can purge something another device restored before that
+    /// restore arrives. Photos, Files and Mail all have the same property; the
+    /// alternative is never purging, which is what we are fixing.
+    @discardableResult
+    func purgeExpiredTrash(retention: TimeInterval = Repository.trashRetention,
+                           now: Date = .now) -> Int {
+        let cutoff = now.addingTimeInterval(-retention)
+        var purged = 0
+
+        func expired(_ deletedAt: Date?) -> Bool {
+            guard let deletedAt else { return false }
+            return deletedAt < cutoff
+        }
+
+        for game in trashedGames() where expired(game.deletedAt) {
+            context.delete(game)
+            purged += 1
+        }
+        for pt in trashedPlaythroughs() where expired(pt.deletedAt) {
+            context.delete(pt)
+            purged += 1
+        }
+        for collection in trashedCollections() where expired(collection.deletedAt) {
+            context.delete(collection)
+            purged += 1
+        }
+        // Pictures last, and only the ones still standing: a picture under a
+        // game purged above went with it.
+        for image in trashedImages() where expired(image.deletedAt) {
+            context.delete(image)
+            purged += 1
+        }
+
+        if purged > 0 { persist() }
+        return purged
+    }
+
     /// Removed pictures, newest first — with the memory or game they came
     /// from, so the list can say where each one was.
     ///

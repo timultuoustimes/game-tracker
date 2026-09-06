@@ -303,13 +303,13 @@ struct MemorySheet: View {
     /// No confirmation: removing is a soft delete, the same as everywhere else
     /// pictures are removed.
     ///
-    /// ⚠️ **This used to say "so the picture is recoverable rather than gone",
-    /// and that is not true today.** `Repository.restore(_ image:)` exists and
-    /// nothing calls it: Recently Deleted carries Games, Playthroughs and
-    /// Collections only, so a removed picture is tombstoned, invisible, and
-    /// unreachable — and its external bytes stay on disk forever. Codex data
-    /// #4. The comment was believed once already; it says what is true now
-    /// until either recovery or an immediate Undo exists.
+    /// The picture is recoverable rather than gone — and as of build 37 that
+    /// is true rather than aspirational. It lands in Recently Deleted with a
+    /// Restore beside it and keeps for thirty days.
+    ///
+    /// It said this for two schema versions while `restore(_ image:)` had no
+    /// caller at all, which is how a removed picture became invisible,
+    /// unrecoverable AND permanent, all at once. Codex data #4.
     private func removeButton(_ label: String,
                               action: @escaping () -> Void) -> some View {
         Button(role: .destructive, action: action) {

@@ -174,7 +174,7 @@ struct GameContextMenuModifier: ViewModifier {
             Button("Delete Game", role: .destructive) { repo.softDelete(game) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("It moves to Recently Deleted in Settings, with its sessions and progress. You can put it back.")
+            Text("It moves to Recently Deleted in Settings, with its sessions and progress. You can put it back for 30 days.")
         }
         .alert("New Collection", isPresented: $newCollection) {
             TextField("Name", text: $newCollectionName)
