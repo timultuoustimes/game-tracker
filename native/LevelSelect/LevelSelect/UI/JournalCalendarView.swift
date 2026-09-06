@@ -235,6 +235,7 @@ private struct YearStrip: View {
 
 /// Twelve months of one year, as heat.
 private struct YearGrid: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let year: Int
     let calendar: Calendar
     let load: [Date: DayLoad]
@@ -248,9 +249,32 @@ private struct YearGrid: View {
     private let columns = [GridItem(.adaptive(minimum: 108, maximum: 160), spacing: 14)]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 18) {
-            ForEach(months, id: \.self) { month in
-                MiniMonth(month: month, calendar: calendar, load: load, peak: peak)
+        // **At accessibility sizes the picture becomes the sentence.** B4.
+        //
+        // A mini-month is 42 squares inside ~108pt; the squares are already
+        // about 2pt across and they do not grow, because the grid is sized to
+        // fit a year rather than to fit type. Scaling it up instead would cost
+        // the one thing the year view exists for — a year on one screen — and
+        // still leave someone reading a shape they turned the text up because
+        // they could not read.
+        //
+        // So the heat map is dropped, not shrunk or stretched: twelve rows,
+        // each saying in words exactly what its square block encoded, each
+        // opening the same month. Nothing is lost but the picture, and the
+        // picture was the part that did not work at this size. VoiceOver has
+        // read this same sentence off the grid all along — `monthSummary` is
+        // shared, so the two can never drift.
+        if typeSize.isAccessibilitySize {
+            VStack(spacing: 8) {
+                ForEach(months, id: \.self) { month in
+                    MonthSummaryRow(month: month, calendar: calendar, load: load)
+                }
+            }
+        } else {
+            LazyVGrid(columns: columns, spacing: 18) {
+                ForEach(months, id: \.self) { month in
+                    MiniMonth(month: month, calendar: calendar, load: load, peak: peak)
+                }
             }
         }
     }
@@ -259,6 +283,106 @@ private struct YearGrid: View {
         (1...12).compactMap {
             calendar.date(from: DateComponents(year: year, month: $0, day: 1))
         }
+    }
+}
+
+/// What a month holds, as numbers — shared by the grid's VoiceOver label and
+/// by the list that replaces the grid at accessibility sizes, so the spoken
+/// version and the written one are the same sentence by construction.
+struct MonthLoad {
+    let month: Date
+    let activeDays: Int
+    let seconds: TimeInterval
+
+    init(month: Date, calendar: Calendar, load: [Date: DayLoad]) {
+        self.month = month
+        let days = MonthLoad.days(of: month, calendar: calendar)
+        let active = days.compactMap { load[$0] }.filter { $0.entries > 0 }
+        self.activeDays = active.count
+        self.seconds = active.reduce(0) { $0 + $1.seconds }
+    }
+
+    /// Every day of the month, normalized to start-of-day — which is how
+    /// `load` is keyed, so anything less exact silently misses days.
+    ///
+    /// The trap is arithmetic in seconds: `+86400` per day drifts an hour the
+    /// moment the clocks change, and every day after 8 March 2026 in a US zone
+    /// then lands at 1 a.m. and matches nothing. Walking the month's own
+    /// interval and normalizing each step is immune to that, and it is the
+    /// same walk `MiniMonth` was already doing — which is why it calls this
+    /// rather than keeping a second copy that could diverge from it.
+    static func days(of month: Date, calendar: Calendar) -> [Date] {
+        guard let interval = calendar.dateInterval(of: .month, for: month) else { return [] }
+        var result: [Date] = []
+        var cursor = interval.start
+        while cursor < interval.end {
+            result.append(calendar.startOfDay(for: cursor))
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return result
+    }
+
+    var isEmpty: Bool { activeDays == 0 }
+
+    private var dayWord: String { activeDays == 1 ? "day" : "days" }
+
+    /// The written form: what the row shows under the month name.
+    var detail: String {
+        guard !isEmpty else { return "Nothing recorded" }
+        guard seconds > 0 else { return "\(activeDays) \(dayWord)" }
+        return "\(activeDays) \(dayWord) · \(Format.duration(seconds))"
+    }
+
+    /// The spoken form, month name included. Reads as a sentence rather than
+    /// as a heading followed by a fragment.
+    var spoken: String {
+        let name = month.formatted(.dateTime.month(.wide).year())
+        guard !isEmpty else { return "\(name), nothing recorded" }
+        guard seconds > 0 else { return "\(name), \(activeDays) \(dayWord)" }
+        return "\(name), \(activeDays) \(dayWord), \(Format.spokenDuration(seconds))"
+    }
+}
+
+/// One month as a line of text. The accessibility-size stand-in for `MiniMonth`.
+private struct MonthSummaryRow: View {
+    let month: Date
+    let calendar: Calendar
+    let load: [Date: DayLoad]
+
+    private var summary: MonthLoad {
+        MonthLoad(month: month, calendar: calendar, load: load)
+    }
+
+    var body: some View {
+        let summary = summary
+        NavigationLink(value: CalendarMonth(start: month)) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(month.formatted(.dateTime.month(.wide)))
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(summary.detail)
+                        // A month with nothing in it stays on the list rather
+                        // than being dropped: a year missing March reads as a
+                        // bug, and "nothing recorded" is also the answer
+                        // someone scrubbing back through old years is after.
+                        .font(.subheadline)
+                        .foregroundStyle(summary.isEmpty ? .tertiary : .secondary)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .lsCard()
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(summary.spoken)
+        .accessibilityHint("Opens the month")
     }
 }
 
@@ -310,15 +434,10 @@ private struct MiniMonth: View {
         .accessibilityHint("Opens the month")
     }
 
-    /// What a month holds, in a sentence.
+    /// What a month holds, in a sentence. Shared with the accessibility-size
+    /// list that replaces this grid, so the two say the same thing (B4).
     private var monthSummary: String {
-        let name = month.formatted(.dateTime.month(.wide).year())
-        let active = days.compactMap { load[$0] }.filter { $0.entries > 0 }
-        guard !active.isEmpty else { return "\(name), nothing recorded" }
-        let seconds = active.reduce(0) { $0 + $1.seconds }
-        let dayWord = active.count == 1 ? "day" : "days"
-        guard seconds > 0 else { return "\(name), \(active.count) \(dayWord)" }
-        return "\(name), \(active.count) \(dayWord), \(Format.spokenDuration(seconds))"
+        MonthLoad(month: month, calendar: calendar, load: load).spoken
     }
 
     /// Accent at a strength, rather than a second color ramp.
@@ -336,17 +455,7 @@ private struct MiniMonth: View {
         return LSTheme.accent.opacity(0.3 + 0.7 * (entry.seconds / peak))
     }
 
-    private var days: [Date] {
-        guard let interval = calendar.dateInterval(of: .month, for: month) else { return [] }
-        var result: [Date] = []
-        var cursor = interval.start
-        while cursor < interval.end {
-            result.append(calendar.startOfDay(for: cursor))
-            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
-            cursor = next
-        }
-        return result
-    }
+    private var days: [Date] { MonthLoad.days(of: month, calendar: calendar) }
 
     private var leadingBlanks: Int {
         guard let first = days.first else { return 0 }
