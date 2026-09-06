@@ -52,6 +52,90 @@ struct ReconciliationTests {
         #expect(live.first?.rank == 2)
     }
 
+    // MARK: The variant a duplicate fold must not lose (Codex data #2)
+
+    /// The choice survives when it was made on the row that LOSES the fold.
+    ///
+    /// This is the sequence the assessment named: the phone chooses `alt`
+    /// offline, the iPad then touches the same item for some other reason, and
+    /// the iPad's row is later under `(updatedAt, id)`. Before the fix the
+    /// merge kept the iPad's row, tombstoned the phone's, and the choice was
+    /// simply gone.
+    @Test func aVariantChosenOnTheLosingRowSurvives() {
+        let (repo, game) = self.game(named: "Hollow Knight")
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+
+        repo.setTrackerVariant(pt, itemID: "defiance", variant: "alt")
+        // The other device's row is LATER, and knows nothing about variants.
+        _ = syncedState(repo, pt: pt, itemID: "defiance", completed: true,
+                        updatedAt: .now.addingTimeInterval(60))
+
+        _ = repo.reconcile(game)
+
+        let live = (pt.trackerStates ?? []).filter {
+            $0.itemID == "defiance" && $0.deletedAt == nil
+        }
+        #expect(live.count == 1)
+        #expect(live.first?.completed == true)
+        #expect(live.first?.selectedVariant == "alt")
+    }
+
+    /// **Clearing is a choice, and a later clear beats an earlier pick.**
+    ///
+    /// The reason the fix could not simply be "copy the loser's value when the
+    /// winner has none": nil means "back to the default", not "never said".
+    /// Only `selectedVariantUpdatedAt` can tell those apart, which is why it
+    /// shipped a build before this code.
+    @Test func aLaterClearIsNotUndoneByAnEarlierPick() {
+        let (repo, game) = self.game(named: "Hollow Knight")
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+
+        // The row that will WIN the fold: an old pick.
+        let old = syncedState(repo, pt: pt, itemID: "defiance",
+                              updatedAt: .now.addingTimeInterval(60))
+        old.selectedVariant = "alt"
+        old.selectedVariantUpdatedAt = .now.addingTimeInterval(-600)
+
+        // The row that will lose it: a newer deliberate switch back.
+        let cleared = syncedState(repo, pt: pt, itemID: "defiance")
+        cleared.selectedVariant = nil
+        cleared.selectedVariantUpdatedAt = .now
+
+        _ = repo.reconcile(game)
+
+        let live = (pt.trackerStates ?? []).filter {
+            $0.itemID == "defiance" && $0.deletedAt == nil
+        }
+        #expect(live.count == 1)
+        #expect(live.first?.selectedVariant == nil)
+    }
+
+    /// A row written before the field existed carries no stamp, and must not
+    /// outrank one that does — otherwise deploying the fix would resurrect
+    /// whatever every pre-field row happened to hold.
+    @Test func anUnstampedRowLosesToAStampedOne() {
+        let (repo, game) = self.game(named: "Hollow Knight")
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+
+        // Pre-field history: a variant with no stamp, and it wins the fold.
+        let legacy = syncedState(repo, pt: pt, itemID: "defiance",
+                                 updatedAt: .now.addingTimeInterval(60))
+        legacy.selectedVariant = "legacy"
+        legacy.selectedVariantUpdatedAt = nil
+
+        let chosen = syncedState(repo, pt: pt, itemID: "defiance")
+        chosen.selectedVariant = "alt"
+        chosen.selectedVariantUpdatedAt = .now
+
+        _ = repo.reconcile(game)
+
+        let live = (pt.trackerStates ?? []).filter {
+            $0.itemID == "defiance" && $0.deletedAt == nil
+        }
+        #expect(live.count == 1)
+        #expect(live.first?.selectedVariant == "alt")
+    }
+
     /// Round 2: "newest wins" folding via OR resurrected deliberate
     /// reductions. An untick that is the user's LATEST action must survive a
     /// stale completed twin — reconcile must not re-tick it.

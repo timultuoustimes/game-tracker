@@ -2603,6 +2603,39 @@ struct Repository {
             if winner.count == nil { winner.count = losers.compactMap(\.count).first }
             winner.revealed = winner.revealed || losers.contains { $0.revealed }
 
+            // **The variant is decided by WHEN it was chosen, not by which row
+            // won the fold.** Codex data #2, the last P0 in the assessments.
+            //
+            // The rest of this merge can take the winner's value and fill the
+            // gaps, because rank, count, revealed and notes are all things you
+            // add to. A variant is a thing you SWITCH — and nil is a real
+            // answer, meaning "back to the default", not an absence. So
+            // "copy the loser's value when the winner has none" is wrong in
+            // exactly the case that matters: choose `alt` on the phone, switch
+            // back to default on the iPad, and the phone's older choice would
+            // be restored on top of the newer one.
+            //
+            // `selectedVariantUpdatedAt` is what tells never-set from
+            // deliberately-cleared, which is why the field shipped a build
+            // before this code and has been accumulating since.
+            //
+            // Rows with no stamp are pre-field history. They lose to any
+            // stamped row, and among themselves the total order decides — the
+            // same rule the rest of the fold uses, so two devices folding the
+            // same rows still agree.
+            let byVariantTime = ([winner] + losers).max { a, b in
+                switch (a.selectedVariantUpdatedAt, b.selectedVariantUpdatedAt) {
+                case let (x?, y?): return x == y ? b.outranks(a) : x < y
+                case (nil, _?):    return true
+                case (_?, nil):    return false
+                case (nil, nil):   return b.outranks(a)
+                }
+            }
+            if let byVariantTime, byVariantTime !== winner {
+                winner.selectedVariant = byVariantTime.selectedVariant
+                winner.selectedVariantUpdatedAt = byVariantTime.selectedVariantUpdatedAt
+            }
+
             // Notes: winner's first, then each loser's in the same total
             // order, skipping any text an earlier part already contains —
             // that containment check is what makes the fold idempotent under
