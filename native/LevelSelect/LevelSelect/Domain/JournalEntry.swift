@@ -83,17 +83,28 @@ struct JournalEntry: Identifiable {
 /// to trouble to preserve and hand it back as the lie it was designed to
 /// avoid.
 struct JournalPeriod: Identifiable {
+    /// How wide a period is. Ordered narrow to wide, which is what the
+    /// `Comparable` conformance is for — two periods starting on the same
+    /// instant sort with the more precise one first.
+    ///
+    /// **Season and decade are first-class, not spans with a label.** Tim, on
+    /// where "summer 1998" and "the 1990s" belong: *"I think first-class
+    /// season/decade headers."* Before this they could only be stored as a
+    /// bare interval with no name for how wide it was, so the calendar had
+    /// nothing to group them by. B1.
     enum Grain: Int, Comparable {
-        case day = 0, month = 1, year = 2
+        case day = 0, month = 1, season = 2, year = 3, decade = 4
         static func < (a: Grain, b: Grain) -> Bool { a.rawValue < b.rawValue }
 
         /// `CompletionEvent.datePrecision`'s vocabulary, reused rather than a
         /// second one invented beside it.
         init(precision: String?) {
             switch precision {
-            case "year":  self = .year
-            case "month": self = .month
-            default:      self = .day
+            case "decade": self = .decade
+            case "year":   self = .year
+            case "season": self = .season
+            case "month":  self = .month
+            default:       self = .day
             }
         }
 
@@ -102,7 +113,11 @@ struct JournalPeriod: Identifiable {
             case .day:   calendar.startOfDay(for: date)
             case .month: calendar.dateInterval(of: .month, for: date)?.start
                             ?? calendar.startOfDay(for: date)
+            case .season: Memory.seasonInterval(of: date)?.lowerBound
+                            ?? calendar.startOfDay(for: date)
             case .year:  calendar.dateInterval(of: .year, for: date)?.start
+                            ?? calendar.startOfDay(for: date)
+            case .decade: Memory.decadeInterval(of: date)?.lowerBound
                             ?? calendar.startOfDay(for: date)
             }
         }
@@ -140,6 +155,18 @@ struct JournalPeriod: Identifiable {
     func title(now: Date = .now) -> String {
         if let headingOverride { return headingOverride }
         switch grain {
+        // "The 1990s" — the decade named the way anybody says it.
+        case .decade:
+            let first = calendar.component(.year, from: start)
+            return "The \(first)s"
+        // A season memory always carries the words it was written with, so
+        // this is a fallback rather than the usual path — and it deliberately
+        // names months rather than a season, because which three months are
+        // "summer" depends on which half of the planet you were on.
+        case .season:
+            let end = calendar.date(byAdding: .month, value: 2, to: start) ?? start
+            return start.formatted(styled(.dateTime.month(.abbreviated)))
+                + "–" + end.formatted(styled(.dateTime.month(.abbreviated).year()))
         case .year:  return String(calendar.component(.year, from: start))
         case .month: return start.formatted(styled(.dateTime.month(.wide).year()))
         case .day:

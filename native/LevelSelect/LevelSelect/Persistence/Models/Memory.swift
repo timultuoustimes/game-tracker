@@ -233,15 +233,63 @@ extension Memory {
     /// The first instant the memory could have happened, given its precision.
     static func intervalStart(of date: Date, precision: String?) -> Date {
         switch precision {
+        case "decade": decadeInterval(of: date)?.lowerBound ?? date
+        case "season": seasonInterval(of: date)?.lowerBound ?? date
         case "year":  calendar.dateInterval(of: .year, for: date)?.start ?? date
         case "month": calendar.dateInterval(of: .month, for: date)?.start ?? date
         default:      calendar.startOfDay(for: date)
         }
     }
 
+    /// **The decade a date falls in — 1990-01-01 to 1999-12-31.**
+    ///
+    /// "The 1990s" is a thing people say about their own history constantly,
+    /// and until build 37 the app could only file it as a year with the wrong
+    /// nine years missing, or as a bare span with no name. B1.
+    static func decadeInterval(of date: Date) -> ClosedRange<Date>? {
+        let year = calendar.component(.year, from: date)
+        let first = year - (year % 10)
+        guard let start = calendar.date(from: DateComponents(year: first, month: 1, day: 1)),
+              let end = calendar.date(from: DateComponents(year: first + 9, month: 12, day: 31))
+        else { return nil }
+        return start...end
+    }
+
+    /// **Three months, and the words stay the user's.**
+    ///
+    /// The months are the northern-hemisphere ones, which is an assumption and
+    /// is why it never reaches the screen: a season memory carries `whenText`,
+    /// so what anybody READS is the phrase they chose ("summer 1998"). This
+    /// interval only decides where it sorts, and being a season out in the
+    /// southern hemisphere costs an ordering nudge inside one year rather than
+    /// a wrong sentence about someone's life.
+    static func seasonInterval(of date: Date) -> ClosedRange<Date>? {
+        let parts = calendar.dateComponents([.year, .month], from: date)
+        guard let year = parts.year, let month = parts.month else { return nil }
+        // Winter is the one that straddles a year end, so it starts in the
+        // previous December rather than folding into the following spring.
+        let firstMonth: Int, startYear: Int
+        switch month {
+        case 3...5:   firstMonth = 3;  startYear = year
+        case 6...8:   firstMonth = 6;  startYear = year
+        case 9...11:  firstMonth = 9;  startYear = year
+        default:      firstMonth = 12; startYear = month == 12 ? year : year - 1
+        }
+        guard let start = calendar.date(from: DateComponents(year: startYear, month: firstMonth, day: 1)),
+              let end = calendar.date(byAdding: DateComponents(month: 3, day: -1), to: start)
+        else { return nil }
+        return start...end
+    }
+
     /// The last. A year-precision memory spans the whole year, so it sorts
     /// among that year rather than pretending to be 1 January.
     static func intervalEnd(of date: Date, precision: String?) -> Date {
+        if precision == "decade" { return decadeInterval(of: date)?.upperBound ?? date }
+        if precision == "season" {
+            guard let season = seasonInterval(of: date) else { return date }
+            return calendar.dateInterval(of: .day, for: season.upperBound)?.end
+                .addingTimeInterval(-1) ?? season.upperBound
+        }
         let unit: Calendar.Component
         switch precision {
         case "year":  unit = .year

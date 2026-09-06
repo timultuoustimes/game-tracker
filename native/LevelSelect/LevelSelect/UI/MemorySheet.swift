@@ -73,13 +73,15 @@ struct MemorySheet: View {
 
     /// How well the date is known — and the fourth case is the point.
     enum HowKnown: String, CaseIterable, Identifiable {
-        case day, month, year, unsure
+        case day, month, season, year, decade, unsure
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .day:    "Exact day"
+            case .day:    "Day"
             case .month:  "Month"
+            case .season: "Season"
             case .year:   "Year"
+            case .decade: "Decade"
             case .unsure: "Not sure"
             }
         }
@@ -89,7 +91,9 @@ struct MemorySheet: View {
             switch self {
             case .day:    "day"
             case .month:  "month"
+            case .season: "season"
             case .year:   "year"
+            case .decade: "decade"
             case .unsure: nil
             }
         }
@@ -131,12 +135,20 @@ struct MemorySheet: View {
                         // calendar grid is where that first bit.
                         DatePicker("When", selection: $date, displayedComponents: .date)
                             .lsMemoryCalendar()
-                    case .month, .year:
+                    case .month, .season, .year, .decade:
                         // The same picker, and the app throws away what it was
                         // not told: a month-precision memory keeps the month
-                        // and prints only that.
+                        // and prints only that. A season keeps the three months
+                        // around the one you land on; a decade keeps the ten
+                        // years around it.
                         DatePicker("Around when", selection: $date, displayedComponents: .date)
                             .lsMemoryCalendar()
+                        if howKnown == .season {
+                            // The words are the user's, always. The stored
+                            // months are northern-hemisphere and never shown —
+                            // see `Memory.seasonInterval`.
+                            TextField("Summer 1998", text: $words)
+                        }
                     case .unsure:
                         TextField("Christmas 1995 or 1996", text: $words)
                         // `verbatim:`, because interpolating an Int into a
@@ -280,10 +292,13 @@ struct MemorySheet: View {
         // nobody anything.
         case .day:    ""
         case .month:  "Only the month and year are kept."
+        case .season: "Shown exactly as you write it. The three months around the date are only used to place it in the year."
         case .year:   "Only the year is kept."
+        case .decade: "Only the decade is kept — it sits under its own heading rather than on any one year."
         case .unsure: dayKnown
-            ? "Shown exactly as you write it. It sits on that day in the first year, marked as uncertain."
-            : "Shown exactly as you write it. The years are only used to place it on the timeline."
+            // Both candidate years now, not just the first.
+            ? "Shown exactly as you write it. It sits on that day in every year it might have been, marked as uncertain."
+            : "Shown exactly as you write it. It sits under the year rather than on a day, because you haven't named one."
         }
     }
 
@@ -431,7 +446,12 @@ struct MemorySheet: View {
                             // to guess it back out of the stored dates later.
                             dayKnown: dayKnown)
         } else {
-            repo.saveMemory(memory, on: date, precision: howKnown.precision, words: nil)
+            // A season carries the words it was written with — "summer 1998"
+            // is what gets shown, and the stored months only decide where it
+            // sorts. Every other precision re-renders exactly, so storing a
+            // copy of the words would only give the two a chance to disagree.
+            repo.saveMemory(memory, on: date, precision: howKnown.precision,
+                            words: howKnown == .season ? words : nil)
         }
         for data in pendingPhotos.map(\.data) {
             try? repo.addImage(to: memory, data: data)
