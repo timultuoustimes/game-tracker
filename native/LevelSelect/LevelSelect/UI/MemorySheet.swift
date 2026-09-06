@@ -426,7 +426,10 @@ struct MemorySheet: View {
             let end = (dayKnown ? vagueDate(year: high) : nil)
                 ?? Memory.calendar.date(from: DateComponents(year: high, month: 12, day: 31)) ?? date
             repo.saveMemory(memory, on: start, precision: nil,
-                            words: words, span: start...end)
+                            words: words, span: start...end,
+                            // The sheet already asked; the app should not have
+                            // to guess it back out of the stored dates later.
+                            dayKnown: dayKnown)
         } else {
             repo.saveMemory(memory, on: date, precision: howKnown.precision, words: nil)
         }

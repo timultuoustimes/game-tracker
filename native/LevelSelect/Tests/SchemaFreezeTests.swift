@@ -170,7 +170,7 @@ struct SchemaFreezeTests {
             // and never regenerated from the interval; precision is nil for a
             // genuine disjunction ("Christmas 1995 or 1996"), which is the
             // case no single precision can describe.
-            "Memory: body,createdAt,deletedAt,earliest,game,id,images,kind,latest,legacyID,place,platform,playedWithData,precision,revision,title,updatedAt,userID,whenText",
+            "Memory: body,createdAt,dayKnownRaw,deletedAt,earliest,game,id,images,kind,latest,legacyID,place,platform,playedWithData,precision,revision,title,updatedAt,userID,whenText",
             "MigrationReceipt: appVersion,countsJSON,id,importedAt,sourceDeviceID",
             // PlayerProfile added 2026-08-29 build 33 — the person the shelf
             // belongs to. A NEW record type rather than reusing `Profile`,

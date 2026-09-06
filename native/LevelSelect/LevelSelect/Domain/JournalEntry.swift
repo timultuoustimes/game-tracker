@@ -265,7 +265,7 @@ enum JournalBuilder {
     /// there is one memory here, shown twice, not two memories.
     static func candidateEntries(for memory: Memory) -> [JournalEntry] {
         let base = entry(for: memory)
-        guard memory.precision == nil else { return [base] }
+        guard memory.precision == nil, memory.hasKnownDay else { return [base] }
 
         let cal = Memory.calendar
         let from = cal.dateComponents([.year, .month, .day], from: memory.earliest)
@@ -288,6 +288,17 @@ enum JournalBuilder {
         }
     }
 
+    /// The grain a memory is placed at.
+    ///
+    /// **An uncertain memory with no day is not a day.** It used to be given
+    /// `.day` anyway, which is what put it on a square — 1 January, a date
+    /// nobody wrote. Grained at the year instead, it lands in the area the
+    /// calendar already keeps above the grid for entries that name no day.
+    static func grain(for memory: Memory) -> JournalPeriod.Grain {
+        if memory.precision == nil, !memory.hasKnownDay { return .year }
+        return JournalPeriod.Grain(precision: memory.precision)
+    }
+
     static func entry(for memory: Memory,
                       id: String? = nil,
                       date: Date? = nil) -> JournalEntry {
@@ -295,7 +306,7 @@ enum JournalBuilder {
             id: id ?? memory.id.uuidString,
             kind: .memory,
             date: date ?? memory.earliest,
-            grain: JournalPeriod.Grain(precision: memory.precision),
+            grain: grain(for: memory),
             game: memory.game,
             title: memory.title,
             notes: [memory.body?.journalText].compactMap { $0 },

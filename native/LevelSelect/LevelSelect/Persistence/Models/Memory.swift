@@ -63,13 +63,48 @@ final class Memory {
     var earliest: Date = Date.now
     var latest: Date = Date.now
 
-    /// `day` | `month` | `year`, or nil when no single precision describes it.
+    /// **Whether a day is known at all, when the date is uncertain.**
+    ///
+    /// `precision == nil` was carrying two different answers. "Christmas 1995
+    /// or 1996" knows the day perfectly well and only doubts the year;
+    /// "sometime in 1995 or 1996" has no day in it. Both stored nil, so the
+    /// app had to invent a date for the second — and it invented 1 January,
+    /// which reads on the calendar as a New Year's Day memory nobody wrote.
+    ///
+    /// Tim, choosing this over marking the square or a separate area: *"It
+    /// also means the app stops making stuff up on it's own about a user's
+    /// memory, so I'd rather that be the case."*
+    ///
+    /// Three states on purpose. `true` and `false` are answers the sheet
+    /// wrote; **nil is a row from before this field existed**, and those are
+    /// read by `hasKnownDay` rather than guessed at here.
+    var dayKnownRaw: Bool?
+
+    /// `day` | `month` | `year` | `season` | `decade`, or nil when no single
+    /// precision describes it.
     ///
     /// The same vocabulary as `CompletionEvent.datePrecision`, reused rather
     /// than a second one invented beside it. **nil is meaningful**: it is the
     /// disjunction case — "1995 or 1996" is not year-precision, it is two
     /// years, and only `whenText` can say so.
     var precision: String?
+
+    /// Does this memory name a day?
+    ///
+    /// A precise date always does. An uncertain one says so explicitly since
+    /// build 37 — and for the rows written before that, the heuristic is the
+    /// one the old sheet made true: it stored 1 January when there was no day
+    /// and the real month/day when there was. So a legacy uncertain memory
+    /// filed on 1 January is treated as dayless, and every other one keeps its
+    /// day. It can be wrong for exactly one case — an uncertain memory that
+    /// genuinely happened on a 1 January — and the cost there is a heading
+    /// instead of a square, which loses no words and no date.
+    var hasKnownDay: Bool {
+        if let dayKnownRaw { return dayKnownRaw }
+        guard precision == nil else { return precision == "day" }
+        let parts = Memory.calendar.dateComponents([.month, .day], from: earliest)
+        return !(parts.month == 1 && parts.day == 1)
+    }
 
     // MARK: What kind of thing it was
 

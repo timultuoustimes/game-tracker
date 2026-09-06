@@ -438,6 +438,10 @@ enum CloudKitSchemaSeeder {
         memory.body = marker
         memory.place = marker
         memory.platform = marker
+        // Build 37. The seeded Memory is deleted whole by `purgeAll`, so this
+        // needs no marker value of its own — it only has to be non-nil, or
+        // CloudKit never sees the field at all.
+        memory.dayKnownRaw = true
         memory.companions = [Companion(name: marker, handle: marker)]
         context.insert(memory)
         memory.game = game

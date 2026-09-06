@@ -352,12 +352,17 @@ struct Repository {
     /// "year" always means the whole year and never 1 January — a memory
     /// stored as an instant would sort as though its precision were a day,
     /// which is the mistake the precision field exists to prevent.
+    /// - Parameter dayKnown: only meaningful with a `span` — whether the
+    ///   uncertain date names a day. Recorded rather than inferred, so the
+    ///   calendar never has to invent one. See `Memory.dayKnownRaw`.
     @discardableResult
     func saveMemory(_ memory: Memory,
                     on date: Date,
                     precision: String?,
                     words: String?,
-                    span: ClosedRange<Date>? = nil) -> Memory {
+                    span: ClosedRange<Date>? = nil,
+                    dayKnown: Bool? = nil) -> Memory {
+        memory.dayKnownRaw = span == nil ? (precision == "day") : dayKnown
         if let span {
             // A genuine disjunction — "Christmas 1995 or 1996". No single
             // precision describes it, so nil is stored and only the words can
