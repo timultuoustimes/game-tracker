@@ -138,22 +138,86 @@ struct ColorEditor: View {
         }
     }
 
+    /// **Linked mode edits two things, not one.**
+    ///
+    /// It used to edit only the accent, so turning "Match light and dark" on
+    /// took the ground away entirely — Tim: *"why aren't they able to choose a
+    /// background and accent color for the 'match light and dark'? They're
+    /// just choosing one color."* Nothing about matching the appearances
+    /// implies giving up the ground; that was an omission, not a design.
+    ///
+    /// Two segments here against the unlinked editor's four, which is exactly
+    /// the difference the toggle describes: one hue per role instead of one
+    /// per role per appearance.
+    enum LinkedKind: String, CaseIterable, Identifiable {
+        case accent, ground
+        var id: String { rawValue }
+        var label: String { self == .accent ? "Accent" : "Ground" }
+    }
+    @State private var linkedKind: LinkedKind = .accent
+
+    /// The ground needs no new stored fields to be "linked".
+    ///
+    /// `LSTheme.ground(tintedBy:)` keeps only hue and saturation and supplies
+    /// the luminance per appearance, so writing one colour to BOTH stored
+    /// grounds already produces a matched pair. The accent is different — it
+    /// has a real linked hue of its own, because its brightness is derived
+    /// rather than fixed.
     private var linkedHue: Binding<Double> {
-        Binding(get: { themeSettings.first?.accentHue ?? hue },
-                set: { v in
-                    let theme = ThemePalette.fetchOrCreate(in: context)
-                    theme.accentHue = v
-                    commitTheme(theme)
-                })
+        switch linkedKind {
+        case .accent:
+            return Binding(get: { themeSettings.first?.accentHue ?? hue },
+                           set: { v in
+                               let theme = ThemePalette.fetchOrCreate(in: context)
+                               theme.accentHue = v
+                               commitTheme(theme)
+                           })
+        case .ground:
+            return Binding(get: { groundHueSaturation.h },
+                           set: { writeLinkedGround(hue: $0,
+                                                    saturation: groundHueSaturation.s) })
+        }
     }
 
     private var linkedSaturation: Binding<Double> {
-        Binding(get: { themeSettings.first?.accentSaturation ?? saturation },
-                set: { v in
-                    let theme = ThemePalette.fetchOrCreate(in: context)
-                    theme.accentSaturation = v
-                    commitTheme(theme)
-                })
+        switch linkedKind {
+        case .accent:
+            return Binding(get: { themeSettings.first?.accentSaturation ?? saturation },
+                           set: { v in
+                               let theme = ThemePalette.fetchOrCreate(in: context)
+                               theme.accentSaturation = v
+                               commitTheme(theme)
+                           })
+        case .ground:
+            return Binding(get: { groundHueSaturation.s },
+                           set: { writeLinkedGround(hue: groundHueSaturation.h,
+                                                    saturation: $0) })
+        }
+    }
+
+    /// The targets one linked role covers — both appearances of it.
+    private var linkedTargets: [ColorTarget] {
+        let prefix = linkedKind == .accent ? "accent-" : "background-"
+        return targets.filter { $0.id.hasPrefix(prefix) }
+    }
+
+    /// The stored ground's hue and saturation, or the default's.
+    private var groundHueSaturation: (h: Double, s: Double) {
+        let stored = themeSettings.first?.backgroundHex(dark: true)
+            .flatMap { Color(hex: $0) } ?? LSTheme.purpleDeep
+        let v = ColorEditor.hsb(stored)
+        return (v.h, v.s)
+    }
+
+    /// Both grounds at once — that is what "matched" means here.
+    ///
+    /// Brightness is arbitrary and discarded downstream, so it is set to
+    /// something mid-range rather than pretending to be meaningful.
+    private func writeLinkedGround(hue h: Double, saturation sat: Double) {
+        let colour = Color(hue: h, saturation: sat, brightness: 0.6)
+        for t in targets where t.id.hasPrefix("background-") {
+            t.binding.wrappedValue = colour
+        }
     }
 
     private func commitTheme(_ theme: ThemeSettings) {
@@ -169,31 +233,47 @@ struct ColorEditor: View {
         offersLinking && linked && themeSettings.first?.accentHue != nil
     }
 
-    /// Hue and saturation once, and what each appearance makes of them.
+    /// Preview, palette, your own colours, a hex field, the plane, and
+    /// whatever readout the mode wants — in that order, in both modes.
     @ViewBuilder
-    private var linkedEditor: some View {
-        VStack(spacing: 14) {
-            HueSaturationField(hue: linkedHue, saturation: linkedSaturation,
+    private func pickerStack<Readout: View>(
+        hue: Binding<Double>,
+        saturation: Binding<Double>,
+        @ViewBuilder readout: () -> Readout
+    ) -> some View {
+        preview
+
+        // One grid, no headed rows. There is no "Not readable on this ground"
+        // group — every entry resolves for the appearance being edited — and
+        // no "LevelSelect" group either, because the app's own two are now the
+        // first two circles in the ring.
+        hueGroup(nil, Self.palette, hue: hue, saturation: saturation)
+
+        if !saved.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Yours")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(saved, id: \.self) { hex in
+                        swatch(hex, removable: true)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        hexRow
+
+        // Three sliders and a colour wheel were two ways into three numbers,
+        // and one of the three is no longer the user's to set. With lightness
+        // derived, the choice is two-dimensional, and a plane is the honest
+        // shape for it — Tim: *"It should just be the hue and saturation like
+        // we had."*
+        VStack(spacing: 10) {
+            HueSaturationField(hue: hue, saturation: saturation,
                                darkGround: ThemePalette.groundBase(dark: true))
-
-            Text("Brightness is chosen for you, per appearance, so the accent stays readable on each ground.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            derivedRow(dark: false)
-            derivedRow(dark: true)
-
-            // **The palette belongs here too — in fact mostly here.**
-            //
-            // `paletteLinked` defaults true, so this is the editor almost
-            // everyone sees, and it had no presets at all: a plane to drag on
-            // and nothing to pick. The grid lived only in the unlinked branch,
-            // which is the one nobody is in. A swatch is a (hue, saturation)
-            // pair and this editor edits exactly a hue and a saturation, so
-            // they are the same thing said two ways.
-            Divider().padding(.top, 2)
-            hueGroup(nil, Self.palette)
+            readout()
         }
     }
 
@@ -369,8 +449,46 @@ struct ColorEditor: View {
                     }
                 }
 
+                // **One editor, two modes — the same controls in the same
+                // order.**
+                //
+                // These had drifted into two different screens: the linked one
+                // put the plane first, then previews, then swatches; the
+                // unlinked one put a segmented picker, a preview, swatches, a
+                // hex field and then the plane. Tim: *"The picker layout with
+                // the preview should be almost exactly the same as the other
+                // one. It's weird that you hit the toggle and the dots are
+                // down below, the picker is above, and the preview looks
+                // extremely different."*
+                //
+                // So the only thing the toggle changes now is what the
+                // segments say — four appearance-specific targets, or two
+                // roles — and what the readout underneath reports.
                 if linkedMode {
-                    linkedEditor
+                    Picker("Editing", selection: $linkedKind) {
+                        ForEach(LinkedKind.allCases) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    pickerStack(hue: linkedHue, saturation: linkedSaturation) {
+                        // Linked mode's own readout: one hue, and what each
+                        // appearance makes of it. Only meaningful for the
+                        // accent — a ground's luminance is not the user's.
+                        if linkedKind == .accent {
+                            Text("Brightness is chosen for you, per appearance, so the accent stays readable on each ground.")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            derivedRow(dark: false)
+                            derivedRow(dark: true)
+                        } else {
+                            Text("Only the hue is kept — the app supplies the lightness for each appearance, so no ground can make text unreadable.")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
                 } else {
                     if targets.count > 1 {
                         Picker("Editing", selection: $selectedID) {
@@ -380,42 +498,9 @@ struct ColorEditor: View {
                         .labelsHidden()
                     }
 
-                    preview
-
-                // One grid, no headed rows. There is no "Not readable on this
-                // ground" group — every entry resolves for the appearance being
-                // edited — and no "LevelSelect" group either, because the app's
-                // own two are now the first two circles in the ring.
-                hueGroup(nil, Self.palette)
-
-                if !saved.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Yours")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                        LazyVGrid(columns: columns, spacing: 10) {
-                            ForEach(saved, id: \.self) { hex in
-                                swatch(hex, removable: true)
-                            }
-                        }
+                    pickerStack(hue: $hue, saturation: $saturation) {
+                        contrastReadout
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                hexRow
-
-                // **The same field the linked editor uses.**
-                //
-                // Three sliders and a colour wheel were two ways into three
-                // numbers, and one of the three is no longer the user's to set.
-                // With lightness derived, the choice is two-dimensional, and a
-                // plane is the honest shape for it — Tim: *"It should just be
-                // the hue and saturation like we had."*
-                VStack(spacing: 10) {
-                    HueSaturationField(hue: $hue, saturation: $saturation,
-                                       darkGround: ThemePalette.groundBase(dark: true))
-                    contrastReadout
-                }
                 }
             }
             .padding(20)
@@ -477,7 +562,27 @@ struct ColorEditor: View {
 
     @ViewBuilder
     private var resetControl: some View {
-        if target.isCustomised || target.defaultColor != nil {
+        // **Resets what you are editing.**
+        //
+        // `target` follows the four-way segmented picker, which linked mode
+        // does not use — so with linking on it offered to reset the accent
+        // while you were editing the ground, and did. In linked mode the reset
+        // clears every target of that role, both appearances, because that is
+        // what one linked value covers.
+        if linkedMode {
+            Button {
+                for t in linkedTargets { t.onReset() }
+            } label: {
+                Label("Use the default \(linkedKind.label.lowercased())",
+                      systemImage: "arrow.uturn.backward")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .background(.bar)
+        } else if target.isCustomised || target.defaultColor != nil {
             Button {
                 target.onReset()
                 if let d = target.defaultColor { setFromColor(d) }
@@ -598,8 +703,17 @@ struct ColorEditor: View {
         // Same floor as everything else here — a typed value is still a choice.
         guard passes(c) else { hexBad = true; return }
         hexBad = false
-        setFromColor(c)
-        push()
+        // The same rule the swatches follow: in linked mode the value lives on
+        // the settings record, not in this view's state, so a typed hex has to
+        // go through the mode's own bindings or it lands nowhere visible.
+        let v = ColorEditor.hsb(c)
+        if linkedMode {
+            linkedHue.wrappedValue = v.h
+            linkedSaturation.wrappedValue = v.s
+        } else {
+            setFromColor(c)
+            push()
+        }
     }
 
     private func keepCurrent() {
@@ -674,14 +788,16 @@ struct ColorEditor: View {
     }
 
     @ViewBuilder
-    private func hueGroup(_ title: String?, _ entries: [(h: Double, s: Double)]) -> some View {
+    private func hueGroup(_ title: String?, _ entries: [(h: Double, s: Double)],
+                          hue: Binding<Double>,
+                          saturation: Binding<Double>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if let title {
                 Text(title).font(.caption2).foregroundStyle(.tertiary)
             }
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(entries.indices, id: \.self) { i in
-                    hueSwatch(entries[i])
+                    hueSwatch(entries[i], hue: hue, saturation: saturation)
                 }
             }
         }
@@ -689,15 +805,24 @@ struct ColorEditor: View {
     }
 
     /// A swatch of the colour this hue actually becomes here.
-    private func hueSwatch(_ e: (h: Double, s: Double)) -> some View {
+    ///
+    /// **Writes the bindings it was handed, not this view's `hue`/`saturation`
+    /// state.** Those two belong to the unlinked editor; in linked mode the
+    /// value lives on the settings record. Tapping a swatch used to set the
+    /// unlinked state and call `push()` regardless, so in linked mode — the
+    /// mode almost everyone is in — nothing moved and the ring settled on a
+    /// colour nobody had chosen. Tim: *"Picking a color here isn't changing
+    /// the previews."* The selection ring reads the same bindings back, so it
+    /// can no longer disagree with what is on screen.
+    private func hueSwatch(_ e: (h: Double, s: Double),
+                           hue: Binding<Double>,
+                           saturation: Binding<Double>) -> some View {
         let c = resolved(hue: e.h, saturation: e.s)
-        let hs = current.lsHueSaturation
-        let selected = abs((hs?.hue ?? -1) - e.h) < 0.02
-            && abs((hs?.saturation ?? -1) - e.s) < 0.08
+        let selected = abs(hue.wrappedValue - e.h) < 0.02
+            && abs(saturation.wrappedValue - e.s) < 0.08
         return Button {
-            hue = e.h
-            saturation = e.s
-            push()
+            hue.wrappedValue = e.h
+            saturation.wrappedValue = e.s
         } label: {
             Circle()
                 .fill(c)
@@ -815,7 +940,14 @@ struct ColorEditor: View {
                                      ground: ThemePalette.groundBase(dark: derivedDark)).color
     }
 
-    private var current: Color { resolved(hue: hue, saturation: saturation) }
+    /// The colour being edited, wherever this mode keeps it. Used by the hex
+    /// field, "keep this colour", and the contrast readout — all of which
+    /// reported the unlinked state regardless of mode before.
+    private var current: Color {
+        linkedMode
+            ? resolved(hue: linkedHue.wrappedValue, saturation: linkedSaturation.wrappedValue)
+            : resolved(hue: hue, saturation: saturation)
+    }
 
     private var hueTrack: LinearGradient {
         LinearGradient(colors: stride(from: 0.0, through: 1.0, by: 0.1)
