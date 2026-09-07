@@ -76,11 +76,35 @@ enum DemoLibrarySeeder {
         .init(igdbID: 299593, name: "Promise Mascot Agency",      platform: "Nintendo Switch",        status: .wishlist, rating: nil, ownership: [], hours: 0),
         .init(igdbID: 361826, name: "Denshattack!",               platform: "Nintendo Switch",        status: .wishlist, rating: nil, ownership: [], hours: 0),
         .init(igdbID: 388341, name: "Future Knight",              platform: "PC (Microsoft Windows)", status: .wishlist, rating: nil, ownership: [], hours: 0),
+        // Three Tim had added to the demo store by hand, promoted into the
+        // seed because they shoot well: all three were still weeks out when he
+        // asked for them, so "Coming soon" fills properly and the countdowns
+        // read as real numbers rather than "today".
+        //
+        // Being hand-added is why they kept surviving "Empty demo library",
+        // which removes what this seeder marked. Seeded, they carry the marker
+        // and go with everything else.
+        //
+        // Dated releases are perishable in a way the rest of this list is not
+        // — Onimusha above was three days out when it was added and has
+        // already shipped. That is fine, and partly the point: the wishlist
+        // wants both shelves populated. But if "Coming soon" ever comes up
+        // empty in a capture, this block is why, and the fix is newer ids.
+        .init(igdbID: 366896, name: "Fire Emblem: Fortune's Weave", platform: "Nintendo Switch 2",    status: .wishlist, rating: nil, ownership: [], hours: 0),
+        .init(igdbID: 397817, name: "Graveyard Keeper II",         platform: "Nintendo Switch 2",     status: .wishlist, rating: nil, ownership: [], hours: 0),
+        .init(igdbID: 225582, name: "Control Resonant",            platform: "Mac",                   status: .wishlist, rating: nil, ownership: [], hours: 0),
         // Out already, which the shelf needs too: "Out now" is one of the
         // three, and a wishlist of nothing but unreleased games never draws it.
         .init(igdbID: 381237, name: "Orbitals",                   platform: "Nintendo Switch",        status: .wishlist, rating: nil, ownership: [], hours: 0),
         .init(igdbID: 404724, name: "Blood Dungeon",              platform: "PC (Microsoft Windows)", status: .wishlist, rating: nil, ownership: [], hours: 0),
     ]
+
+    /// The pinned ids, for the tests that guard this list.
+    ///
+    /// A wrong id does not fail — it quietly seeds a different game, and the
+    /// capture looks fine until someone reads it. So the numbers are what gets
+    /// checked, not the names.
+    static var seededIGDBIDs: [Int] { seeds.compactMap(\.igdbID) }
 
     /// Create the demo library. Network is used for IGDB metadata; without it
     /// the games are still created, just without cover art.

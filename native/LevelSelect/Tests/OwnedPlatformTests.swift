@@ -264,3 +264,31 @@ struct DemoPurgeMessageTests {
     }
 }
 #endif
+
+#if DEV_TOOLS
+/// The three games Tim shot with are seeded now, so emptying and reloading the
+/// demo library brings them back instead of losing them.
+@MainActor
+struct DemoSeedContentTests {
+
+    /// Pinned ids, read off his own demo store and confirmed by seeding with
+    /// them. A wrong id does not fail — it quietly seeds a different game and
+    /// the capture looks fine until someone reads it — so the numbers are the
+    /// thing worth checking.
+    @Test func theHandAddedScreenshotGamesAreInTheSeed() {
+        let wanted: Set<Int> = [
+            366896,   // Fire Emblem: Fortune's Weave
+            397817,   // Graveyard Keeper II
+            225582,   // Control Resonant
+        ]
+        #expect(wanted.isSubset(of: DemoLibrarySeeder.seededIGDBIDs))
+    }
+
+    /// No id twice: two seeds pointing at one game is two identical rows in
+    /// every capture.
+    @Test func noGameIsSeededTwice() {
+        let ids = DemoLibrarySeeder.seededIGDBIDs
+        #expect(ids.count == Set(ids).count)
+    }
+}
+#endif
