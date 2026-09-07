@@ -59,9 +59,13 @@ const sections = [
   { id: 'layouts',           q: 'Can I change how a game page looks?',
     a: 'Settings → Game page layout. Four arrangements of the same page.' },
   { id: 'colors',            q: 'Can I change the colors?',
-    a: 'Settings → Accent color, or any status color. Swatches, sliders, or a hex field.' },
+    a: 'Settings → Colors. Accent and background together, light and dark previewed at once.' },
   { id: 'itch',              q: 'Can I bring in my itch.io games?',
     a: 'Settings → itch.io → Connect. Games you bought or claimed arrive with their art.' },
+  { id: 'systemnames',       q: 'It is called a Mega Drive, not a Genesis',
+    a: 'Settings → System names. Your name for a console changes every shelf, chip and widget.' },
+  { id: 'ownership',         q: 'I borrowed it. I rented it. I played it in an arcade.',
+    a: 'Nine ways to say how you have a game, and you choose which ones your library uses.' },
   { id: 'paste',             q: 'I have a checklist from a wiki',
     a: 'Tracker → Paste a List turns it into real tracker categories, in two formats.' },
   { id: 'regenerating',      q: 'Will regenerating lose my progress?',
@@ -74,6 +78,8 @@ const sections = [
     a: 'For retro games LevelSelect installs the real authored list, not an approximation.' },
   { id: 'sessions',          q: 'Why is my playtime wrong?',
     a: 'A session is time played; a run is one attempt at something. They count differently. Stopping one asks what happened.' },
+  { id: 'carriedover',       q: 'Steam says I have 42 hours in this',
+    a: 'Add it as a starting total. It counts toward your time without inventing a day you played it.' },
   { id: 'releases',          q: 'When does the game I am waiting for come out?',
     a: 'The wishlist counts down, on the date for the platform you picked — not somebody else\'s.' },
   { id: 'widgets',           q: 'I want it on my Home Screen',
@@ -102,8 +108,9 @@ const sections = [
  */
 const moments = [
   { t: 'I am just setting up',            ids: ['profile', 'layouts', 'colors', 'itch'] },
+  { t: 'It should use my words',          ids: ['systemnames', 'ownership'] },
   { t: 'I want a checklist for this game', ids: ['paste', 'regenerating', 'notes', 'hints', 'retroachievements'] },
-  { t: 'My playtime looks wrong',         ids: ['sessions'] },
+  { t: 'My playtime looks wrong',         ids: ['sessions', 'carriedover'] },
   { t: 'I am waiting for a game',         ids: ['releases'] },
   { t: 'I want it outside the app',       ids: ['widgets', 'shortcuts'] },
   { t: 'I just finished a game',          ids: ['beaten'] },
@@ -227,6 +234,7 @@ if (sections.map((x) => x.id).join() !== ordered.join())
       </div>
     </details>
 
+
     <details class="qa" id="itch" name="qa" data-qa>
       <summary class="qa__s">
         <span class="qa__q">{sections.find((x) => x.id === 'itch')!.q}</span>
@@ -240,6 +248,37 @@ if (sections.map((x) => x.id).join() !== ordered.join())
     <p>itch attaches a game to your account when it is <em>bought or claimed</em>. The <em>&ldquo;No thanks, just take me to the downloads&rdquo;</em> link records nothing at all &mdash; no purchase, no key, no email &mdash; and a game you only ever play in the browser frequently records nothing either. Those games are invisible to any app, ours included, and have to be added by hand. That is a better path than it used to be: a game IGDB has never heard of now gets its artwork from SteamGridDB by name instead of staying a gray rectangle.</p>
     <p>Collections would have covered most of the gap, and they cannot. itch's API will tell an app that a collection exists and how many games are in it, then refuse to say <em>which</em> &mdash; so LevelSelect does not ask for that permission at all. Approving something that can do nothing is worse than not asking.</p>
     <p><strong>Your token stays on your device</strong>, in the Keychain, and talks to itch.io directly. It never passes through our servers, and disconnecting removes it.</p>
+      </div>
+    </details>
+
+    <details class="qa" id="systemnames" name="qa" data-qa>
+      <summary class="qa__s">
+        <span class="qa__q">{sections.find((x) => x.id === 'systemnames')!.q}</span>
+        <span class="qa__a">{sections.find((x) => x.id === 'systemnames')!.a}</span>
+      </summary>
+      <div class="qa__body">
+    <p><strong>Settings &rarr; System names.</strong> Mega Drive or Genesis. Super Nintendo or Super Famicom. TurboGrafx-16 or PC Engine. Master System or Mark III. Pick the one you say out loud and it changes every shelf heading, every chip and every widget that names that console.</p>
+    <p>The systems you already own something on are listed first, because those are the ones you will actually change. The rest are underneath, and your choice is remembered for when you do own one.</p>
+
+    <h3>It changes the label, never the library</h3>
+    <p>Your games keep the platform they were stored with. A rename cannot split one shelf into two, and it cannot strand a game somewhere you will not think to look. Only the words change.</p>
+      </div>
+    </details>
+
+    <details class="qa" id="ownership" name="qa" data-qa>
+      <summary class="qa__s">
+        <span class="qa__q">{sections.find((x) => x.id === 'ownership')!.q}</span>
+        <span class="qa__a">{sections.find((x) => x.id === 'ownership')!.a}</span>
+      </summary>
+      <div class="qa__body">
+    <p>The row under a game&rsquo;s name says how you have it, and there are nine ways:</p>
+    <p><strong>Physical &middot; Digital &middot; Emulated &middot; Former</strong> &mdash; the ones you have. A hard drive of ROMs is a thing you own and keep, and <em>Former</em> is still ownership; it is just in the past.</p>
+    <p><strong>Subscription &middot; Rented &middot; Borrowed &middot; Shared &middot; Arcade</strong> &mdash; the ones you only reach. Rented is the weekend from a shop that no longer exists. Borrowed is a friend&rsquo;s cartridge or a library loan. Shared is a household. Arcade is the one where the copy never comes to you &mdash; and you can beat a game you only ever played standing up.</p>
+    <p>A game can be several at once, which is the point: a cartridge you dumped is Physical and Emulated, and one you sold is Physical and Former.</p>
+
+    <h3>Choosing which ones you use</h3>
+    <p><strong>Settings &rarr; Ownership chips.</strong> Rented, Borrowed, Shared and Arcade are off to begin with, so a library that never needs them never sees them. Turn any of the nine off &mdash; and <strong>turning one off only hides it</strong>. A game already marked with it keeps the mark and goes on showing it, so a change of vocabulary can never quietly edit your library.</p>
+    <p>You can also set their order: the app&rsquo;s own, most-used-in-your-library first, or drag them where you want them.</p>
       </div>
     </details>
 
@@ -344,6 +383,17 @@ if (sections.map((x) => x.id).join() !== ordered.join())
       <div class="qa__body">
     <p>A <strong>session</strong> is time played — start it and it counts, including on the Lock Screen and your watch. A <strong>run</strong> is one attempt at something, for roguelikes: a loadout, an outcome, and a win rate over time.</p>
     <p>They're deliberately separate. A run doesn't start a timer, and a session doesn't record a run, so your playtime never gets inflated by counting attempts. Run logging is off until you turn it on for a game — the Tracker section's <strong>Build</strong> menu, <em>Log Runs for This Game</em> — because plenty of games deserve a tracker without one. Once it's on, the Runs section carries its own controls, including switching it back off.</p>
+      </div>
+    </details>
+
+    <details class="qa" id="carriedover" name="qa" data-qa>
+      <summary class="qa__s">
+        <span class="qa__q">{sections.find((x) => x.id === 'carriedover')!.q}</span>
+        <span class="qa__a">{sections.find((x) => x.id === 'carriedover')!.a}</span>
+      </summary>
+      <div class="qa__body">
+    <p>Open the game and look under <strong>Time played</strong> for <em>Add time played before tracking</em>. Put the number your console or storefront already knows in there &mdash; Steam&rsquo;s hours, a Switch profile&rsquo;s &mdash; and it counts toward that game&rsquo;s total from then on, with your sessions adding on top of it.</p>
+    <p>It is a number, not a session. It never appears in your history and it never lands on a day in the Journal, because it did not happen on one. Set it back to zero to remove it.</p>
       </div>
     </details>
 

@@ -8,9 +8,21 @@
  */
 
 /** Shown on both surfaces, so the app can say when this was last honest. */
-export const reviewed = '3 September 2026';
+export const reviewed = '7 September 2026';
 
 export const shipped = [
+  { t: 'Your words for your library', build: 37,
+    d: 'Call a console whatever you call it — Mega Drive or Genesis, Super Famicom or SNES — and it changes every shelf, chip and widget that names it. Rename statuses and stars too.' },
+  { t: 'Nine ways a game can be yours', build: 37,
+    d: 'Physical, digital, emulated and former; subscription, rented, borrowed, shared, and played standing up in an arcade. Choose which your library uses and what order they sit in.' },
+  { t: 'One place to choose a color', build: 37,
+    d: 'Accent and background in a single editor, light and dark previewed side by side with the contrast on each, and swatches that only offer colors that stay readable.' },
+  { t: 'Browse by genre', build: 37,
+    d: 'The genres and themes every game already carried are a way into the library now, not just a label on a page you were already looking at.' },
+  { t: 'Who made it', build: 37,
+    d: 'Director, designer, writer and composer on the game page, from Wikidata — the person-level credits the games database does not have.' },
+  { t: 'Feedback without leaving', build: 37,
+    d: "Send feedback goes straight to Tim from inside the app, and What's New and What's Coming read the site rather than opening it." },
   { t: 'The Journal', build: 36,
     d: 'Everything you have written down, in order. A day of a game is one entry, not three, and it asks what happened while it is still what you were just doing.' },
   { t: 'The part that happened before the app', build: 36,
