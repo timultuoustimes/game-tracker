@@ -180,3 +180,89 @@ struct LegibleAccentTests {
         #expect(abs(before - after) < 0.03, "correction must keep the color recognizably theirs")
     }
 }
+
+/// Build 37 — the accent that came out black, and the art that vanished with
+/// a name.
+///
+/// Both were found the morning after Tim's profile was deleted and re-added,
+/// on a phone that had switched to light mode overnight — which is why
+/// neither had been seen before.
+@MainActor
+struct Build37HeaderInkTests {
+
+    private var lightGround: Color { ThemePalette.groundBase(dark: false) }
+
+    /// A color that reads fine as display type and fails as body text — the
+    /// band the whole bug lives in. Found rather than hardcoded, so the test
+    /// still means something if a ground tint moves.
+    private func colorInTheGap() -> Color? {
+        for step in stride(from: 0.30, through: 0.95, by: 0.01) {
+            let candidate = Color(hue: 0.88, saturation: 0.65, brightness: step)
+            let ratio = LSContrast.ratio(candidate, lightGround)
+            if ratio >= 3, ratio < 4.5 { return candidate }
+        }
+        return nil
+    }
+
+    /// **The two floors disagree, and that disagreement was the bug.**
+    ///
+    /// At 4.5:1 a mid plum on a light ground is pushed dark enough to read
+    /// black under a pixel face; at 3:1 — the floor WCAG asks of large text —
+    /// it is returned untouched.
+    @Test func theDisplayFloorKeepsAColorTheBodyFloorDarkens() throws {
+        let plum = try #require(colorInTheGap(),
+                                "no color sits between the two floors on this ground")
+        #expect(LSTheme.legible(plum, on: lightGround, floor: 3) == plum)
+        #expect(LSTheme.legible(plum, on: lightGround) != plum)
+    }
+
+    /// Accent and Custom have to agree about the same color. They did not:
+    /// one went through the 4.5:1 correction and the other through none, so
+    /// pressing a different button changed the color on screen.
+    @Test func theNameFollowsTheDisplayAccent() {
+        ThemePalette.refresh(from: nil)
+        #expect(ProfileNameColor.resolve(ProfileNameColor.accent) == LSTheme.displayAccent)
+    }
+
+    /// Still a guarantee, just the right one — nothing here opts out of
+    /// legibility, it only stops applying the body-text rule to display type.
+    @Test func theDisplayAccentStillClearsTheLargeTextFloor() {
+        let corrected = LSTheme.legible(LSTheme.torchInk, on: lightGround, floor: 3)
+        #expect(LSContrast.ratio(corrected, lightGround) >= 3)
+    }
+
+    @Test func aCustomHexIsUntouchedByEitherFloor() {
+        #expect(ProfileNameColor.resolve("#8B2F63") == Color(hex: "#8B2F63"))
+    }
+
+    @Test func theDefaultIsOrdinaryTextNotTheAccent() {
+        #expect(ProfileNameColor.resolve(ProfileNameColor.plain) == .primary)
+        #expect(ProfileNameColor.mode(of: "") == .plain)
+        #expect(ProfileNameColor.mode(of: "accent") == .accent)
+        #expect(ProfileNameColor.mode(of: "#8B2F63") == .custom)
+    }
+
+    // MARK: The art
+
+    /// **A blank name field must not take the week's art with it.**
+    ///
+    /// `drawsArt` required a filled profile, so deleting a name emptied the
+    /// header of cover art that has nothing to do with the profile.
+    @Test func theWeeksArtDrawsWithNoProfileAtAll() {
+        let week = PlayerSummary(recentCovers: ["a", "b"])
+        #expect(week.usesRibbon)
+        #expect(ProfileHeader.drawsArt(profile: nil, summary: week))
+    }
+
+    @Test func oneQuietWeeksFallbackAlsoDraws() {
+        let quiet = PlayerSummary(recentCovers: ["a"], fallbackBackdrop: "cover")
+        #expect(!quiet.usesRibbon)
+        #expect(ProfileHeader.drawsArt(profile: nil, summary: quiet))
+    }
+
+    /// No art is still no art band — the reason the gate exists at all is that
+    /// 190pt of flat tint reads as a broken image.
+    @Test func nothingPlayedMeansNoArtBand() {
+        #expect(!ProfileHeader.drawsArt(profile: nil, summary: PlayerSummary()))
+    }
+}

@@ -9,9 +9,10 @@ import PhotosUI
 /// geometry; Tim's was better: the thing uniting a plural page is **whose it
 /// is**. This is that, said once at the top.
 ///
-/// It shows only what someone actually put there. No avatar and no name means
-/// no header at all, because a placeholder ring above "Add your name" is a
-/// form, and a form is the opposite of a personal page.
+/// It shows only what someone actually put there: no avatar and no name means
+/// no identity row, because a placeholder ring above "Add your name" is a
+/// form, and a form is the opposite of a personal page. The ART is a separate
+/// question and answers to the library instead — see `drawsArt`.
 struct ProfileHeader: View {
     let profile: PlayerProfile?
     let summary: PlayerSummary
@@ -46,23 +47,33 @@ struct ProfileHeader: View {
     /// space under the toolbar. Left with the stack's ordinary top padding it
     /// sits in a 16pt trench, which reads as a misaligned image rather than a
     /// header.
+    /// **The art belongs to the library, not to the profile.**
+    ///
+    /// This used to require a filled profile as well, which meant an empty
+    /// name field took the week's cover ribbon down with it — Home lost its
+    /// art because of a field that has nothing to do with art. Tim saw it the
+    /// morning after his profile was deleted, 2026-09-07: *"home on king kai
+    /// doesn't have the header recently played game art without a profile
+    /// name."*
+    ///
+    /// The identity row is still gated on someone having put something there
+    /// — a placeholder ring above "Add your name" is a form. The art and the
+    /// stats are not: they are true of the library whether or not you have
+    /// told the app your name.
     static func drawsArt(profile: PlayerProfile?, summary: PlayerSummary) -> Bool {
-        guard let profile else { return false }
-        let filled = profile.avatarData != nil
-            || profile.resolvedDisplayName != nil
-            || !profile.handles.isEmpty
-        guard filled else { return false }
-        return summary.usesRibbon || summary.fallbackBackdrop != nil
+        summary.usesRibbon || summary.fallbackBackdrop != nil
     }
 
     var body: some View {
-        if let profile, hasAnything {
+        if hasArt || hasAnything {
             VStack(spacing: 10) {
                 if hasArt {
                     ZStack(alignment: .bottomLeading) {
                         backdrop
-                        identity(profile)
-                            .padding(.bottom, 10)
+                        if let profile, hasAnything {
+                            identity(profile)
+                                .padding(.bottom, 10)
+                        }
                     }
                     // NO negative top padding here, deliberately.
                     //
@@ -73,7 +84,7 @@ struct ProfileHeader: View {
                     // height it had before. Offsetting as well double-counted
                     // the inset and pulled the portrait and name up into the
                     // wordmark.
-                } else {
+                } else if let profile, hasAnything {
                     identity(profile)
                         .padding(.top, 4)
                 }
@@ -82,9 +93,17 @@ struct ProfileHeader: View {
             .contentShape(.rect)
             .onTapGesture(perform: onEdit)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(accessibilityText(profile))
+            .accessibilityLabel(headerLabel)
             .accessibilityAddTraits(.isButton)
         }
+    }
+
+    /// What the whole header announces. With no identity yet there is still
+    /// art and a stat band, and the tap still opens the editor — so it says
+    /// what tapping would do rather than reading out a name that isn't there.
+    private var headerLabel: String {
+        if let profile, hasAnything { return accessibilityText(profile) }
+        return "Your profile. Add your name, picture and handles."
     }
 
     private func identity(_ profile: PlayerProfile) -> some View {
@@ -500,7 +519,7 @@ struct ProfileEditor: View {
                                 // Seed from the accent, so "Custom" starts
                                 // somewhere deliberate rather than black.
                                 if ProfileNameColor.mode(of: nameColorRaw) != .custom {
-                                    nameColorRaw = LSTheme.accent.hexString() ?? "#FFFFFF"
+                                    nameColorRaw = LSTheme.displayAccent.hexString() ?? "#FFFFFF"
                                 }
                             }
                         })) {
@@ -516,7 +535,7 @@ struct ProfileEditor: View {
                                     defaultColor: LSTheme.accent,
                                     isCustomised: true,
                                     binding: Binding(
-                                        get: { Color(hex: nameColorRaw) ?? LSTheme.accent },
+                                        get: { Color(hex: nameColorRaw) ?? LSTheme.displayAccent },
                                         set: { nameColorRaw = $0.hexString() ?? nameColorRaw }),
                                     onReset: { nameColorRaw = ProfileNameColor.accent }),
                             ])

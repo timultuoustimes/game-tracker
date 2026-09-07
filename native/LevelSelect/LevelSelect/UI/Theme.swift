@@ -11,6 +11,9 @@ extension LSTheme {
     /// The live accent — user's choice (synced) or the default purple.
     @MainActor
     static var accent: Color { ThemePalette.accent }
+    /// The accent for large display type — see `ThemePalette.displayAccent`.
+    @MainActor
+    static var displayAccent: Color { ThemePalette.displayAccent }
 
     /// What to draw on top of a filled accent surface. See
     /// `ThemePalette.onAccent` — chosen by contrast, because the accent is the

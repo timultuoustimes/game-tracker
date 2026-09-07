@@ -24,7 +24,7 @@ enum ProfileNameColor {
     static func resolve(_ raw: String) -> Color {
         switch raw {
         case plain:  .primary
-        case accent: LSTheme.accent
+        case accent: LSTheme.displayAccent
         default:     Color(hex: raw) ?? .primary
         }
     }

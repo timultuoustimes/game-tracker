@@ -7,6 +7,23 @@ import SwiftData
 @MainActor
 enum ThemePalette {
     private(set) static var accent: Color = LSTheme.defaultAccent
+    /// The accent as DISPLAY ink, held to the large-text floor rather than the
+    /// body-text one.
+    ///
+    /// `accent` is corrected to 4.5:1, which is right for the 59 places it is
+    /// used as ordinary foreground text. On a LIGHT ground that correction is
+    /// severe — it is what turns a mid plum into something that reads black —
+    /// and at 22pt pixel type with a hard step under it, the result stopped
+    /// looking like the user's color at all. Tim, 2026-09-07: *"Tapping
+    /// default, and having it be accent make it basically black, but choosing
+    /// custom color and the current accent color shows the right color."*
+    ///
+    /// Custom took `Color(hex:)` with no correction, so the same color came
+    /// out two different ways depending on which button was pressed. This is
+    /// the reconciliation: display type gets 3:1, the floor WCAG actually
+    /// asks of large text, so Accent shows the accent and Custom still
+    /// matches it.
+    private(set) static var displayAccent: Color = LSTheme.defaultAccent
     /// True once the user has picked their own accent. The wordmark keeps its
     /// brand torch-orange until then, so the default look is unchanged.
     private(set) static var accentIsCustom = false
@@ -268,6 +285,12 @@ enum ThemePalette {
         let darkAccent = LSTheme.legible(darkCustom ?? LSTheme.torch,
                                          on: groundBase(dark: true))
         accent = .lsDynamic(light: lightAccent, dark: darkAccent)
+        // Same input, gentler floor — see `displayAccent`.
+        displayAccent = .lsDynamic(
+            light: LSTheme.legible(lightCustom ?? LSTheme.torchInk,
+                                   on: groundBase(dark: false), floor: 3),
+            dark: LSTheme.legible(darkCustom ?? LSTheme.torch,
+                                  on: groundBase(dark: true), floor: 3))
         accentIsCustom = lightCustom != nil || darkCustom != nil
         // A knockout, not simply a contrasting ink — see `knockout(on:)`.
         //
