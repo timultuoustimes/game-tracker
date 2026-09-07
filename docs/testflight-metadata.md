@@ -248,3 +248,48 @@ Already answered in the build: `ITSAppUsesNonExemptEncryption = false`
       the updated version (added 2026-08-15) so the External group and public
       link see it, since that's the review-facing moment where candor matters
       most.
+
+## What to Test — build 37 (0.1.0)
+
+3,639 characters with the standing header, inside the 4,000 cap.
+
+> (standing header above, then:)
+>
+> THIS BUILD: your words for your library
+> A library is full of words somebody else chose. Your console is a Mega Drive or a Genesis depending on where you grew up. A game is "owned" or it isn't - except you borrowed it from a friend for two weeks in 1997 and beat it anyway. This build is mostly about giving those words back.
+>
+> WHAT'S NEW
+>
+> System names. Settings > System names. Mega Drive or Genesis, Super Famicom or SNES, PC Engine or TurboGrafx-16. Pick what you say out loud and it changes every shelf, chip and widget. It changes the label only - your games keep the platform they were stored with, so a rename can't split a shelf.
+>
+> Nine ways a game can be yours. Physical, Digital, Emulated, Former; Subscription, Rented, Borrowed, Shared, Arcade. Four are new. Arcade is the one where the copy never comes to you - and yes, you can mark an arcade game Beaten without ever logging a second. Settings > Ownership chips picks which ones your library uses and what order they sit in. Turning one off only hides it: a game already marked keeps the mark.
+>
+> One color editor. Accent and background together, light and dark previewed side by side with the contrast on each. Swatches only offer colors that stay readable.
+>
+> Browse by genre. Library now lists the genres and themes your games already carried.
+>
+> Suggested tags. 46 subgenre words under the tag field - Metroidvania, Soulslike, Boomer Shooter, Cozy. Nothing is ever applied for you; tap one and it's an ordinary tag. Free text still works.
+>
+> Who made it. Game Info shows director, designer, writer and composer where they're known, from Wikidata - the person credits the games database doesn't have.
+>
+> Time played before you started. A game page takes a starting total. Steam's 42 hours count toward your time without inventing a day you played them.
+>
+> Seasons and decades for memories, and dates you're genuinely unsure about.
+>
+> Feedback without leaving. Settings > Send feedback goes straight to me, and you can read every word before it sends. What's New and What's Coming now read the site instead of opening it.
+>
+> FIXED
+>
+> A cover you picked from your own photos was invisible on every shelf. Two records meeting after a sync could lose your name, avatar or handles. A memory with no day was filed on 1 January. A day with both a session and a memory showed as two sections. Day numbers vanished into bright cover art. Journal day cells weren't announced as buttons by VoiceOver.
+>
+> WHAT TO POKE AT
+>
+> The ownership row is the thing most likely to be wrong. Turn some chips on, reorder them, and tell me whether nine is too many or the right number for your library.
+>
+> The tag suggestions only earn their place if you find the word you wanted without typing it. If you don't, tell me which word was missing - that's more useful than anything else you could send.
+>
+> If you use light mode, look at the profile name at the top of Home. Its color has moved twice in two days.
+>
+> KNOWN
+>
+> Credits are uneven - Wikidata knows Hollow Knight's composer but not its directors. That's the source, not the app.
