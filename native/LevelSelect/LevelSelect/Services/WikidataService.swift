@@ -100,6 +100,27 @@ enum WikidataService {
         try await lookup(slugs: [slug])[slug]
     }
 
+    /// Answers already given this launch.
+    ///
+    /// Credits are not stored — whether they should be their own record type,
+    /// queryable for "every game this person directed", is a real design
+    /// question and the wrong one to answer in passing. So the same page
+    /// revisited would ask Wikidata again every time without this.
+    @MainActor private static var cache: [String: Entry?] = [:]
+
+    /// **A missing entry is cached; a failed request is not.**
+    ///
+    /// "This game is not in Wikidata" is an answer and worth remembering.
+    /// "The network was down" is not an answer, and caching it would mean one
+    /// bad moment on a train silenced the section until the app restarted.
+    @MainActor
+    static func cachedLookup(slug: String) async -> Entry? {
+        if let hit = cache[slug] { return hit }
+        guard let found = try? await lookup(slug: slug) else { return nil }
+        cache[slug] = found
+        return found
+    }
+
     /// Whether Wikidata's release year disagrees with the one already stored.
     ///
     /// **A question, not a correction.** Coverage is uneven and the modelling

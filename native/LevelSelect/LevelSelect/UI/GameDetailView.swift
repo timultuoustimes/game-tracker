@@ -750,6 +750,29 @@ struct GameDetailView: View {
                                caption: caption(for: .info), isExpanded: expansion(.info)) {
                 gameInfo
             }
+            // Asked when the page appears, not when the section opens: the
+            // answer takes a moment to arrive and a section that fills in
+            // under your thumb is worse than one that was already right.
+            //
+            // Keyed on the slug so Fix Match re-pointing the game asks again
+            // about the game it now IS. A game with no slug — added by hand —
+            // is never asked about at all, because the only honest question
+            // would be by name, and matching by name is how the wrong game's
+            // logo got attached to one of these once already.
+            .task(id: game.igdbSlug) {
+                guard let slug = game.igdbSlug, !slug.isEmpty else {
+                    wikidata = nil
+                    return
+                }
+                let found = await WikidataService.cachedLookup(slug: slug)
+                wikidata = found
+                // Remember the entity, so a later feature does not have to
+                // ask again to find out this game has one. Written only when
+                // it changes — an identical value is not an edit.
+                if let qid = found?.qid, game.wikidataID != qid {
+                    repo.edit(game) { $0.wikidataID = qid }
+                }
+            }
         case .connections:
             CollapsibleSection("Connections", icon: "point.3.connected.trianglepath.dotted",
                                caption: caption(for: .connections), isExpanded: expansion(.connections)) {
@@ -1635,6 +1658,9 @@ struct GameDetailView: View {
     // MARK: Game Info
 
     @State private var editingInfo = false
+    /// What Wikidata says about this game, once asked. Nil until it answers,
+    /// and nil forever if it has nothing — see `creditsBlock`.
+    @State private var wikidata: WikidataService.Entry?
     /// Off unless asked for: someone who hasn't opted in shouldn't find a
     /// critic's number sitting next to their own opinion. Device-local — it's
     /// a display preference, and storing it would be a Schema V3 for a toggle.
@@ -1648,6 +1674,61 @@ struct GameDetailView: View {
     /// game page's layout preferences.
     @AppStorage("gamePageShowStats") private var showGameStats = true
     @State private var reference: GameReferenceService.Reference?
+
+    /// **Who made it, which IGDB cannot say.**
+    ///
+    /// Asked for every field it populates, IGDB has no person or credit field
+    /// at all — every credit is company-level through `involved_companies`.
+    /// So the studio row above comes from IGDB and the names here come from
+    /// Wikidata, and the section says which is which rather than presenting
+    /// one library with two silent sources.
+    ///
+    /// **It appears or it does not.** No spinner, no "couldn't load", no empty
+    /// state: this is enrichment on a page that is complete without it, and a
+    /// failed lookup that announces itself would put an error on a game page
+    /// every time somebody opened one on a train.
+    @ViewBuilder
+    private var creditsBlock: some View {
+        if let entry = wikidata, !entry.orderedCredits.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Divider()
+                Text("Credits")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 6) {
+                    ForEach(entry.orderedCredits) { credit in
+                        GridRow {
+                            Text(credit.label)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .gridColumnAlignment(.leading)
+                            Text(credit.name)
+                                .font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                // **A disagreement is a question, never a correction.** The
+                // app does not quietly substitute one source for another —
+                // the same rule the local cover override follows.
+                if let clash = WikidataService.releaseYearDisagreement(
+                    entry, storedFirstRelease: game.firstReleaseDate) {
+                    Label("Wikidata says \(String(clash.wikidata)); this says \(String(clash.stored)).",
+                          systemImage: "questionmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(LSTheme.working)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Credits from Wikidata.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Credits from Wikidata. "
+                + entry.orderedCredits.map { "\($0.label), \($0.name)" }
+                    .joined(separator: ". "))
+        }
+    }
 
     private var gameInfo: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1708,6 +1789,7 @@ struct GameDetailView: View {
                                game.playerPerspectives.map { GameFacet(kind: .perspective, value: $0) },
                                tint: .gray)
                 }
+                creditsBlock
             }
 
             HStack(spacing: 18) {
