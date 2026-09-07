@@ -192,43 +192,44 @@ struct Build37HeaderInkTests {
 
     private var lightGround: Color { ThemePalette.groundBase(dark: false) }
 
-    /// A color that reads fine as display type and fails as body text — the
-    /// band the whole bug lives in. Found rather than hardcoded, so the test
-    /// still means something if a ground tint moves.
-    private func colorInTheGap() -> Color? {
-        for step in stride(from: 0.30, through: 0.95, by: 0.01) {
-            let candidate = Color(hue: 0.88, saturation: 0.65, brightness: step)
-            let ratio = LSContrast.ratio(candidate, lightGround)
-            if ratio >= 3, ratio < 4.5 { return candidate }
-        }
-        return nil
-    }
-
-    /// **The two floors disagree, and that disagreement was the bug.**
-    ///
-    /// At 4.5:1 a mid plum on a light ground is pushed dark enough to read
-    /// black under a pixel face; at 3:1 — the floor WCAG asks of large text —
-    /// it is returned untouched.
-    @Test func theDisplayFloorKeepsAColorTheBodyFloorDarkens() throws {
-        let plum = try #require(colorInTheGap(),
-                                "no color sits between the two floors on this ground")
-        #expect(LSTheme.legible(plum, on: lightGround, floor: 3) == plum)
-        #expect(LSTheme.legible(plum, on: lightGround) != plum)
-    }
-
-    /// Accent and Custom have to agree about the same color. They did not:
-    /// one went through the 4.5:1 correction and the other through none, so
-    /// pressing a different button changed the color on screen.
-    @Test func theNameFollowsTheDisplayAccent() {
+    /// **The name keeps the color you picked.** Accent and Custom resolve to
+    /// the same thing by construction now, which is what stopped them
+    /// disagreeing about one color.
+    @Test func accentAndCustomCannotDisagree() {
         ThemePalette.refresh(from: nil)
         #expect(ProfileNameColor.resolve(ProfileNameColor.accent) == LSTheme.displayAccent)
     }
 
-    /// Still a guarantee, just the right one — nothing here opts out of
-    /// legibility, it only stops applying the body-text rule to display type.
-    @Test func theDisplayAccentStillClearsTheLargeTextFloor() {
-        let corrected = LSTheme.legible(LSTheme.torchInk, on: lightGround, floor: 3)
-        #expect(LSContrast.ratio(corrected, lightGround) >= 3)
+    /// The step is the legibility mechanism, so it follows the wordmark's
+    /// rule: brand orange gets the brand's dark orange, a picked color gets a
+    /// darkened version of itself.
+    @Test func theBrandInkGetsTheBrandStep() {
+        ThemePalette.refresh(from: nil)
+        #expect(!ThemePalette.accentIsCustom)
+        #expect(ProfileNameColor.step(under: LSTheme.torch,
+                                      raw: ProfileNameColor.accent) == LSTheme.torchShadow)
+    }
+
+    /// A picked color takes the darkening path instead — it must not get the
+    /// brand's brown under a plum. (`hardStep` returns a freshly built dynamic
+    /// color, which never compares equal to another one, so this asserts what
+    /// the branch DIDN'T do.)
+    @Test func aPickedColorDoesNotGetTheBrandStep() {
+        ThemePalette.refresh(from: nil)
+        let picked = Color(hex: "#8B2F63")!
+        #expect(ProfileNameColor.step(under: picked, raw: "#8B2F63") != LSTheme.torchShadow)
+        // And the accent path only claims the brand step while the accent is
+        // still the brand's.
+        #expect(ProfileNameColor.step(under: picked, raw: "#8B2F63")
+                != ProfileNameColor.step(under: LSTheme.torch, raw: ProfileNameColor.accent))
+    }
+
+    /// Why the body-text floor was the wrong tool: torch is the app's own
+    /// wordmark ink on both grounds and does not come close to 4.5:1 on light
+    /// — and nobody has ever had trouble reading the wordmark.
+    @Test func theBodyTextFloorWouldRejectTheAppsOwnWordmark() {
+        #expect(LSContrast.ratio(LSTheme.torch, lightGround) < 4.5)
+        #expect(LSTheme.legible(LSTheme.torch, on: lightGround) != LSTheme.torch)
     }
 
     @Test func aCustomHexIsUntouchedByEitherFloor() {

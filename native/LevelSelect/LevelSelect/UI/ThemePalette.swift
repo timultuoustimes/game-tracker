@@ -7,22 +7,30 @@ import SwiftData
 @MainActor
 enum ThemePalette {
     private(set) static var accent: Color = LSTheme.defaultAccent
-    /// The accent as DISPLAY ink, held to the large-text floor rather than the
-    /// body-text one.
+    /// The accent as DISPLAY ink: **the color as picked, uncorrected**.
     ///
-    /// `accent` is corrected to 4.5:1, which is right for the 59 places it is
-    /// used as ordinary foreground text. On a LIGHT ground that correction is
-    /// severe — it is what turns a mid plum into something that reads black —
-    /// and at 22pt pixel type with a hard step under it, the result stopped
-    /// looking like the user's color at all. Tim, 2026-09-07: *"Tapping
-    /// default, and having it be accent make it basically black, but choosing
-    /// custom color and the current accent color shows the right color."*
+    /// `accent` is held to 4.5:1, which is right for the 59 places it is used
+    /// as ordinary foreground text and wrong for pixel type with a hard step
+    /// under it. Flat fill-versus-ground contrast assumes solid text on a
+    /// solid ground; outlined type carries its own edge, and the step is what
+    /// makes it read. The wordmark is the proof and has been all along — it is
+    /// `torch` on both grounds at 1.90:1 on light, and nobody has ever had
+    /// trouble reading it.
     ///
-    /// Custom took `Color(hex:)` with no correction, so the same color came
-    /// out two different ways depending on which button was pressed. This is
-    /// the reconciliation: display type gets 3:1, the floor WCAG actually
-    /// asks of large text, so Accent shows the accent and Custom still
-    /// matches it.
+    /// Correcting the name instead of trusting the step cost two things.
+    /// Custom took `Color(hex:)` with no correction at all, so the same color
+    /// came out two different ways depending on which button was pressed —
+    /// Tim, 2026-09-07: *"Tapping default, and having it be accent make it
+    /// basically black, but choosing custom color and the current accent
+    /// color shows the right color."* And the light default fell to
+    /// `torchInk`, which is what he lost: *"I honestly think we went too dark
+    /// on some color choices in light mode. Loosing torch, which I thought
+    /// read fine on the profile name, especially with the secondary dark
+    /// orange as it's hard edge drop shadow, worked well."*
+    ///
+    /// So this is the wordmark's own ink rule: torch until you pick an accent,
+    /// exactly what you picked afterwards, on both grounds. Accent and Custom
+    /// now agree because they are the same color by construction.
     private(set) static var displayAccent: Color = LSTheme.defaultAccent
     /// True once the user has picked their own accent. The wordmark keeps its
     /// brand torch-orange until then, so the default look is unchanged.
@@ -285,12 +293,10 @@ enum ThemePalette {
         let darkAccent = LSTheme.legible(darkCustom ?? LSTheme.torch,
                                          on: groundBase(dark: true))
         accent = .lsDynamic(light: lightAccent, dark: darkAccent)
-        // Same input, gentler floor — see `displayAccent`.
-        displayAccent = .lsDynamic(
-            light: LSTheme.legible(lightCustom ?? LSTheme.torchInk,
-                                   on: groundBase(dark: false), floor: 3),
-            dark: LSTheme.legible(darkCustom ?? LSTheme.torch,
-                                  on: groundBase(dark: true), floor: 3))
+        // No `legible()` here, and torch on BOTH grounds by default — the
+        // hard step is the legibility mechanism. See `displayAccent`.
+        displayAccent = .lsDynamic(light: lightCustom ?? LSTheme.torch,
+                                   dark: darkCustom ?? LSTheme.torch)
         accentIsCustom = lightCustom != nil || darkCustom != nil
         // A knockout, not simply a contrasting ink — see `knockout(on:)`.
         //

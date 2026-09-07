@@ -148,8 +148,9 @@ struct ProfileHeader: View {
                         // and was found by eye. It is now derived: one block of
                         // the face at this size, floored — `LSTheme.pixelStep`,
                         // which carries the measurement and the reasoning.
-                        .shadow(color: LSTheme.hardStep(under: ink), radius: 0,
-                                y: LSTheme.pixelStep(for: 22))
+                        .shadow(color: ProfileNameColor.step(
+                                    under: ink, raw: profile.nameColorRaw ?? ""),
+                                radius: 0, y: LSTheme.pixelStep(for: 22))
                 }
                 handleChips(profile)
             }
@@ -537,7 +538,8 @@ struct ProfileEditor: View {
                                     binding: Binding(
                                         get: { Color(hex: nameColorRaw) ?? LSTheme.displayAccent },
                                         set: { nameColorRaw = $0.hexString() ?? nameColorRaw }),
-                                    onReset: { nameColorRaw = ProfileNameColor.accent }),
+                                    onReset: { nameColorRaw = ProfileNameColor.accent },
+                                    specimenName: name.isEmpty ? "Your name" : name),
                             ])
                         } label: {
                             HStack {

@@ -34,6 +34,15 @@ struct ColorTarget: Identifiable {
     var contrastGround: Color? = nil
     /// Which appearance this value belongs to, for the readout's wording.
     var appearanceLabel: String? = nil
+    /// Draw the preview as THIS NAME in the pixel face, rather than as the
+    /// accent's buttons.
+    ///
+    /// The preview's job is to show what the color is a color OF. A Play
+    /// button and a Sample chip say that for an accent and say nothing for a
+    /// profile name, which is 22pt Press Start 2P with a hard step under it —
+    /// a completely different specimen with completely different legibility.
+    /// Tim: *"This color preview doesn't make sense for the profile name."*
+    var specimenName: String? = nil
 }
 
 struct ColorEditor: View {
@@ -597,7 +606,9 @@ struct ColorEditor: View {
     /// One appearance's half: its ground, its accent, and what that pair
     /// actually measures.
     private func previewHalf(dark: Bool) -> some View {
-        let accent = previewAccent(dark: dark)
+        // A name is one color across both grounds, so it previews the live
+        // edit on each; an accent has a value per appearance.
+        let accent = target.specimenName == nil ? previewAccent(dark: dark) : current
         let ground = ThemePalette.groundBase(dark: dark)
         let ratio = ThemePalette.contrast(accent, ground)
         let softened = linkedMode && linkedKind == .accent
@@ -626,6 +637,20 @@ struct ColorEditor: View {
             // is vertically centered, horizontally leading, which is exactly
             // that.
             VStack(alignment: .leading, spacing: 6) {
+            if let specimen = target.specimenName {
+                // The real thing: the face, the step, the ground it lands on.
+                HStack(spacing: 0) {
+                    Text(specimen)
+                        .font(LSTheme.pixel(16))
+                        .fontDesign(nil)
+                        .foregroundStyle(accent)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
+                        .shadow(color: LSTheme.hardStep(under: accent), radius: 0,
+                                y: LSTheme.pixelStep(for: 16))
+                    Spacer(minLength: 0)
+                }
+            } else {
             HStack(spacing: 8) {
                 HStack(spacing: 5) {
                     Image(systemName: "play.fill").font(.caption)
@@ -649,6 +674,7 @@ struct ColorEditor: View {
 
                 Spacer(minLength: 0)
             }
+            }
 
             if softened {
                 // The one thing the old rows said that a swatch cannot: the
@@ -668,7 +694,22 @@ struct ColorEditor: View {
 
     /// What the accent resolves to for one appearance, in whichever mode.
     private func previewAccent(dark: Bool) -> Color {
-        if linkedMode { return derived(dark: dark).color }
+        // **Derived from the accent's hue — only when the accent is the thing
+        // being edited.**
+        //
+        // `linkedHue` follows `linkedKind`, so calling `derived` unconditionally
+        // meant selecting Ground derived the "accent" from the GROUND's hue and
+        // repainted the preview's buttons with it. Tim: *"choosing ground
+        // changes the preview color for accent and ground."* The buttons exist
+        // to show the accent standing on the new ground, so they have to go on
+        // being the accent.
+        if linkedMode, linkedKind == .accent { return derived(dark: dark).color }
+        if linkedMode, let theme = themeSettings.first, let hue = theme.accentHue {
+            return LSTheme.derivedAccent(hue: hue,
+                                         saturation: theme.accentSaturation ?? 0.7,
+                                         dark: dark,
+                                         ground: ThemePalette.groundBase(dark: dark)).color
+        }
         let id = "accent-\(dark ? "dark" : "light")"
         if id == selectedID { return current }
         return targets.first { $0.id == id }?.binding.wrappedValue ?? .clear

@@ -29,6 +29,20 @@ enum ProfileNameColor {
         }
     }
 
+    /// The hard step that goes under the name, following the wordmark's rule.
+    ///
+    /// `Wordmark.shadowTint`: the brand orange gets the brand's own dark
+    /// orange beneath it, and a color the user picked gets a darkened version
+    /// of itself. This is the only other pixel-type string in the app, and Tim
+    /// named that pairing as the thing that made torch work on a light ground
+    /// — *"especially with the secondary dark orange as it's hard edge drop
+    /// shadow."*
+    @MainActor
+    static func step(under ink: Color, raw: String) -> Color {
+        if raw == accent, !ThemePalette.accentIsCustom { return LSTheme.torchShadow }
+        return LSTheme.hardStep(under: ink)
+    }
+
     /// The swatch to show for a setting, so the row previews the real thing.
     @MainActor
     static func swatch(_ raw: String) -> Color { resolve(raw) }
