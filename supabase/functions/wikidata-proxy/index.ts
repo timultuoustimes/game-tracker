@@ -64,15 +64,23 @@ LIMIT 200`;
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
-  const denied = await guard(req);
-  if (denied) return denied;
+  // Free upstream that rate-limits by user agent, so a quota-store outage
+  // should not take the section down — fail open, like the IGDB proxy. The
+  // per-install ceilings are lower than IGDB's because nothing here is on the
+  // Add Game path: this is one lookup per game page.
+  const { rejection, body } = await guard(req, {
+    fn: 'wikidata',
+    maxBodyBytes: 2_000,
+    quotas: [
+      { scope: 'install', windowSeconds: 60, limit: 30 },
+      { scope: 'install', windowSeconds: 86_400, limit: 1_000 },
+      { scope: 'global', windowSeconds: 86_400, limit: 10_000 },
+    ],
+    onQuotaError: 'allow',
+  });
+  if (rejection) return rejection;
 
-  let slugs: unknown;
-  try {
-    ({ slugs } = await req.json());
-  } catch {
-    return jsonResponse({ error: 'Body must be JSON.' }, 400);
-  }
+  const slugs = body?.slugs;
 
   if (!Array.isArray(slugs) || slugs.length === 0) {
     return jsonResponse({ error: 'Send { slugs: [String] }.' }, 400);
