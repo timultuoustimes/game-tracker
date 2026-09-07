@@ -19,6 +19,21 @@ struct ProfileHeader: View {
     /// Extra art drawn ABOVE the header's own top edge, so it reaches up
     /// behind the toolbar. Home passes the top safe-area inset.
     var topOverscan: CGFloat = 0
+    /// Draw the band even with nothing in it — **only for a brand-new
+    /// library.**
+    ///
+    /// The rule this bends is a good one and still holds everywhere else: a
+    /// placeholder ring above "Add your name" is a form, and a form is the
+    /// opposite of a personal page. That argument is about somebody with two
+    /// hundred games who never set a name — for them the band would be a chore
+    /// bolted to the top of a working app.
+    ///
+    /// At ZERO games there is no working app yet, and the page's problem is
+    /// the opposite one: it has no shape. Drawing the band empty means the
+    /// first game fills it in rather than rearranging the page around it. Tim,
+    /// on what would make the empty Home feel closer to an active one:
+    /// *"placeholder profile image and active game backgrounds?"*
+    var placeholderWhenEmpty = false
     var onEdit: () -> Void
 
     private var hasAnything: Bool {
@@ -65,7 +80,7 @@ struct ProfileHeader: View {
     }
 
     var body: some View {
-        if hasArt || hasAnything {
+        if hasArt || hasAnything || placeholderWhenEmpty {
             VStack(spacing: 10) {
                 if hasArt {
                     ZStack(alignment: .bottomLeading) {
@@ -87,6 +102,9 @@ struct ProfileHeader: View {
                 } else if let profile, hasAnything {
                     identity(profile)
                         .padding(.top, 4)
+                } else if placeholderWhenEmpty {
+                    ghostIdentity
+                        .padding(.top, 4)
                 }
                 statBand
             }
@@ -96,6 +114,40 @@ struct ProfileHeader: View {
             .accessibilityLabel(headerLabel)
             .accessibilityAddTraits(.isButton)
         }
+    }
+
+    /// The band with nobody in it yet: the avatar's place, and an invitation
+    /// where the name will go.
+    ///
+    /// It says what tapping does rather than describing an absence — "Add your
+    /// name" is a thing to do, "No name set" is a scolding — and it wears the
+    /// same 84pt portrait slot the real avatar will, so nothing moves when one
+    /// arrives.
+    private var ghostIdentity: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            Circle()
+                .fill(LSTheme.cardFill)
+                .overlay(Circle().strokeBorder(LSTheme.hairline, lineWidth: 1))
+                .overlay(
+                    Image(systemName: "person.fill")
+                        .font(.system(size: Self.portrait * 0.42))
+                        .foregroundStyle(.tertiary))
+                .frame(width: Self.portrait, height: Self.portrait)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Add your name")
+                    .font(LSTheme.pixel(18))
+                    .fontDesign(nil)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text("And a picture, and your handles.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.bottom, 2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
     }
 
     /// What the whole header announces. With no identity yet there is still

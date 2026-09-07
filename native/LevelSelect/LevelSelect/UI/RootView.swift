@@ -745,8 +745,13 @@ struct HomeTab: View {
             LazyVStack(alignment: .leading, spacing: 26) {
                 // Whose shelf this is, before what is on it. Draws nothing
                 // until someone has actually put something in it.
+                // At zero games the band draws itself empty — see
+                // `ProfileHeader.placeholderWhenEmpty`. The page then has the
+                // shape it will always have, and the first game fills it in
+                // rather than rearranging it.
                 ProfileHeader(profile: profiles.first, summary: summary,
-                              topOverscan: headerBleeds ? outer.safeAreaInsets.top : 0) {
+                              topOverscan: headerBleeds ? outer.safeAreaInsets.top : 0,
+                              placeholderWhenEmpty: games.isEmpty) {
                     editingProfile = true
                 }
 
@@ -837,8 +842,17 @@ struct HomeTab: View {
                 // new library it closes the page, which is where the welcome
                 // puts it too. It leaves with the captions.
                 if showsPromiseShelves { privacyPromiseFooter }
-                // After the shelves, not above them: an ask, never a nag.
-                BetaQuestionCard()
+                // After the shelves, not above them: an ask, never a nag —
+                // and not before there is anything to have an opinion about.
+                //
+                // The first question is "what were you using to keep track
+                // before this?", which at zero games is being asked of someone
+                // who has not used the app for a second. Fable, 2026-09-07:
+                // *"it asks what you used before you have added anything; it
+                // belongs after the first game."* The card already answers
+                // through the same composer as Send feedback, so the only
+                // thing wrong with it was when it appeared.
+                if !games.isEmpty { BetaQuestionCard() }
             }
                 .padding(.bottom)
                 // The art runs to the top edge, under the toolbar. Everything
@@ -939,24 +953,59 @@ struct HomeTab: View {
     /// page of sections, and never learns that the tracker is the point or
     /// that they can paste a checklist into it in seconds. The copy now names
     /// the actual first move and what comes after it.
+    /// **The first thing the eye lands on should look like the app.**
+    ///
+    /// This was a `ContentUnavailableView`: a gray system glyph, system type
+    /// and two system buttons, on a screen where the shelves, the rules and
+    /// the footer had all been designed. Fable, 2026-09-07: *"it is the least
+    /// designed object on the page and it is the first thing the eye lands
+    /// on."* Tim agreed, and named why it had survived: *"mostly because I
+    /// forget about it, since my library has games in it."*
+    ///
+    /// Same words, same two actions, in the app's own surface — the card
+    /// treatment every other block on Home wears, an accent glyph instead of a
+    /// gray one, and the primary action carrying the accent it opens into.
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("Start your shelf", systemImage: "gamecontroller")
-        } description: {
-            Text("Add a game you're playing — then give it a tracker: paste a checklist you already have, or let LevelSelect draft one.")
-        } actions: {
+        VStack(spacing: 14) {
+            Image(systemName: "gamecontroller")
+                .font(.system(size: 34))
+                .foregroundStyle(LSTheme.accent)
+                .accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Start your shelf")
+                    .font(.title3.weight(.semibold))
+                Text("Add a game you're playing — then give it a tracker: paste a checklist you already have, or let LevelSelect draft one.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             VStack(spacing: 10) {
                 // Matches the sheet it opens, and the menu item. Codex P5.
-                Button("Add Game") { showingAdd = true }
-                    .buttonStyle(.borderedProminent)
+                Button { showingAdd = true } label: {
+                    Text("Add Game")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(LSTheme.onAccent)
+                .background(LSTheme.accent, in: .capsule)
                 // A spreadsheet is how most people arrive with a backlog. This
                 // opened the whole Settings form and left them to find the
                 // importer — a dead end at the exact moment someone is deciding
                 // whether the app is worth the effort.
                 Button("Import a CSV") { showingCSVImport = true }
-                    .buttonStyle(.borderless)
+                    .font(.subheadline.weight(.medium))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(LSTheme.accent)
+                    .lsTapTargetTall()
             }
+            .padding(.top, 2)
         }
+        .frame(maxWidth: .infinity)
+        .lsCard()
+        .padding(.horizontal)
     }
 
     // MARK: Derived

@@ -349,15 +349,26 @@ struct GameDetailView: View {
                         //
                         // Over Sonic 2's red key art the glass ring reads as a
                         // faint outline you would only find if you knew it was
-                        // there; the back button survives because its corner
-                        // is dark. Fable, 2026-09-07. A shadow costs no layout
-                        // and no material, and gives the ring an edge against
-                        // a bright page without putting a plate on the
-                        // toolbar. The fuller fix Fable suggests — a scrim
-                        // behind BOTH buttons, measured against the backdrop's
-                        // luminance — is a change to the app's chrome and is
-                        // Tim's call rather than mine.
-                        .shadow(color: .black.opacity(0.45), radius: 3, y: 1)
+                        // there. Liquid Glass borrows its contrast from what is
+                        // behind it, and bright art has none to lend. Fable,
+                        // 2026-09-07.
+                        //
+                        // **Only where there is art, and no measuring.** Fable
+                        // proposed sampling the backdrop's luminance and
+                        // fading a scrim in when it is light. Same outcome for
+                        // a fraction of the cost: a dark scrim over a dark
+                        // backdrop is invisible, and over a bright one it is
+                        // the thing that saves the control — so the only
+                        // question worth asking is whether art is under the
+                        // bar at all. Sampling would mean decoding a remote
+                        // image, caching the result, and re-running it when
+                        // the art changes, to learn something the scrim
+                        // already handles by being dark.
+                        //
+                        // On a page with no backdrop the bar sits on the page
+                        // ground, where the glass works as designed and a
+                        // plate would be the only thing you noticed.
+                        .lsToolbarScrim(over: !backdropArtwork.isEmpty)
                 }
                 .accessibilityLabel("Game actions")
             }

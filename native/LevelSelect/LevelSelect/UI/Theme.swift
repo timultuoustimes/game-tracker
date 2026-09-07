@@ -275,3 +275,29 @@ struct BouncyTap<Label: View>: View {
         .sensoryFeedback(.impact(weight: .light), trigger: pressed) { _, new in new }
     }
 }
+
+extension View {
+    /// A dark wash behind a toolbar glyph that has artwork under it.
+    ///
+    /// Liquid Glass takes its contrast from what is behind it, so over bright
+    /// key art a toolbar button becomes a faint ring — present, and not
+    /// findable. This puts something dark between the glyph and the picture so
+    /// the ring has an edge to read against, and fades at its rim so it reads
+    /// as part of the art treatment rather than as a plate bolted to the bar.
+    ///
+    /// Deliberately soft: strong enough to rescue a control on white key art,
+    /// weak enough to be invisible on the dark art that never needed it.
+    func lsToolbarScrim(over hasArt: Bool) -> some View {
+        shadow(color: .black.opacity(hasArt ? 0.5 : 0), radius: 3, y: 1)
+            .background {
+                if hasArt {
+                    Circle()
+                        .fill(RadialGradient(
+                            colors: [.black.opacity(0.34), .black.opacity(0)],
+                            center: .center, startRadius: 1, endRadius: 20))
+                        .frame(width: 40, height: 40)
+                        .allowsHitTesting(false)
+                }
+            }
+    }
+}
