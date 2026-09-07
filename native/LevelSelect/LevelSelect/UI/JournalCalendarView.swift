@@ -97,8 +97,12 @@ struct JournalCalendarView: View {
     /// season, a decade. Dropping those would be the calendar quietly editing
     /// someone's history, so they are kept below the year the way the release
     /// calendar keeps its "no date yet" group rather than pretending it is
-    /// empty. Note those currently also land on 1 January in the grid — an
-    /// open defect needing a grain field, not something this section fixes.
+    /// empty.
+    ///
+    /// They no longer also land on 1 January — `Memory.hasKnownDay` and
+    /// `JournalBuilder.grain(for:)` keep a dayless entry out of every day
+    /// square, and this comment claimed the old defect for a build after it
+    /// was fixed. Codex verified both on 2026-09-07.
     private func undatedSection(_ undated: [JournalPeriod]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No single day")
@@ -723,6 +727,14 @@ private struct DayCell: View {
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(isFuture ? "Hasn't happened yet" : "Nothing recorded"))
                     .accessibilityHint(isFuture ? "" : "Adds a memory")
+                    // **`children: .ignore` takes the trait with the children.**
+                    //
+                    // The label and the hint survived it; `isButton` did not, so
+                    // VoiceOver read out what the cell would do and never said it
+                    // was a control. Codex A4, verified in the running tree on
+                    // 2026-09-07: every tappable day came through as a generic
+                    // `element`. Re-added explicitly on all three branches.
+                    .accessibilityAddTraits(.isButton)
             } else if entries.count > 1 {
                 // More than one thing happened. Open the DAY, not whichever of
                 // them the cell happened to wear — the other was unreachable
@@ -733,6 +745,7 @@ private struct DayCell: View {
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(spokenSummary))
                     .accessibilityHint("Opens the day")
+                    .accessibilityAddTraits(.isButton)
             } else if let subject {
                 // One thing, so go straight to it rather than through a list
                 // of one.
@@ -742,6 +755,7 @@ private struct DayCell: View {
                     .accessibilityLabel(Text(spokenDate))
                     .accessibilityValue(Text(spokenSummary))
                     .accessibilityHint(subject.game.map { "Opens \($0.name)" } ?? "Opens the day")
+                    .accessibilityAddTraits(.isButton)
             }
         }
     }

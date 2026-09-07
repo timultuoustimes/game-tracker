@@ -107,7 +107,19 @@ struct RatingControl: View {
             //
             // Padding out and back in gives the same 44-point target and
             // occupies nothing, so the label sits where it belongs.
-            .lsTapTargetTall(12)
+            // Sideways as far as the 6-point gap allows and no further: 3
+            // points each side fills the gap exactly, so each star reaches 26
+            // points wide with no overlap.
+            //
+            // **It does not reach 44 wide, and that is a layout decision
+            // rather than a bug.** Five 44-point stars are 220 points against
+            // the ~124 this row occupies now, and this control sits inside the
+            // game page's measured hero panel — widening it by ninety-odd
+            // points is a visible change to a row Tim has already had opinions
+            // about twice. Codex A7 is right that the horizontal target is
+            // small; it is not right that the fix is free. Flagged rather than
+            // taken unilaterally.
+            .lsTapTargetTall(12, horizontal: 3)
             .onTapGesture { set(i) }
     }
 

@@ -34,14 +34,19 @@ final class TrackerStateRecord {
     var selectedVariant: String?
     /// When `selectedVariant` was last set — including being set back to nil.
     ///
-    /// **Storage only in build 37; the reconciler does not read it yet.**
-    /// Scaffolded now because it needs a CloudKit deploy and the appearance
-    /// palette needed one anyway. Two offline devices can each create a state
-    /// row for the same item, and `mergeDuplicateStates` keeps one and
-    /// tombstones the rest without ever looking at `selectedVariant` — so a
-    /// chosen Mirror talent disappears. Copying a nonnil loser is not the fix
-    /// either: nil can mean "I deliberately switched back to default", and
-    /// without a timestamp the merge cannot tell that from never-set.
+    /// **The reconciler reads this now** — it was storage-only when the field
+    /// first shipped, and this comment still said so after the merge started
+    /// using it. Codex caught the drift on 2026-09-07.
+    ///
+    /// Two offline devices can each create a state row for the same item, and
+    /// the merge used to keep one and tombstone the rest without ever looking
+    /// at `selectedVariant`, so a chosen Mirror talent disappeared. Copying a
+    /// nonnil loser was not the fix either: nil can mean "I deliberately
+    /// switched back to default", and without a timestamp the merge cannot
+    /// tell that from never-set. So the merge now picks the variant with the
+    /// newest stamp across every duplicate — a stamped value beats legacy
+    /// unstamped history, a later clear beats an older choice — and copies the
+    /// value AND its stamp before tombstoning the losers.
     var selectedVariantUpdatedAt: Date?
 
     var playthrough: Playthrough?

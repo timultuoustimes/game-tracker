@@ -409,7 +409,19 @@ enum JournalBuilder {
                     headingOverride: $0.items.first?.headingOverride,
                     calendar: $0.calendar)
             }
-            .sorted { $0.start == $1.start ? $0.grain < $1.grain : $0.start > $1.start }
+            // **Total, like the entries inside it.** Start and grain were not
+            // enough: the bucket key includes the verbatim heading, so "sometime
+            // in 1998" and "around 1998" make two year-grain periods that both
+            // begin on 1 January. The comparator called neither before the
+            // other, and dictionary iteration order is not stable — so those two
+            // sections could swap between runs or devices. Codex data #11, the
+            // half that was still open. The heading is the thing that separated
+            // them, so it is the thing that orders them.
+            .sorted {
+                if $0.start != $1.start { return $0.start > $1.start }
+                if $0.grain != $1.grain { return $0.grain < $1.grain }
+                return ($0.headingOverride ?? "") < ($1.headingOverride ?? "")
+            }
     }
 }
 

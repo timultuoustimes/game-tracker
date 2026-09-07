@@ -97,6 +97,7 @@ enum LibraryExport {
             dict["review"] = game.review
             dict["igdbID"] = game.igdbID
             dict["igdbSlug"] = game.igdbSlug
+            dict["wikidataID"] = game.wikidataID
             dict["coverImageID"] = game.coverImageID
             dict["coverURL"] = game.coverURLString
             // The artwork the USER chose, which the fetched fields above

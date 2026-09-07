@@ -5,6 +5,18 @@ import SwiftData
 /// confirmed sync over per-device). One record; nil/absent fields = defaults.
 @Model
 final class ThemeSettings {
+    /// A synced identity, so two devices fold duplicate rows the same way.
+    ///
+    /// **This closes a real hazard rather than adding a feature.** Both
+    /// singleton folds tie-broke on `createdAt`, and passed a fresh `UUID()`
+    /// when those matched — so rows created in the same instant sorted at
+    /// random inside the comparator. `PlayerProfile` already had an id to fix
+    /// that with; this model had none, so the best available was the LOCAL
+    /// identifier, which is deterministic per device and can still have two
+    /// devices keep different rows and delete each other's winner. Codex found
+    /// the random tie-break on 2026-09-07; this is the half of it that needed
+    /// a field.
+    var id: UUID = UUID()
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
 

@@ -165,6 +165,7 @@ enum CloudKitSchemaSeeder {
         game.notes = marker
         game.igdbID = 1
         game.igdbSlug = marker
+        game.wikidataID = marker                       // build 37
         game.firstReleaseDate = now
         game.franchise = marker
         game.coverURLString = marker
@@ -545,6 +546,7 @@ enum CloudKitSchemaSeeder {
         // happened to `savedSwatchesData` on the first attempt at this deploy.
         } else {
             let theme = ThemeSettings()
+            // `id` has a UUID default, so it types itself — nothing to seed.
             theme.accentHex = seededAccent
             theme.statusColorsData = stamp
             theme.defaultMergeModeRaw = marker           // V2

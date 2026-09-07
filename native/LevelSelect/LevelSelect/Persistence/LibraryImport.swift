@@ -607,6 +607,7 @@ enum LibraryImport {
         game.review = d["review"] as? String
         game.igdbID = d["igdbID"] as? Int
         game.igdbSlug = d["igdbSlug"] as? String
+        game.wikidataID = d["wikidataID"] as? String
         game.coverImageID = d["coverImageID"] as? String
         game.coverURLString = d["coverURL"] as? String
         game.coverOverrideURLString = d["coverOverrideURL"] as? String

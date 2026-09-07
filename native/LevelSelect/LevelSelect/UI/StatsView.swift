@@ -318,7 +318,9 @@ struct StatsCards: View {
             ForEach(latestFinishes, id: \.event.id) { row in
                 NavigationLink(value: row.game) {
                     HStack(spacing: 12) {
-                        CoverThumb(urlString: row.game.displayCoverURLString, name: row.game.name, status: row.game.status)
+                        CoverThumb(urlString: row.game.displayCoverURLString,
+                                   artwork: row.game.resolvedArtwork(.cover),
+                                   name: row.game.name, status: row.game.status)
                             .frame(width: 34, height: 45)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(row.game.name)
@@ -1134,7 +1136,9 @@ struct CompletionYearView: View {
             ForEach(rows, id: \.event.id) { row in
                 NavigationLink(value: row.game) {
                     HStack(spacing: 12) {
-                        CoverThumb(urlString: row.game.displayCoverURLString, name: row.game.name, status: row.game.status)
+                        CoverThumb(urlString: row.game.displayCoverURLString,
+                                   artwork: row.game.resolvedArtwork(.cover),
+                                   name: row.game.name, status: row.game.status)
                             .frame(width: 40, height: 53)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(row.game.name)

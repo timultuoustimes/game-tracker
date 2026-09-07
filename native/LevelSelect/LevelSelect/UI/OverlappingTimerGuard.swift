@@ -497,6 +497,7 @@ private struct CrossGameTimerSheet: View {
                         } label: {
                             HStack(spacing: 11) {
                                 CoverThumb(urlString: session.playthrough?.game?.displayCoverURLString,
+                                           artwork: session.playthrough?.game?.resolvedArtwork(.cover),
                                            name: session.playthrough?.game?.name ?? "",
                                            status: session.playthrough?.game?.status ?? .playing)
                                     .frame(width: 34, height: 46)

@@ -21,6 +21,20 @@ final class Game {
     var notes: String = ""
     var igdbID: Int?
     var igdbSlug: String?
+    /// The Wikidata entity for this game — a Q-number, e.g. "Q1339021".
+    ///
+    /// **Shipped ahead of the feature, deliberately.** Every Wikidata thing
+    /// the roadmap wants — real person credits, cross-checking release dates
+    /// against a second source, series relationships — needs the QID as its
+    /// bridge, and IGDB stays the identity source: this is enrichment hung off
+    /// `igdbID`, so if Wikidata ever goes away a field breaks and the library
+    /// does not. An unused optional costs nothing and a schema version costs a
+    /// promote cycle, which is the same reasoning that shipped `backgroundHex`
+    /// a build before the light theme used it.
+    ///
+    /// Resolved by querying Wikidata BY the IGDB id rather than by name —
+    /// name matching is how the wrong game's logo got attached once already.
+    var wikidataID: String?
     var firstReleaseDate: Date?
     /// Every date IGDB gives for this game, keyed by platform. Schema V4.
     ///

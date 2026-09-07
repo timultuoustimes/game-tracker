@@ -18,11 +18,16 @@ struct PlayerSummary {
 
     /// Cover art for the games played in the last seven days, most recently
     /// played first — the backdrop's raw material.
-    var recentCovers: [String] = []
+    ///
+    /// **Resolved artwork, not URLs.** These were `[String]` of
+    /// `displayCoverURLString`, which is nil for a locally picked cover — so a
+    /// game whose cover you chose from Photos was silently missing from your
+    /// own Home header while every shelf below showed it. Codex, 2026-09-07.
+    var recentCovers: [ResolvedArtwork] = []
 
     /// One game's art, for when the week is too quiet to build a backdrop
     /// from. The game you're on now, or failing that the last one you touched.
-    var fallbackBackdrop: String?
+    var fallbackBackdrop: ResolvedArtwork?
 
     /// Two, not three.
     ///
@@ -84,7 +89,8 @@ struct PlayerSummary {
 
         summary.recentCovers = recent
             .sorted { $0.at > $1.at }
-            .compactMap { $0.game.displayCoverURLString }
+            .map { $0.game.resolvedArtwork(.cover) }
+            .filter { !$0.isEmpty }
 
         // Whatever is being played that HAS art — not merely whatever is
         // being played.
@@ -108,11 +114,15 @@ struct PlayerSummary {
         // The header is about how it is going, so it leads with the game you
         // last actually touched, and only falls back to "something you are
         // playing" when nothing has been played this week at all.
+        // `resolvedArtwork(.backdrop)` already falls back to the cover when a
+        // game has no backdrop of its own, so the two-step preference the four
+        // lines here used to spell out is now one call — and it picks up local
+        // artwork on the way, which the URL version could not.
         summary.fallbackBackdrop =
-            mostRecent?.backdropURLString
-            ?? mostRecent?.displayCoverURLString
-            ?? playing.compactMap(\.backdropURLString).first
-            ?? playing.compactMap(\.displayCoverURLString).first
+            [mostRecent?.resolvedArtwork(.backdrop)].compactMap { $0 }
+                .first(where: { !$0.isEmpty })
+            ?? playing.map { $0.resolvedArtwork(.backdrop) }
+                .first(where: { !$0.isEmpty })
 
         return summary
     }

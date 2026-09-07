@@ -76,7 +76,7 @@ enum AppPromise: CaseIterable {
     ///
     /// Above this, Home goes back to drawing only the shelves that have
     /// something on them. The captions are for the stretch between the welcome
-    /// and a working shelf — someone who has genuinely settled at four games
+    /// and a working shelf — someone who has genuinely settled at five games
     /// does not need to be told what Paused is every time they open the app.
     ///
     /// Five rather than one, because the first thing many people do is add

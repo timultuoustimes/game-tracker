@@ -365,7 +365,7 @@ struct PlayerSummaryTests {
         let s = PlayerSummary.make(from: [game], now: now)
         #expect(s.recentCovers.count == 1)
         #expect(!s.usesRibbon)
-        #expect(s.fallbackBackdrop == "https://example.com/a.jpg")
+        #expect(s.fallbackBackdrop == .remote(URL(string: "https://example.com/a.jpg")!))
     }
 
     /// And two now makes a ribbon.
@@ -398,8 +398,8 @@ struct PlayerSummaryTests {
         let s = PlayerSummary.make(from: games, now: now)
         #expect(s.usesRibbon)
         // G0 played most recently, so its cover leads.
-        #expect(s.recentCovers.first == "https://example.com/0.jpg")
-        #expect(s.recentCovers.last == "https://example.com/3.jpg")
+        #expect(s.recentCovers.first == .remote(URL(string: "https://example.com/0.jpg")!))
+        #expect(s.recentCovers.last == .remote(URL(string: "https://example.com/3.jpg")!))
     }
 
     /// Someone with no sessions at all still has a header; it just has nothing
@@ -479,7 +479,7 @@ extension PlayerSummaryTests {
         withArt.coverURLString = "https://example.com/cover.jpg"
 
         let s = PlayerSummary.make(from: [bare, withArt])
-        #expect(s.fallbackBackdrop == "https://example.com/cover.jpg")
+        #expect(s.fallbackBackdrop == .remote(URL(string: "https://example.com/cover.jpg")!))
     }
 
     /// And a backdrop beats a cover when both exist — a cover in a wide band
@@ -491,7 +491,7 @@ extension PlayerSummaryTests {
         g.status = .playing
         g.coverURLString = "https://example.com/cover.jpg"
         g.backdropURLString = "https://example.com/backdrop.jpg"
-        #expect(PlayerSummary.make(from: [g]).fallbackBackdrop == "https://example.com/backdrop.jpg")
+        #expect(PlayerSummary.make(from: [g]).fallbackBackdrop == .remote(URL(string: "https://example.com/backdrop.jpg")!))
     }
 }
 

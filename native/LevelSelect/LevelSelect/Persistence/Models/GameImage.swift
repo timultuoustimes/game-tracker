@@ -133,7 +133,7 @@ enum ArtworkRole: String, Codable, CaseIterable, Sendable, Identifiable {
 ///
 /// Views switch on this rather than juggling "URL or Data or neither", which
 /// is the shape that produces three slightly-different renderers.
-enum ResolvedArtwork: Equatable {
+enum ResolvedArtwork: Hashable {
     case remote(URL)
     case local(Data)
     case none

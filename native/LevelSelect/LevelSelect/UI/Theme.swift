@@ -127,8 +127,16 @@ extension View {
     /// Vertical is free in these rows, because nothing sits directly above or
     /// below a chip except the row's own padding. 8 points each side takes a
     /// 28-point chip to 44 without moving anything.
-    func lsTapTargetTall(_ grow: CGFloat = 8) -> some View {
-        padding(.vertical, grow).contentShape(.rect).padding(.vertical, -grow)
+    /// `horizontal` grows sideways too, for a row whose gaps have room to
+    /// spare. It must stay at or under HALF the spacing between neighbours or
+    /// their targets overlap and the wrong one wins — the failure this whole
+    /// family exists to avoid.
+    func lsTapTargetTall(_ grow: CGFloat = 8, horizontal: CGFloat = 0) -> some View {
+        padding(.vertical, grow)
+            .padding(.horizontal, horizontal)
+            .contentShape(.rect)
+            .padding(.vertical, -grow)
+            .padding(.horizontal, -horizontal)
     }
 
     /// Card surface used across Stats/Home.

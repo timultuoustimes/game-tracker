@@ -748,6 +748,11 @@ struct ColorEditor: View {
             }
             .buttonStyle(.plain)
             .disabled(saved.contains(currentHex))
+            // 30 points, and the last control in the row — the only thing to
+            // its left is a non-interactive Divider, so 7 points each side
+            // reaches 44 with nothing to collide with. The family named in
+            // Codex A7 that nobody had touched.
+            .lsTapTargetInline(7)
             .accessibilityLabel("Keep this color")
         }
         .padding(.horizontal, 12)

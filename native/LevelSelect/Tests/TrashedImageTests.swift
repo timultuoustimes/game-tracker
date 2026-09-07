@@ -45,7 +45,21 @@ struct TrashedImageTests {
         #expect(repo.trashedImages().isEmpty)
     }
 
-    /// The point of the whole fix: the bytes actually go.
+    /// **The row goes, which is what this can honestly prove.**
+    ///
+    /// It used to say "the bytes actually go" while asserting only that no
+    /// `GameImage` remained, against an in-memory store — which cannot observe
+    /// an external sidecar file, disk reclamation, or a CloudKit asset
+    /// deletion. Codex called that out on 2026-09-07 and was right: the claim
+    /// was wider than the evidence.
+    ///
+    /// The row is still the right thing to assert, because it is the operation
+    /// the app actually controls. `GameImage.data` is a SwiftData-managed
+    /// `@Attribute(.externalStorage)`, so deleting and saving the owning row is
+    /// what makes the blob unreachable and eligible for the framework's own
+    /// cleanup; there is no application-owned file path to remove. What is not
+    /// claimed here is when the bytes leave the disk, because nothing at this
+    /// level can see that.
     @Test func deletingForeverRemovesTheRow() {
         let repo = store()
         let game = repo.addGame(name: "Hollow Knight", status: .playing)

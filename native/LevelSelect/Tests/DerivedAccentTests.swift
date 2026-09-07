@@ -250,13 +250,15 @@ struct Build37HeaderInkTests {
     /// `drawsArt` required a filled profile, so deleting a name emptied the
     /// header of cover art that has nothing to do with the profile.
     @Test func theWeeksArtDrawsWithNoProfileAtAll() {
-        let week = PlayerSummary(recentCovers: ["a", "b"])
+        let week = PlayerSummary(recentCovers: [.remote(URL(string: "a")!),
+                                                .remote(URL(string: "b")!)])
         #expect(week.usesRibbon)
         #expect(ProfileHeader.drawsArt(profile: nil, summary: week))
     }
 
     @Test func oneQuietWeeksFallbackAlsoDraws() {
-        let quiet = PlayerSummary(recentCovers: ["a"], fallbackBackdrop: "cover")
+        let quiet = PlayerSummary(recentCovers: [.remote(URL(string: "a")!)],
+                                  fallbackBackdrop: .remote(URL(string: "cover")!))
         #expect(!quiet.usesRibbon)
         #expect(ProfileHeader.drawsArt(profile: nil, summary: quiet))
     }

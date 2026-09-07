@@ -67,8 +67,16 @@ struct CalendarDayView: View {
     /// through the Timeline.
     private func row(_ entry: JournalEntry) -> some View {
         HStack(spacing: 12) {
-            if let game = entry.game, let url = game.displayCoverURLString {
-                CoverThumb(urlString: url, name: game.name, status: game.status)
+            // The guard used to be `let url = game.displayCoverURLString`,
+            // which is nil for a locally picked cover — so choosing a photo as
+            // a game's cover made it vanish from the Journal day and fall
+            // through to the memory's own image. Ask for the game's artwork
+            // instead of for a URL.
+            if let game = entry.game,
+               !game.resolvedArtwork(.cover).isEmpty {
+                CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover),
+                           name: game.name, status: game.status)
                     .frame(width: 44, height: 59)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             } else if let data = entry.images.first?.data {

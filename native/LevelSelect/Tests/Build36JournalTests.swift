@@ -1181,3 +1181,71 @@ struct Build36UpcomingReleaseTests {
                                      key: MetadataCheckedStore.upcomingKey).all()[id] != nil)
     }
 }
+
+/// **Two sections that begin on the same day, in a stable order.**
+///
+/// The entries inside a period got a total order when Codex data #11 was
+/// first fixed; the periods themselves did not. The bucket key includes the
+/// verbatim heading, so two dayless uncertain memories worded differently make
+/// two separate year-grain periods that both begin on 1 January — and the
+/// comparator, which only knew start and grain, called neither before the
+/// other. `sorted` is not stable and dictionary iteration is not ordered, so
+/// those two sections could swap between runs, between devices, and between
+/// two exports of the same library.
+@MainActor
+struct Build37JournalPeriodOrderTests {
+
+    private func utc(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        var c = DateComponents(); c.year = y; c.month = m; c.day = d
+        return Memory.calendar.date(from: c)!
+    }
+
+    /// Both begin 1 January 1998, both are year-grain, and only the words
+    /// differ — the exact shape Codex named.
+    private func twoWaysOfSaying1998() -> [Memory] {
+        [Memory(title: "Bought a PlayStation", kind: "acquired",
+                earliest: utc(1998, 1, 1), latest: utc(1998, 12, 31),
+                precision: nil, whenText: "sometime in 1998"),
+         Memory(title: "Beat Symphony of the Night", kind: "memory",
+                earliest: utc(1998, 1, 1), latest: utc(1998, 12, 31),
+                precision: nil, whenText: "around 1998")]
+    }
+
+    @Test func twoHeadingsOnOneDayAreTwoSections() {
+        let periods = JournalBuilder.periods(from: [], standalone: twoWaysOfSaying1998())
+        #expect(periods.count == 2)
+        #expect(Set(periods.map(\.start)).count == 1, "both should start on 1 January")
+        #expect(Set(periods.map(\.grain)).count == 1, "both should be year-grain")
+    }
+
+    /// The property that was actually broken: same input, same order, always.
+    @Test func theOrderIsTheSameEveryTime() {
+        var orders: Set<[String]> = []
+        for _ in 0..<12 {
+            let periods = JournalBuilder.periods(from: [], standalone: twoWaysOfSaying1998())
+            orders.insert(periods.map { $0.headingOverride ?? "" })
+        }
+        #expect(orders.count == 1, "period order varied across builds: \(orders)")
+    }
+
+    /// And the heading is what breaks the tie, so the order is a fact about
+    /// the words rather than about hash seeding.
+    @Test func theHeadingBreaksTheTie() {
+        let periods = JournalBuilder.periods(from: [], standalone: twoWaysOfSaying1998())
+        #expect(periods.map { $0.headingOverride ?? "" } == ["around 1998", "sometime in 1998"])
+    }
+
+    /// Newest-first still wins over the tie-break — this did not become an
+    /// alphabetical journal.
+    @Test func differentDatesStillSortNewestFirst() {
+        let older = Memory(title: "A", kind: "memory",
+                           earliest: utc(1995, 1, 1), latest: utc(1995, 12, 31),
+                           precision: nil, whenText: "zzz 1995")
+        let newer = Memory(title: "B", kind: "memory",
+                           earliest: utc(2005, 1, 1), latest: utc(2005, 12, 31),
+                           precision: nil, whenText: "aaa 2005")
+        let periods = JournalBuilder.periods(from: [], standalone: [older, newer])
+        #expect(periods.count == 2)
+        #expect(periods.first?.start ?? .distantPast > periods.last?.start ?? .distantFuture)
+    }
+}

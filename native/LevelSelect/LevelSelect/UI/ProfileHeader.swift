@@ -174,7 +174,8 @@ struct ProfileHeader: View {
                 if summary.usesRibbon {
                     ribbon(width: geo.size.width)
                 } else if let art = summary.fallbackBackdrop {
-                    CoverThumb(urlString: art)
+                    // Resolved already — the summary carries artwork, not a URL.
+                    CoverThumb(urlString: nil, artwork: art)
                         .frame(width: geo.size.width, height: (Self.artHeight + topOverscan) * 1.7)
                         .clipped()
                         .blur(radius: 3)
@@ -228,7 +229,7 @@ struct ProfileHeader: View {
         let tile = max(96, (width * 1.3) / CGFloat(max(covers.count, 1)))
         return HStack(spacing: 4) {
             ForEach(Array(covers.enumerated()), id: \.offset) { _, art in
-                CoverThumb(urlString: art)
+                CoverThumb(urlString: nil, artwork: art)
                     .frame(width: tile, height: (Self.artHeight + topOverscan) * 1.7)
                     .clipped()
             }

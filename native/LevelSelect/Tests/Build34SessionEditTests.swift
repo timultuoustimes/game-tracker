@@ -99,7 +99,7 @@ struct Build34SessionEditTests {
         session.state = .stopped
 
         let summary = PlayerSummary.make(from: [old, recent])
-        #expect(summary.fallbackBackdrop == "skate-story.jpg")
+        #expect(summary.fallbackBackdrop == .remote(URL(string: "skate-story.jpg")!))
     }
 
     /// With nothing played this week there is no "last played", so it falls
@@ -111,7 +111,7 @@ struct Build34SessionEditTests {
         game.coverURLString = "animal-well.jpg"
 
         let summary = PlayerSummary.make(from: [game])
-        #expect(summary.fallbackBackdrop == "animal-well.jpg")
+        #expect(summary.fallbackBackdrop == .remote(URL(string: "animal-well.jpg")!))
     }
 
     /// Tim beat Under the Island on the 25th and it was missing from the
@@ -139,7 +139,8 @@ struct Build34SessionEditTests {
 
         let summary = PlayerSummary.make(from: [played, beaten])
         #expect(summary.recentCovers.count == 2)
-        #expect(Set(summary.recentCovers) == ["skate.jpg", "island.jpg"])
+        #expect(Set(summary.recentCovers) == [.remote(URL(string: "skate.jpg")!),
+                                              .remote(URL(string: "island.jpg")!)])
         // Two covers is a ribbon now — a quiet week is still a week.
         #expect(summary.usesRibbon)
     }

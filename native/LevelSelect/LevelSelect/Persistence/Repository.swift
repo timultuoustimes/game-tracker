@@ -1222,10 +1222,11 @@ struct Repository {
         let record = ensureTrackerState(pt, itemID: itemID)
         record.selectedVariant = variant
         // Stamped even when `variant` is nil — clearing the choice IS the
-        // choice, and it is the case the reconciler will not be able to
-        // recognize without a time. See `selectedVariantUpdatedAt`; nothing
-        // reads it yet, but it has to be accumulating from the build that
-        // deploys the field or the merge fix lands with no history to use.
+        // choice, and it is the case the reconciler cannot recognize without a
+        // time. The merge reads this now (it did not when the field shipped,
+        // and this comment went on saying so until Codex checked), which is
+        // why a later deliberate clear beats an older choice instead of losing
+        // to it.
         record.selectedVariantUpdatedAt = .now
         touch(record)
         touch(pt)
@@ -2746,9 +2747,10 @@ struct Repository {
         // moving under us. Two rows tying on BOTH dates could still be folded
         // differently on two devices; closing that needs a synced id, and a
         // synced id on this model is a CloudKit schema deploy.
-        let rows = ordered(ThemeSettings.self, { $0.createdAt },
-                           { _ in UUID() },
-                           tieBreak: { "\($0.updatedAt.timeIntervalSince1970)-\($0.persistentModelID)" })
+        // Build 37: `ThemeSettings` has a synced id of its own now, so this
+        // tie-break is the same on every device — the local-identifier
+        // fallback below it could only be deterministic per device.
+        let rows = ordered(ThemeSettings.self, { $0.createdAt }, { $0.id })
         guard rows.count > 1, let winner = rows.first else { return 0 }
         for loser in rows.dropFirst() {
             let loserIsNewer = loser.updatedAt > winner.updatedAt
