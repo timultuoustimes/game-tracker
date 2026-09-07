@@ -80,11 +80,11 @@ struct HeatmapWidget: Widget {
     }
 }
 
-// MARK: - Finished share (small)
+// MARK: - Beaten share (small)
 
 /// The library-wide completion ring — the whole shelf's "how far along am I",
 /// where the existing ring is one game's.
-struct FinishedShareView: View {
+struct BeatenShareView: View {
     let snapshot: WidgetSnapshot?
 
     var body: some View {
@@ -116,15 +116,20 @@ struct FinishedShareView: View {
     }
 }
 
-struct FinishedShareWidget: Widget {
+struct BeatenShareWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "FinishedShare", provider: ContinuePlayingProvider()) { entry in
-            FinishedShareView(snapshot: entry.snapshot)
+        // **The `kind` moves too, and now is the moment.**
+        //
+        // This string identifies a placed widget, so changing it orphans any
+        // that already exist — someone's Home Screen keeps a tile that no
+        // longer updates until they replace it. Tim: *"could probably be
+        // changed since it would only potentially affect a couple people, as
+        // opposed to changing later when we have actual users."* A handful of
+        // testers re-adding one tile now is the cheapest this ever gets.
+        StaticConfiguration(kind: "BeatenShare", provider: ContinuePlayingProvider()) { entry in
+            BeatenShareView(snapshot: entry.snapshot)
                 .lsWidgetSurface()
         }
-        // The widget `kind` stays "FinishedShare" — that string identifies
-        // widgets people have already placed, and changing it would strand
-        // them. Only the words anybody reads move.
         .configurationDisplayName("Beaten Share")
         .description("How much of the whole library you've beaten.")
         .supportedFamilies([.systemSmall])

@@ -1413,19 +1413,18 @@ struct GameDetailView: View {
             // announced as separate elements ahead of them.
             .accessibilityElement(children: .combine)
 
-            // **Your verdict and the critics', as one block.**
+            RatingControl(rating: $game.rating)
+
+            // Directly under your own verdict, because the comparison is the
+            // entire point — a critic score parked elsewhere on the page is
+            // just trivia.
             //
-            // The panel's 8-point rhythm separated the star label from the
-            // score beneath it by as much as it separated whole facts, so
-            // "Loved it" read as the end of one thing rather than the top of a
-            // comparison. Tim, looking at Mina: *"I think the gap between the
-            // label and the stats needs to close."* Two points here, eight
-            // around the pair — the comparison is the entire point, and a
-            // critic score parked elsewhere on the page is just trivia.
-            VStack(alignment: alignment, spacing: 2) {
-                RatingControl(rating: $game.rating)
-                referenceRow
-            }
+            // On the panel's ordinary 8-point rhythm, deliberately. Squeezing
+            // this pair together was the first, wrong answer to the label
+            // floating mid-panel: it glued the label to the score instead of
+            // to its stars. The space that needed removing was inside
+            // `RatingControl`, under the stars themselves.
+            referenceRow
 
             if let franchise = game.franchise, !franchise.isEmpty {
                 Text(franchise)

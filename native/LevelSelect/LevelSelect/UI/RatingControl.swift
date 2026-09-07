@@ -95,10 +95,19 @@ struct RatingControl: View {
             }
             // Vertical only. Five stars sit side by side, so a 44-point
             // square around each would overlap its neighbors and the wrong
-            // star would win the tap — worse than a small target. Height is
-            // free here because nothing sits above or below.
-            .frame(minHeight: 44)
-            .contentShape(.rect)
+            // star would win the tap — worse than a small target.
+            //
+            // **And it must not cost layout.** `frame(minHeight: 44)` around
+            // a `.title3` glyph left about twelve points of dead space under
+            // the stars, which pushed the star label away from the very thing
+            // it names. Tim, after a first attempt tightened the wrong gap:
+            // *"it's not closer to the stars."* It wasn't — the label had
+            // been pulled down to the critic score instead of up to the
+            // stars, because this was the space actually holding it away.
+            //
+            // Padding out and back in gives the same 44-point target and
+            // occupies nothing, so the label sits where it belongs.
+            .lsTapTargetTall(12)
             .onTapGesture { set(i) }
     }
 
