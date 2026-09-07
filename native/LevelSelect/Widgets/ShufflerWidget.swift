@@ -52,7 +52,9 @@ struct ShufflerConfigIntent: WidgetConfigurationIntent {
     @Parameter(title: "System", optionsProvider: ShufflePlatformProvider())
     var platform: String?
 
-    @Parameter(title: "Include finished games", default: false)
+    // Admits `statusRaw == "completed"`, so it names the Completed STATUS —
+    // "finished" belongs to playthroughs and tracker items, not to this.
+    @Parameter(title: "Include completed games", default: false)
     var includeCompleted: Bool
 
     /// One stored pick per distinct configuration.
@@ -112,7 +114,7 @@ struct ShuffleRollIntent: AppIntent {
     @Parameter(title: "Key") var pickKey: String
     @Parameter(title: "Statuses") var statusRaws: [String]
     @Parameter(title: "System") var platform: String?
-    @Parameter(title: "Include finished") var includeCompleted: Bool
+    @Parameter(title: "Include completed") var includeCompleted: Bool
 
     init() {
         pickKey = ""; statusRaws = []; platform = nil; includeCompleted = false

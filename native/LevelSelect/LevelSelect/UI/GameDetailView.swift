@@ -1407,7 +1407,12 @@ struct GameDetailView: View {
             // rendered the status as "Now…" instead of "Now Playing", and a
             // panel measured correctly around a truncated word is the wrong
             // trade. Wrapping is what accessibility sizes are for.
-            .lineLimit(1)
+            // The comment above was already the intent; the code was not.
+            // Applied unconditionally, this one-line limit reached the PLATFORM
+            // too, so at AX XXXL the stack that had just been fixed to keep
+            // "Now Playing" whole showed "Sega Mega Dri…" underneath it. Codex
+            // verified it on the simulator, 2026-09-07.
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             .fixedSize(horizontal: false, vertical: true)
             // The glyphs repeat what the words already say, and were being
             // announced as separate elements ahead of them.

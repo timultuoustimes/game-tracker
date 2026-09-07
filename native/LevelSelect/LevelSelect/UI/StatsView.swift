@@ -311,7 +311,9 @@ struct StatsCards: View {
 
     private var latestFinishesCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Latest Finishes", systemImage: "checkmark.seal.fill")
+            // Beaten names the EVENT; Completed names the status. These are
+            // CompletionEvents, so they are beatings.
+            Label("Latest Beaten", systemImage: "checkmark.seal.fill")
                 .font(.headline)
             ForEach(latestFinishes, id: \.event.id) { row in
                 NavigationLink(value: row.game) {

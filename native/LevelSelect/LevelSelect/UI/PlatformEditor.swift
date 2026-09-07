@@ -107,7 +107,10 @@ struct PlatformEditor: View {
     /// set, and the chips are checkboxes.
     private func chip(_ platform: String) -> some View {
         let isMine = ownedNames.contains(platform)
-        return HStack(spacing: 5) {
+        return Button {
+            toggleMine(platform)
+        } label: {
+        HStack(spacing: 5) {
             PlatformIconView(platform: platform, size: 15)
             Text(PlatformShort.name(platform)).font(.caption)
             if isMine {
@@ -127,26 +130,27 @@ struct PlatformEditor: View {
                    : AnyShapeStyle(LSTheme.hairline), lineWidth: 1))
         .foregroundStyle(.primary)
         .contentShape(.capsule)
-        // **One target, one gesture, and the rare action behind a hold.**
+        }
+        .buttonStyle(.plain)
+        // **The common action on the tap, the rare one behind the hold.**
         //
-        // This used to be a 22-point Button nested inside a tap gesture on the
-        // chip: two actions competing for the same capsule, the inner one
-        // under the 44-point minimum, and removing a console — the thing you
-        // almost never do — was the easier of the two to hit by accident.
-        // Codex A7 and open question 5. Tim: *"press and hold a console >
-        // select 'make mine'?"*
+        // This was a 22-point remove Button nested inside a tap gesture on the
+        // chip — two actions on one capsule, the inner one under the 44-point
+        // minimum, and removing a console (which you almost never do) easier
+        // to hit by accident than owning one. The repair moved BOTH actions
+        // into the context menu, which fixed the collision and then went one
+        // step too far: tapping a chip did nothing at all, so the everyday
+        // action needed a long press and a sighted user had no affordance for
+        // it. Codex called that a regression on 2026-09-07 and was right.
         //
-        // So a tap does nothing, a press-and-hold offers both, and the menu
-        // says which is which in words rather than an ✕ nobody asked about.
+        // Tim asked for the hold — *"press and hold a console > select 'make
+        // mine'?"* — and it stays, because that is where Remove belongs. What
+        // comes back is the tap, on the whole capsule, doing the thing the
+        // chip is a checkbox for.
+        .lsTapTargetTall()
         .contextMenu {
             Button {
-                var next = ownedNames
-                if let index = next.firstIndex(of: platform) {
-                    next.remove(at: index)
-                } else {
-                    next.append(platform)
-                }
-                withAnimation(.snappy(duration: 0.28)) { owned = next }
+                toggleMine(platform)
             } label: {
                 Label(isMine ? "Not mine" : "Make mine",
                       systemImage: isMine ? "xmark.circle" : "checkmark.circle")
@@ -160,8 +164,18 @@ struct PlatformEditor: View {
                 Label("Remove \(PlatformShort.name(platform))", systemImage: "trash")
             }
         }
-        .accessibilityHint("Press and hold for options")
+        .accessibilityHint("Marks whether the game is yours here. Press and hold to remove it.")
         .accessibilityValue(isMine ? "Mine" : "Not marked as yours")
+    }
+
+    private func toggleMine(_ platform: String) {
+        var next = ownedNames
+        if let index = next.firstIndex(of: platform) {
+            next.remove(at: index)
+        } else {
+            next.append(platform)
+        }
+        withAnimation(.snappy(duration: 0.28)) { owned = next }
     }
 
     @ViewBuilder

@@ -2715,13 +2715,27 @@ struct Repository {
     /// so nothing that cached a reference to it is invalidated by the fold.
     private func ordered<T: PersistentModel>(_ type: T.Type,
                                              _ createdAt: (T) -> Date,
-                                             _ id: (T) -> UUID) -> [T] {
-        ((try? context.fetch(FetchDescriptor<T>())) ?? [])
-            .sorted { (createdAt($0), id($0).uuidString) < (createdAt($1), id($1).uuidString) }
+                                             _ id: (T) -> UUID,
+                                             tieBreak: ((T) -> String)? = nil) -> [T] {
+        func key(_ row: T) -> String { tieBreak.map { $0(row) } ?? id(row).uuidString }
+        return ((try? context.fetch(FetchDescriptor<T>())) ?? [])
+            .sorted { (createdAt($0), key($0)) < (createdAt($1), key($1)) }
     }
 
     private func foldThemeSettings(at date: Date) -> Int {
-        let rows = ordered(ThemeSettings.self, { $0.createdAt }, { _ in UUID() })
+        // **A tie-break has to be a fact about the row, not a fresh UUID.**
+        //
+        // Both singleton folds passed `{ _ in UUID() }`, so two rows created in
+        // the same instant were ordered at random *inside the comparator* —
+        // a different winner on every run. `ThemeSettings` has no synced id of
+        // its own, so this uses what it does have and falls back to the local
+        // identifier: deterministic per device, which is what stops the winner
+        // moving under us. Two rows tying on BOTH dates could still be folded
+        // differently on two devices; closing that needs a synced id, and a
+        // synced id on this model is a CloudKit schema deploy.
+        let rows = ordered(ThemeSettings.self, { $0.createdAt },
+                           { _ in UUID() },
+                           tieBreak: { "\($0.updatedAt.timeIntervalSince1970)-\($0.persistentModelID)" })
         guard rows.count > 1, let winner = rows.first else { return 0 }
         for loser in rows.dropFirst() {
             let loserIsNewer = loser.updatedAt > winner.updatedAt
@@ -2757,7 +2771,10 @@ struct Repository {
     }
 
     private func foldProfiles(at date: Date) -> Int {
-        let rows = ordered(PlayerProfile.self, { $0.createdAt }, { _ in UUID() })
+        // `PlayerProfile` HAS a synced id, so its tie-break is the same on
+        // every device — two devices folding the same duplicate pair keep the
+        // same row, rather than each deleting the other's winner.
+        let rows = ordered(PlayerProfile.self, { $0.createdAt }, { $0.id })
         guard rows.count > 1, let winner = rows.first else { return 0 }
         for loser in rows.dropFirst() {
             // **Fill blanks. Never overwrite. Identity is not a setting.**
@@ -2785,6 +2802,19 @@ struct Repository {
                 if winner[keyPath: path] == nil { winner[keyPath: path] = value }
             }
             take(\.displayName); take(\.avatarData); take(\.handlesData)
+            // The other two authored fields, which the first pass missed.
+            // Codex found them on 2026-09-07: a newer row that linked its name
+            // to a handle and picked a name color lost both, because the fold
+            // copied three of the five fields and then deleted the row.
+            take(\.nameColorRaw)
+            // Non-optional, so there is no blank to fill and no way to tell
+            // "off" from "never set". The newer row wins, for the same reason
+            // `foldThemeSettings` lets it win: a toggle is visible the moment
+            // you look at Home and costs one tap to put back, which is the
+            // test the name and the avatar failed.
+            if loser.updatedAt > winner.updatedAt {
+                winner.useHandleAsName = loser.useHandleAsName
+            }
             context.delete(loser)
         }
         winner.updatedAt = date

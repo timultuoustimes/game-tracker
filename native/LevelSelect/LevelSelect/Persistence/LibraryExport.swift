@@ -476,7 +476,15 @@ enum LibraryExport {
         // row this file's comment excludes — this is the name, the handles and
         // the avatar, and the avatar is the one thing here that cannot be
         // retyped from memory. Added in v3.
-        if let profile = try? context.fetch(FetchDescriptor<PlayerProfile>()).first {
+        // **Sorted, because `.first` of an unsorted fetch is not a choice.**
+        //
+        // Before foreground reconciliation folds them, two profile rows can
+        // both be present, and an unsorted fetch could put either one in the
+        // backup — so the file that exists to rescue an identity could capture
+        // the wrong one. Same order the fold itself uses.
+        let profiles = ((try? context.fetch(FetchDescriptor<PlayerProfile>())) ?? [])
+            .sorted { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) }
+        if let profile = profiles.first {
             root["profile"] = ([
                 "id": profile.id.uuidString,
                 "createdAt": iso(profile.createdAt),
