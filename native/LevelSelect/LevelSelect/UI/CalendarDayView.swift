@@ -91,9 +91,8 @@ struct CalendarDayView: View {
                 .font(.caption.bold())
                 .foregroundStyle(.tertiary)
         }
-        .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LSTheme.cardFill, in: .rect(cornerRadius: 12))
+        .lsCard()
         .accessibilityElement(children: .combine)
     }
 

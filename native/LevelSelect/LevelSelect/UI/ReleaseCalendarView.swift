@@ -150,8 +150,7 @@ struct ReleaseCalendarView: View {
                     .foregroundStyle(LSTheme.accent)
             }
         }
-        .padding(10)
-        .background(LSTheme.cardFill, in: .rect(cornerRadius: 12))
+        .lsCard()
         .contentShape(.rect)
     }
 }

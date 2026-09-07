@@ -280,7 +280,10 @@ struct ShufflerMedium: View {
         let status = ShuffleStatusOption.allCases
             .first { $0.statusRaw == pick.statusRaw }
             .map { ShuffleStatusOption.caseDisplayRepresentations[$0]?.title ?? "" }
-        let statusText = pick.statusRaw == "completed" ? "Finished — replay it"
+        // "Completed", not "Finished": this names the STATUS, and Completed
+        // is what the app calls it everywhere else. Beaten is the event — the
+        // times you finished a game — and the two are not interchangeable.
+        let statusText = pick.statusRaw == "completed" ? "Completed — replay it"
             : status.map(String.init(localized:)) ?? pick.statusRaw.capitalized
         return "\(statusText) · \(pick.platform)"
     }

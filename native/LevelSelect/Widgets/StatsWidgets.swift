@@ -103,7 +103,11 @@ struct FinishedShareView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-            Text("Finished")
+            // "Beaten" — the app's own word for this exact figure. StatsView
+            // labels the same percentage that way, and a widget that renames
+            // it makes the Home Screen and the Stats page look like two
+            // products reporting different numbers. Codex P1.
+            Text("Beaten")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.primary)
         }
@@ -118,8 +122,11 @@ struct FinishedShareWidget: Widget {
             FinishedShareView(snapshot: entry.snapshot)
                 .lsWidgetSurface()
         }
-        .configurationDisplayName("Finished Share")
-        .description("How much of the whole library you've finished.")
+        // The widget `kind` stays "FinishedShare" — that string identifies
+        // widgets people have already placed, and changing it would strand
+        // them. Only the words anybody reads move.
+        .configurationDisplayName("Beaten Share")
+        .description("How much of the whole library you've beaten.")
         .supportedFamilies([.systemSmall])
     }
 }

@@ -112,8 +112,7 @@ struct CSVImportView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(LSTheme.cardFill, in: .rect(cornerRadius: 14))
+                .lsCard()
                 .padding(.horizontal)
 
                 if let importError {

@@ -60,18 +60,35 @@ struct AppearanceSettingsSection: View {
         // beside them — and the theming half is the part the notebook
         // direction expects to keep growing, so it needs room of its own.
         // Split per the 2026-08-28 settings audit.
-        switch scope {
-        case .theme:
-            theme
-                .onDisappear { flushThemeCommit() }
-        case .statuses:
-            statuses
-                .onDisappear { flushThemeCommit() }
-        case .gamePages:
-            gamePages
-        case .trackers:
-            trackers
+        Group {
+            switch scope {
+            case .theme:
+                theme
+                    .onDisappear { flushThemeCommit() }
+            case .statuses:
+                statuses
+                    .onDisappear { flushThemeCommit() }
+            case .gamePages:
+                gamePages
+            case .trackers:
+                trackers
+            }
         }
+        // **Rebuilt when the theme changes, because `.tint` is baked.**
+        //
+        // Fable 2.3: change the accent in Colors, tap Done, and the two menu
+        // pickers on this page kept the OLD one — orange while everything
+        // else had gone purple — until Settings was closed and reopened.
+        // `LSTheme.accent` is a static, not observed state, so a `.tint` on a
+        // Picker is fixed at the moment the row is constructed; the toggles
+        // looked right only because they resolve their tint later.
+        //
+        // The tab tree is re-keyed on `themeRevision` when Settings CLOSES
+        // (see RootView), which is exactly too late for a sheet that is still
+        // open. Keying on the record's own `updatedAt` rebuilds these rows the
+        // moment the color editor writes, and costs nothing the rest of the
+        // time — the value only moves when a theme setting actually changes.
+        .id(themeSettings.first?.updatedAt)
     }
 
     private var theme: some View {

@@ -40,6 +40,7 @@ struct CoverCard: View {
 /// A titled horizontal carousel of covers, with count + "See all".
 struct StatusCarousel: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let status: GameStatus
     let games: [Game]
     var collapsed = false
@@ -94,11 +95,19 @@ struct StatusCarousel: View {
                         }
                         .gameContextMenu(game)
                         // Covers breathe + tilt like a shelf as they scroll.
+                        // The shelf breathes and tilts as it scrolls — the
+                        // last high-motion effect in the app that ignored
+                        // Reduce Motion (Codex K6). Scale and a 3D rotation
+                        // are spatial; the fade is not, so the setting drops
+                        // the movement and keeps the depth cue rather than
+                        // flattening the shelf for everyone.
                         .scrollTransition(axis: .horizontal) { content, phase in
                             content
-                                .scaleEffect(phase.isIdentity ? 1 : 0.86)
+                                .scaleEffect(reduceMotion ? 1 : (phase.isIdentity ? 1 : 0.86))
                                 .opacity(phase.isIdentity ? 1 : 0.6)
-                                .rotation3DEffect(.degrees(phase.value * -12), axis: (x: 0, y: 1, z: 0))
+                                .rotation3DEffect(
+                                    .degrees(reduceMotion ? 0 : phase.value * -12),
+                                    axis: (x: 0, y: 1, z: 0))
                         }
                     }
                 }
@@ -359,6 +368,7 @@ struct ContinueHeroCard: View {
 /// record is Library's Finished section.
 struct RecentlyBeatenShelf: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let games: [Game]
     var onOpen: (Game) -> Void
 
@@ -386,11 +396,19 @@ struct RecentlyBeatenShelf: View {
                             CoverCard(game: game)
                         }
                         .gameContextMenu(game)
+                        // The shelf breathes and tilts as it scrolls — the
+                        // last high-motion effect in the app that ignored
+                        // Reduce Motion (Codex K6). Scale and a 3D rotation
+                        // are spatial; the fade is not, so the setting drops
+                        // the movement and keeps the depth cue rather than
+                        // flattening the shelf for everyone.
                         .scrollTransition(axis: .horizontal) { content, phase in
                             content
-                                .scaleEffect(phase.isIdentity ? 1 : 0.86)
+                                .scaleEffect(reduceMotion ? 1 : (phase.isIdentity ? 1 : 0.86))
                                 .opacity(phase.isIdentity ? 1 : 0.6)
-                                .rotation3DEffect(.degrees(phase.value * -12), axis: (x: 0, y: 1, z: 0))
+                                .rotation3DEffect(
+                                    .degrees(reduceMotion ? 0 : phase.value * -12),
+                                    axis: (x: 0, y: 1, z: 0))
                         }
                     }
                 }

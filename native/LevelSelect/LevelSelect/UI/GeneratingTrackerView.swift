@@ -110,8 +110,7 @@ struct GeneratingTrackerView: View {
                         .buttonStyle(.borderless)
                 }
             }
-            .padding(14)
-            .background(LSTheme.cardFill, in: .rect(cornerRadius: 14))
+            .lsCard()
             .accessibilityElement(children: .combine)
         }
     }
