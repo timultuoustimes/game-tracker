@@ -227,6 +227,30 @@ struct LibraryTab: View {
         }
     }
 
+    /// Genres and themes, which IGDB has been supplying all along.
+    ///
+    /// Both come from `visible`, so they exclude wishlist games and follow the
+    /// filter above them — the same rule `platformGroups` uses, and the one
+    /// the systems MENU got wrong until 2026-09-06 by reading the raw list.
+    ///
+    /// Only when there is more than one value: a row headed "Genres (1)" is a
+    /// row that answers nothing.
+    @ViewBuilder
+    private var genreShelf: some View {
+        let groups = GameFacet.groups(of: .genre, in: visible)
+        if groups.count > 1 {
+            FacetShelf(title: "Genres", kind: .genre, groups: groups) { path.append($0) }
+        }
+    }
+
+    @ViewBuilder
+    private var themeShelf: some View {
+        let groups = GameFacet.groups(of: .theme, in: visible)
+        if groups.count > 1 {
+            FacetShelf(title: "Themes", kind: .theme, groups: groups) { path.append($0) }
+        }
+    }
+
     /// Same grouping Home used: by the game's most-preferred owned platform,
     /// largest groups first. Counts follow the CURRENT filters, unlike Home's
     /// which always counted the whole library — here the shelf sits inside a
@@ -271,6 +295,8 @@ struct LibraryTab: View {
             LazyVStack(alignment: .leading, spacing: 18) {
                 systemsShelf
                 collectionShelf
+                genreShelf
+                themeShelf
                 if let groups = sectionGroups {
                     ForEach(groups.indices, id: \.self) { i in
                         sectionHeader(title: groups[i].title, status: groups[i].status,
@@ -301,6 +327,8 @@ struct LibraryTab: View {
             LazyVStack(alignment: .leading, spacing: 22) {
                 systemsShelf
                 collectionShelf
+                genreShelf
+                themeShelf
                 ForEach(shelfGroups.indices, id: \.self) { i in
                     let group = shelfGroups[i]
                     VStack(alignment: .leading, spacing: 10) {

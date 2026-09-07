@@ -46,6 +46,33 @@ struct GameFacet: Hashable, Codable, Sendable {
     let kind: Kind
     let value: String
 
+    /// What to call this slice on screen.
+    ///
+    /// IGDB writes a few genres as "Name (ABBR)" — "Role-playing (RPG)",
+    /// "Real Time Strategy (RTS)", "Turn-based strategy (TBS)". In every one
+    /// of those the abbreviation IS the common name, so the parenthetical is
+    /// the useful half and the prose is the redundant one. Three of the
+    /// twenty-one genres in a real 183-game library are of this shape; the
+    /// rest are already plain words and pass through untouched.
+    ///
+    /// Display only. `value` stays exactly what IGDB sent, because it is what
+    /// `matches(_:)` compares against and what a game record actually stores —
+    /// the same split `PlatformShort` keeps between a stored platform string
+    /// and the name shown for it.
+    var displayName: String {
+        guard value.hasSuffix(")"),
+              let open = value.lastIndex(of: "("),
+              open > value.startIndex
+        else { return value }
+        let abbreviation = value[value.index(after: open)..<value.index(before: value.endIndex)]
+        // Only when it reads as an abbreviation. "Card & Board Game (and
+        // similar)" should keep its full name rather than become "and similar".
+        guard abbreviation.count <= 5,
+              abbreviation.allSatisfy({ $0.isUppercase || $0.isNumber })
+        else { return value }
+        return String(abbreviation)
+    }
+
     /// Whether a game belongs in this slice.
     ///
     /// Matching is exact rather than fuzzy: these values come from IGDB and

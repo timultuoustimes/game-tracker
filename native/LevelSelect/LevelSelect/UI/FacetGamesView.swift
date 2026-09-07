@@ -25,7 +25,7 @@ struct FacetGamesView: View {
                 ContentUnavailableView {
                     Label("Nothing here", systemImage: facet.kind.systemImage)
                 } description: {
-                    Text("No games in your library match \(facet.value).")
+                    Text("No games in your library match \(facet.displayName).")
                 }
                 .padding(.top, 60)
             } else {
@@ -52,7 +52,7 @@ struct FacetGamesView: View {
         }
         .scrollIndicators(.hidden)
         .lsBackground()
-        .navigationTitle(facet.value)
+        .navigationTitle(facet.displayName)
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
