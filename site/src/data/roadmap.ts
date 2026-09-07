@@ -12,7 +12,7 @@ export const reviewed = '7 September 2026';
 
 export const shipped = [
   { t: 'Your words for your library', build: 37,
-    d: 'Call a console whatever you call it — Mega Drive or Genesis, Super Famicom or SNES — and it changes every shelf, chip and widget that names it. Rename statuses and stars too.' },
+    d: 'Call a console whatever you call it — Mega Drive or Genesis, Super Nintendo or SNES — and it changes every shelf, chip and widget that names it. Rename statuses and stars too.' },
   { t: 'Nine ways a game can be yours', build: 37,
     d: 'Physical, digital, emulated and former; subscription, rented, borrowed, shared, and played standing up in an arcade. Choose which your library uses and what order they sit in.' },
   { t: 'One place to choose a color', build: 37,
