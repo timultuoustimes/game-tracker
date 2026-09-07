@@ -346,10 +346,20 @@ enum DemoLibrarySeeder {
 
     /// Remove everything this seeder created. Cascade deletes take the
     /// playthroughs, sessions, runs, and tracker rows with the games.
+    ///
+    /// **It says what it left behind**, because "Empty demo library" reads
+    /// like it empties the library and it does not — it removes what the
+    /// SEEDER made, and a game you added by hand while in demo mode has no
+    /// marker and stays. Tim hit exactly that: he emptied the demo library,
+    /// saw "All (0)", and four hand-added wishlist games were still there
+    /// putting Switch 2 and Mac in the systems menu. Nothing was wrong with
+    /// the deletion; the report just stopped short of the fact that explained
+    /// what he was looking at.
     @discardableResult
     static func purge(context: ModelContext) -> String {
         var removed = 0
-        for game in ((try? context.fetch(FetchDescriptor<Game>())) ?? []) where game.legacyID == marker {
+        let games = (try? context.fetch(FetchDescriptor<Game>())) ?? []
+        for game in games where game.legacyID == marker {
             context.delete(game)
             removed += 1
         }
@@ -358,7 +368,22 @@ enum DemoLibrarySeeder {
             context.delete(collection)
         }
         PersistenceMonitor.shared.commit(context)
-        return "Removed \(removed) demo game(s) and their history."
+        return message(removed: removed, kept: kept(among: games))
+    }
+
+    /// Live games in this store that the seeder did not create.
+    static func kept(among games: [Game]) -> Int {
+        games.filter { $0.deletedAt == nil && $0.legacyID != marker }.count
+    }
+
+    /// Separated from `purge` so the sentence can be checked without a store.
+    static func message(removed: Int, kept: Int) -> String {
+        let first = "Removed \(removed) demo game(s) and their history."
+        guard kept > 0 else { return first }
+        // Named as the user's own, because they are — this is the one line
+        // standing between "the button is broken" and "oh, I added those".
+        return first + " \(kept) game(s) you added yourself are still here; "
+            + "the seeder only removes what it made."
     }
 }
 #endif

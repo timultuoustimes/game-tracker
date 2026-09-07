@@ -639,8 +639,26 @@ struct LibraryTab: View {
     /// of Crypt of the NecroDancer — systems Tim has never owned a game on,
     /// sitting in a list titled "your systems". The shelf beside it always
     /// counted the owned platform only, so the two disagreed.
+    ///
+    /// **Wishlist games are not in this list**, because they are not in this
+    /// tab. Every other number here already knows that — `All (n)`, the status
+    /// counts, the ownership chips and the systems shelf all run through
+    /// `matches`, which drops wishlist first — but this one read `games` raw,
+    /// so a wanted game put its system in a menu that could never show it.
+    /// Picking that system gave you an empty library.
+    ///
+    /// Tim found it on a device still syncing down, where it was unmissable:
+    /// "All (0)" with Switch 2 and Mac listed underneath. It was never only
+    /// an empty-library bug though — his fourteen wishlist games carry
+    /// `ownedPlatforms` (the system he plans to buy it on), so they have been
+    /// quietly adding entries to a full library's menu too.
+    ///
+    /// Filtered on `games` rather than on `visible`: this is the list of
+    /// systems you own something on, not the list surviving the current
+    /// filter. Building it from `visible` would collapse the menu to whatever
+    /// is already selected — a filter you cannot get back out of.
     private var allPlatforms: [(short: String, icon: String)] {
-        PlatformShort.systems(in: games.map(\.ownedPlatformNames))
+        PlatformShort.librarySystems(in: games)
     }
 
     private var anyFilterActive: Bool {
@@ -842,6 +860,31 @@ enum PlatformShort {
     ///
     /// `icon` is the highest-ranked variant behind the name, so each row keeps
     /// the art it had.
+    /// The systems the Library's own filter menu should offer.
+    ///
+    /// **Wishlist games are excluded**, because they are not in this tab.
+    /// Every other number in Library already knows that — `All (n)`, the
+    /// status counts, the ownership chips and the systems shelf all run
+    /// through the view's `matches`, which drops wishlist first — but the
+    /// menu read the raw list, so a wanted game put its system in a menu that
+    /// could never show it. Picking that system gave you an empty library.
+    ///
+    /// Tim found it on a device still syncing down, where it was unmissable:
+    /// "All (0)" with Switch 2 and Mac listed underneath. It was never only
+    /// an empty-library bug though — his fourteen wishlist games each carry
+    /// `ownedPlatforms` (the system he plans to buy it on), so they have been
+    /// quietly adding rows to a full library's menu too.
+    ///
+    /// A static taking games rather than a computed var on the view, so the
+    /// rule is the part that can be wrong and can be checked without a
+    /// running app — the same reason `OverlappingTimerGuard.crossGameSessions`
+    /// is one.
+    static func librarySystems(in games: [Game]) -> [(short: String, icon: String)] {
+        systems(in: games
+            .filter { $0.status != .wishlist }
+            .map(\.ownedPlatformNames))
+    }
+
     static func systems(in lists: [[String]]) -> [(short: String, icon: String)] {
         var byShort: [String: String] = [:]
         for list in lists {

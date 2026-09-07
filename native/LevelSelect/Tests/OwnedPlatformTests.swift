@@ -165,3 +165,102 @@ struct OwnedPlatformTests {
         #expect(!PlatformShort.matches(["Mac"], short: "PC"))
     }
 }
+
+/// The Library's system menu offers the systems you own something ON.
+///
+/// It read every game, including wishlist ones — which the Library excludes
+/// from everything else it counts. Tim caught it on a device mid-sync, where
+/// the menu said "All (0)" and then listed Switch 2 and Mac; his real library
+/// has fourteen wishlist games each carrying an `ownedPlatforms` entry for the
+/// system he plans to buy it on, so the rows were there all along.
+///
+/// The shape is adversarial on purpose: the wishlist game's system is one no
+/// owned game has, because a test where both sides share a system passes
+/// against the broken code.
+@MainActor
+struct LibrarySystemsMenuTests {
+
+    private func makeContext() -> ModelContext {
+        ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+    }
+
+    @discardableResult
+    private func game(_ context: ModelContext, _ name: String,
+                      status: GameStatus, owned: [String]) -> Game {
+        let game = Game(name: name)
+        game.status = status
+        game.platforms = owned
+        game.ownedPlatforms = owned
+        context.insert(game)
+        return game
+    }
+
+    @Test func aWantedGamesSystemIsNotOfferedAsAFilter() {
+        let context = makeContext()
+        game(context, "Hades", status: .playing, owned: ["Nintendo Switch"])
+        game(context, "The Duskbloods", status: .wishlist, owned: ["Nintendo Switch 2"])
+
+        let shorts = PlatformShort.librarySystems(in: allGames(context)).map(\.short)
+        #expect(shorts == ["Switch"])
+    }
+
+    /// The empty-library case Tim actually saw. Nothing owned means no systems
+    /// — a menu of filters that all return nothing is worse than no menu.
+    @Test func aLibraryOfOnlyWantedGamesOffersNoSystems() {
+        let context = makeContext()
+        game(context, "Orbitals", status: .wishlist, owned: ["Nintendo Switch 2"])
+        game(context, "Blood Dungeon", status: .wishlist, owned: ["Mac"])
+
+        #expect(PlatformShort.librarySystems(in: allGames(context)).isEmpty)
+    }
+
+    /// A system you own something on stays, even when a wishlist game shares
+    /// it — the wishlist game is ignored, not the system.
+    @Test func aSharedSystemSurvivesOnTheOwnedGamesAccount() {
+        let context = makeContext()
+        game(context, "Metroid Prime 4", status: .backlog, owned: ["Nintendo Switch 2"])
+        game(context, "The Duskbloods", status: .wishlist, owned: ["Nintendo Switch 2"])
+
+        let shorts = PlatformShort.librarySystems(in: allGames(context)).map(\.short)
+        #expect(shorts == ["Switch 2"])
+    }
+
+    /// Every other status counts. Only wishlist is "not in this tab".
+    @Test func everyOwnedStatusContributesItsSystem() {
+        let context = makeContext()
+        game(context, "A", status: .completed, owned: ["Mac"])
+        game(context, "B", status: .abandoned, owned: ["PlayStation 5"])
+        game(context, "C", status: .shelved, owned: ["Nintendo Switch"])
+
+        let shorts = Set(PlatformShort.librarySystems(in: allGames(context)).map(\.short))
+        #expect(shorts == ["Mac", "PS5", "Switch"])
+    }
+
+    private func allGames(_ context: ModelContext) -> [Game] {
+        (try? context.fetch(FetchDescriptor<Game>())) ?? []
+    }
+}
+
+#if DEV_TOOLS
+/// "Empty demo library" removes what the SEEDER made, not everything in the
+/// demo store — a game added by hand while in demo mode has no marker and
+/// survives. That is correct and it is also surprising, which is why the
+/// result now says so.
+@MainActor
+struct DemoPurgeMessageTests {
+
+    @Test func aCleanPurgeSaysOnlyWhatItRemoved() {
+        #expect(DemoLibrarySeeder.message(removed: 14, kept: 0)
+                == "Removed 14 demo game(s) and their history.")
+    }
+
+    /// Tim's case: he emptied the demo library, Library said "All (0)", and
+    /// four hand-added wishlist games were still there. The count is the whole
+    /// difference between "the button is broken" and "oh, I added those".
+    @Test func survivorsAreNamedSoTheEmptyLibraryMakesSense() {
+        let message = DemoLibrarySeeder.message(removed: 14, kept: 4)
+        #expect(message.hasPrefix("Removed 14 demo game(s) and their history."))
+        #expect(message.contains("4 game(s) you added yourself are still here"))
+    }
+}
+#endif
