@@ -100,7 +100,8 @@ enum CollectionSeeding {
     }
 
     static func played(_ game: Game, now: Date = .now) -> TimeInterval {
-        sessions(game).reduce(0) { $0 + $1.elapsed(asOf: now) }
+        game.livePlaythroughs.reduce(0) { $0 + $1.carriedOverSeconds }
+            + sessions(game).reduce(0) { $0 + $1.elapsed(asOf: now) }
     }
 
     private static func releaseYear(_ game: Game) -> Int {

@@ -48,6 +48,10 @@ struct PlayerSummary {
 
             var latestThisWeek: Date?
             for playthrough in game.livePlaythroughs {
+                // The lifetime total, and deliberately NOT this week's: time
+                // carried over from Steam or a console profile is time you
+                // played, and it is not time you played in the last seven days.
+                summary.totalSeconds += playthrough.carriedOverSeconds
                 for session in (playthrough.sessions ?? []) where session.deletedAt == nil {
                     let seconds = session.elapsed(asOf: now)
                     summary.totalSeconds += seconds

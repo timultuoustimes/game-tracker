@@ -212,6 +212,9 @@ enum CloudKitSchemaSeeder {
         pt.progressPercent = 50
         pt.outcomeRaw = PlaythroughOutcome.shelved.rawValue
         pt.outcomeNote = marker
+        // build 37 — a number, so the marker cannot stand in for it. Any
+        // non-zero value types the CloudKit field; the purge sets it back.
+        pt.carriedOverSeconds = 1
         pt.startedAt = now
         pt.lastPlayedAt = now
         context.insert(pt)

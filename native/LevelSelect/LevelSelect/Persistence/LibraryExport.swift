@@ -252,6 +252,11 @@ enum LibraryExport {
                 p["lastPlayedAt"] = pt.lastPlayedAt.map(iso)
                 p["outcome"] = pt.outcomeRaw
                 p["outcomeNote"] = pt.outcomeNote
+                // Zero is every library that never set one, so it is omitted
+                // rather than written into every playthrough in the file.
+                if pt.carriedOverSeconds > 0 {
+                    p["carriedOverSeconds"] = pt.carriedOverSeconds
+                }
                 playthroughObjects.append(p)
             }
             dict["playthroughs"] = playthroughObjects

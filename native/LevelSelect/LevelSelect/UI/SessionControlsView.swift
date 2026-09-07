@@ -8,6 +8,7 @@ struct SessionControlsView: View {
     let game: Game
     @Environment(\.modelContext) private var context
     @State private var showingLog = false
+    @State private var showingCarriedOver = false
     @State private var editing: Session?
 
     /// Store-driven, not relationship-driven. The two-device test caught the
@@ -97,6 +98,12 @@ struct SessionControlsView: View {
         .sheet(item: $editing) { session in
             EditSessionSheet(session: session).lsSheet()
         }
+        .sheet(isPresented: $showingCarriedOver) {
+            CarriedOverSheet(seconds: playthrough?.carriedOverSeconds ?? 0) { seconds in
+                repo.setCarriedOver(seconds, on: repo.ensureDefaultPlaythrough(for: game))
+            }
+            .lsSheet()
+        }
     }
 
     // MARK: Sections
@@ -106,7 +113,11 @@ struct SessionControlsView: View {
             HStack {
                 // Summed from the query results, so a synced session bumps
                 // the total the moment it lands — same reason as the list.
-                let total = sessions.reduce(0) { $0 + $1.elapsed() }
+                // Carried-over time is part of what you have played and part
+                // of no session, so it is added to the number rather than
+                // shown beside it as a footnote.
+                let total = (playthrough?.carriedOverSeconds ?? 0)
+                    + sessions.reduce(0) { $0 + $1.elapsed() }
                 Text(game.livePlaythroughs.count > 1 ? "This playthrough" : "Time played")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -115,6 +126,29 @@ struct SessionControlsView: View {
                     .font(.subheadline.monospacedDigit().weight(.semibold))
                     .foregroundStyle(LSTheme.accent)
             }
+            // Said out loud as the part of the total it is: a number with no
+            // session behind it would otherwise be indistinguishable from a
+            // play history that had lost its sessions. It lives here rather
+            // than beside Start and Log because it edits this number, and
+            // because the everyday control should not grow a menu.
+            if !isRecordOnly {
+                let carried = playthrough?.carriedOverSeconds ?? 0
+                Button { showingCarriedOver = true } label: {
+                    HStack {
+                        Text(carried > 0 ? "Before tracking" : "Add time played before tracking")
+                            .font(.caption)
+                        Spacer()
+                        if carried > 0 {
+                            Text(Format.duration(carried))
+                                .font(.caption.monospacedDigit())
+                        }
+                    }
+                    .foregroundStyle(.tertiary)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .lsTapTargetTall(6)
+            }
             if game.livePlaythroughs.count > 1 {
                 HStack {
                     Text("All playthroughs")
@@ -122,7 +156,8 @@ struct SessionControlsView: View {
                         .foregroundStyle(.tertiary)
                     Spacer()
                     // The query is already scoped to live playthroughs.
-                    let all = liveSessions.reduce(0) { $0 + $1.elapsed() }
+                    let all = game.livePlaythroughs.reduce(0) { $0 + $1.carriedOverSeconds }
+                        + liveSessions.reduce(0) { $0 + $1.elapsed() }
                     Text(Format.duration(all))
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.tertiary)
@@ -292,6 +327,57 @@ struct LogSessionSheet: View {
                     }
                     .disabled(hours == 0 && minutes == 0)
                 }
+            }
+        }
+    }
+}
+
+/// Time played before the app was tracking it.
+///
+/// A duration and nothing else — no date, because there isn't one, and that
+/// absence is the whole point. Steam says 42 hours and cannot say when; the
+/// only way to keep that number until now was one enormous manual session
+/// dated the day you typed it, which files a play in the Journal on a day
+/// nothing happened. Tim: *"being able to put that in, and then add your
+/// sessions after that to the number as you continue to play."*
+struct CarriedOverSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let seconds: TimeInterval
+    var onSave: (TimeInterval) -> Void
+
+    @State private var hours = 0
+    @State private var minutes = 0
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Stepper("\(hours) h", value: $hours, in: 0...9_999)
+                    Stepper("\(minutes) m", value: $minutes, in: 0...59, step: 5)
+                } header: {
+                    Text("Time played before tracking")
+                } footer: {
+                    Text("The number your console or storefront already knows — Steam's hours, a Switch profile's. It adds to this game's total and stays out of your session history, because it never happened on any one day. Set it to zero to remove it.")
+                }
+            }
+            .navigationTitle("Starting total")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(TimeInterval(hours * 3600 + minutes * 60))
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                hours = Int(seconds) / 3600
+                minutes = (Int(seconds) % 3600) / 60
             }
         }
     }

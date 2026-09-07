@@ -29,6 +29,25 @@ final class Playthrough {
     var outcomeNote: String?
     var lastPlayedAt: Date?
 
+    /// Time played before this app was tracking it. **Build 37.**
+    ///
+    /// Steam says 42 hours; a Switch profile says 9. That number is real and
+    /// there is no session history behind it, so the only honest way to keep
+    /// it was one enormous manual session dated the day you typed it — which
+    /// is what the CSV importer does today, and what its own comment calls
+    /// "without inventing a fake play history". It still lands in the Journal
+    /// as a play that never happened on that day.
+    ///
+    /// So this is a number, not an event: it adds to every total and appears
+    /// in no history. Tim: *"being able to put that in, and then add your
+    /// sessions after that to the number as you continue to play."*
+    ///
+    /// Non-optional with a zero default, like `accumulatedDuration` — an
+    /// additive field a CloudKit record simply does not carry yet reads as
+    /// zero, which is the right answer for every library that has never set
+    /// it.
+    var carriedOverSeconds: TimeInterval = 0
+
     var game: Game?
 
     /// Beaten and no longer the run you're actively working: true when a

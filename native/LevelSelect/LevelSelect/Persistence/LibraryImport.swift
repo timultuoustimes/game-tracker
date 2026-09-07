@@ -648,6 +648,9 @@ enum LibraryImport {
         pt.lastPlayedAt = date(d["lastPlayedAt"])
         pt.outcomeRaw = d["outcome"] as? String
         pt.outcomeNote = d["outcomeNote"] as? String
+        // Absent in every file written before build 37, which is exactly the
+        // zero this defaults to.
+        pt.carriedOverSeconds = (d["carriedOverSeconds"] as? Double) ?? 0
         return pt
     }
 

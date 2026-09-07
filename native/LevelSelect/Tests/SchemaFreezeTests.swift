@@ -189,7 +189,18 @@ struct SchemaFreezeTests {
             // nameColorRaw + useHandleAsName promoted to Production 2026-08-30,
             // in one deploy with ThemeSettings.savedSwatchesData.
             "PlayerProfile: avatarData,createdAt,displayName,handlesData,id,nameColorRaw,updatedAt,useHandleAsName",
-            "Playthrough: completionEvents,createdAt,deletedAt,game,id,lastPlayedAt,legacyID,name,notes,outcomeNote,outcomeRaw,progressPercent,revision,runs,sessions,startedAt,trackerStates,updatedAt,userID",
+            // carriedOverSeconds added 2026-09-07 build 37: time played
+            // before this app was tracking it — Steam's hours, a console
+            // profile's. A number rather than a session, because the
+            // alternative is one enormous manual session dated the day you
+            // typed it, which files a play in the Journal on a day nothing
+            // happened. Double, non-optional, defaults to 0, so a record that
+            // predates it reads as zero.
+            //
+            // ⚠️ NOT YET PROMOTED TO PRODUCTION. Seed on a Development build,
+            // verify CD_carriedOverSeconds appears as DOUBLE in the Console
+            // diff, deploy, then purge.
+            "Playthrough: carriedOverSeconds,completionEvents,createdAt,deletedAt,game,id,lastPlayedAt,legacyID,name,notes,outcomeNote,outcomeRaw,progressPercent,revision,runs,sessions,startedAt,trackerStates,updatedAt,userID",
             "Profile: appleUserIdentifier,createdAt,displayName,email,id,updatedAt",
             "Run: createdAt,deletedAt,endedAt,fieldsJSON,id,legacyID,notes,outcome,playedWithData,playthrough,revision,startedAt,templateID,updatedAt,userID",
             "Session: accumulatedDuration,createdAt,deletedAt,endDate,id,isManual,legacyID,notes,originDevice,pausedAt,playedWithData,playthrough,resumedAt,revision,startDate,state,updatedAt,userID",

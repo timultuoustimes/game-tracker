@@ -1070,6 +1070,19 @@ struct Repository {
 
     /// Hand-logged session (already-known duration, no live timer).
     @discardableResult
+    /// Time played before this app was tracking it.
+    ///
+    /// Deliberately not a session: it has no date, appears in no history, and
+    /// adds to every total through `totalPlaytime`. The alternative — one
+    /// enormous manual session dated the day you typed it — is what the CSV
+    /// importer has to do, and it puts a play in the Journal on a day nothing
+    /// happened.
+    func setCarriedOver(_ seconds: TimeInterval, on pt: Playthrough) {
+        pt.carriedOverSeconds = max(0, seconds)
+        touch(pt)
+        persist()
+    }
+
     func logManualSession(
         on pt: Playthrough,
         duration: TimeInterval,
@@ -3362,7 +3375,10 @@ extension Playthrough {
 
     func totalPlaytime(asOf now: Date = .now) -> TimeInterval {
         guard isLive else { return 0 }
-        return (sessions ?? [])
+        // Carried-over time is part of the total and part of no session, so it
+        // is added here — the one place nearly every playtime reading in the
+        // app already goes through.
+        return carriedOverSeconds + (sessions ?? [])
             .filter { $0.deletedAt == nil }
             .reduce(0) { $0 + $1.elapsed(asOf: now) }
     }

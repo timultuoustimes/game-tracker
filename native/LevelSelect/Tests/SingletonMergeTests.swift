@@ -200,3 +200,114 @@ struct SingletonMergeTests {
         #expect(themes(repo).count == 1)
     }
 }
+
+/// **Time played before the app was tracking it.**
+///
+/// A number, not an event: it adds to every total and appears in no history.
+/// The alternative the CSV importer has to use — one enormous manual session
+/// dated today — puts a play in the Journal on a day nothing happened.
+@MainActor
+struct Build37CarriedOverTests {
+
+    private func store() -> Repository {
+        Repository(ModelContext(LevelSelectStore.makeContainer(inMemory: true)))
+    }
+
+    @Test func itDefaultsToZeroSoEveryExistingLibraryIsUnchanged() {
+        let repo = store()
+        let pt = repo.ensureDefaultPlaythrough(for: repo.addGame(name: "Hades", status: .playing))
+        #expect(pt.carriedOverSeconds == 0)
+        #expect(pt.totalPlaytime() == 0)
+    }
+
+    @Test func itAddsToTheTotalWithoutCreatingASession() {
+        let repo = store()
+        let game = repo.addGame(name: "Hollow Knight", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        repo.setCarriedOver(42 * 3600, on: pt)
+
+        #expect(pt.totalPlaytime() == 42 * 3600)
+        // The point of the field: no history was invented.
+        #expect((pt.sessions ?? []).isEmpty)
+    }
+
+    @Test func sessionsAddOnTopOfIt() {
+        let repo = store()
+        let game = repo.addGame(name: "Celeste", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        repo.setCarriedOver(10 * 3600, on: pt)
+        repo.logManualSession(on: pt, duration: 1800)
+
+        #expect(pt.totalPlaytime() == 10 * 3600 + 1800)
+        #expect((pt.sessions ?? []).count == 1)
+    }
+
+    @Test func theGamesTotalIncludesIt() {
+        let repo = store()
+        let game = repo.addGame(name: "Spyro the Dragon", status: .paused)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        repo.setCarriedOver(3 * 3600, on: pt)
+        #expect(game.livePlaythroughs.reduce(0) { $0 + $1.totalPlaytime() } == 3 * 3600)
+        #expect(CollectionSeeding.played(game) == 3 * 3600)
+    }
+
+    /// **Lifetime, not this week.** It is time you played and it is not time
+    /// you played in the last seven days.
+    @Test func itCountsInTheLifetimeTotalAndNotInTheWeek() {
+        let repo = store()
+        let game = repo.addGame(name: "Vampire Survivors", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        repo.setCarriedOver(20 * 3600, on: pt)
+        repo.logManualSession(on: pt, duration: 600)
+
+        let all = (try? repo.context.fetch(FetchDescriptor<Game>())) ?? []
+        let summary = PlayerSummary.make(from: all)
+        #expect(summary.totalSeconds == 20 * 3600 + 600)
+        #expect(summary.weekSeconds == 600)
+    }
+
+    @Test func negativeInputIsClampedRatherThanStored() {
+        let repo = store()
+        let pt = repo.ensureDefaultPlaythrough(for: repo.addGame(name: "Hades", status: .playing))
+        repo.setCarriedOver(-500, on: pt)
+        #expect(pt.carriedOverSeconds == 0)
+    }
+
+    @Test func zeroClearsIt() {
+        let repo = store()
+        let pt = repo.ensureDefaultPlaythrough(for: repo.addGame(name: "Hades", status: .playing))
+        repo.setCarriedOver(3600, on: pt)
+        repo.setCarriedOver(0, on: pt)
+        #expect(pt.carriedOverSeconds == 0)
+        #expect(pt.totalPlaytime() == 0)
+    }
+
+    /// It has to survive the file that exists to rescue a library.
+    @Test func itRoundTripsThroughExportAndImport() throws {
+        let source = store()
+        let game = source.addGame(name: "Chrono Trigger", status: .completed)
+        let pt = source.ensureDefaultPlaythrough(for: game)
+        source.setCarriedOver(9 * 3600 + 1800, on: pt)
+
+        let data = try LibraryExport.makeJSON(context: source.context)
+        let target = ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+        _ = try LibraryImport.apply(data: data, context: target)
+
+        let restored = try #require(try target.fetch(FetchDescriptor<Playthrough>()).first)
+        #expect(restored.carriedOverSeconds == 9 * 3600 + 1800)
+    }
+
+    /// A file written before build 37 has no such key, and zero is the right
+    /// reading of its absence.
+    @Test func anOlderExportImportsAsZero() throws {
+        let file = Data("""
+        {"manifest":{"formatVersion":1},
+         "games":[{"id":"\(UUID().uuidString)","name":"Sonic the Hedgehog 2",
+                   "playthroughs":[{"id":"\(UUID().uuidString)","name":"Main"}]}]}
+        """.utf8)
+        let context = ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+        _ = try LibraryImport.apply(data: file, context: context)
+        let pt = try #require(try context.fetch(FetchDescriptor<Playthrough>()).first)
+        #expect(pt.carriedOverSeconds == 0)
+    }
+}
