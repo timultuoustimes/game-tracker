@@ -183,11 +183,40 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
     /// a game in the library with a status and a Beaten record, which is a
     /// different thing and the library is where it goes.
     ///
-    /// **Not added, and why.** Streamed is a play method like Emulated rather
-    /// than a relationship to a copy, and a cloud-played game is almost always
+    /// **Emulated is not only a play method, and the taxonomy that says so is
+    /// the wrong lens for this row.**
+    ///
+    /// Codex sorted these into four dimensions — what the copy IS, how you
+    /// REACH it, how you PLAY it, and the PAST — and filed Emulated under play
+    /// method alongside a hypothetical Streamed. That reading is useful for
+    /// deciding what is missing (it is why Borrowed was obviously absent) and
+    /// wrong as a rule about what each chip means. Tim: *"a hard drive full of
+    /// roms, or a handheld with a microSD full of roms are still my roms that
+    /// I own and keep."*
+    ///
+    /// He is right, and the giveaway is Streamed. If "play method" were a real
+    /// dimension, Emulated and Streamed would belong together — and on the
+    /// axis this row is actually about, possession, they are opposites. A ROM
+    /// on your own drive is the most completely possessed a game can be:
+    /// nobody can revoke it, no account gates it, it outlives the storefront.
+    /// A streamed game you possess nothing of at all. Filing them as one
+    /// dimension hides the single most important difference between them.
+    ///
+    /// So the row asks ONE question — how do you have this game — and Emulated
+    /// is a straight answer to it. It is not doing double duty by accident.
+    /// "Digital" carries a bought-from-a-store connotation that a dumped
+    /// cartridge does not fit, which is exactly why Emulated ends up carrying
+    /// the ownership meaning for a ROM library, and why that is correct rather
+    /// than sloppy.
+    ///
+    /// **Not added, and why.** Streamed stays out because it is nearly always
     /// Subscription already, so the chip would mostly repeat one that is
-    /// there. Gifted, Bundled, Used, Free and Imported all describe how a copy
-    /// was ACQUIRED, which is a different field and not this one.
+    /// there — NOT because it is a play method, which was the wrong reason
+    /// even though it reached the right answer. The case that would earn it is
+    /// streaming a game you own outright (GeForce Now against your own Steam
+    /// library), which Subscription does not describe. Gifted, Bundled, Used,
+    /// Free and Imported all describe how a copy was ACQUIRED, which is a
+    /// different field and not this one.
     var label: String {
         switch self {
         case .physical: "Physical"
