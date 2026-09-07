@@ -458,7 +458,9 @@ struct ProfileNameColorTests {
 
     /// Garbage in storage falls back rather than rendering an invisible name.
     @Test func nonsenseFallsBack() {
-        #expect(ProfileNameColor.resolve("not a color") == .primary)
+        // Falls back to the app's own ink, not to body text — Default stopped
+        // being `.primary` when torch became the default name colour.
+        #expect(ProfileNameColor.resolve("not a color") == LSTheme.wordmark)
     }
 }
 

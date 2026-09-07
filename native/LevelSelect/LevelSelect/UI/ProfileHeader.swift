@@ -718,11 +718,29 @@ struct ProfileEditor: View {
         handles = profile.handles
         avatar = profile.avatarData
         useHandleAsName = profile.useHandleAsName
-        // Carry across whatever was chosen while this lived on the device
-        // only, so nobody has to set it twice.
-        nameColorRaw = profile.nameColorRaw
-            ?? UserDefaults.standard.string(forKey: ProfileNameColor.key)
-            ?? ProfileNameColor.plain
+        // **Nil means Default, and nothing may argue with it.**
+        //
+        // This fell back to the device-local key this colour used to live in,
+        // which reads sensibly and is wrong: choosing Default stores nil, so
+        // the next time the editor opened it found the OLD device value and
+        // showed Accent selected again. Tim: *"When you choose default for
+        // profile name color and hit done, and then tap back in to edit your
+        // profile, it says that the accent color is selected again."* The same
+        // nil was also why the name rendered as Default while the control
+        // claimed Accent.
+        //
+        // The field is synced now, so it is the only authority. The legacy key
+        // is adopted once — for somebody upgrading who never touched the new
+        // control — and cleared in the same breath so it can never speak
+        // again.
+        if let stored = profile.nameColorRaw {
+            nameColorRaw = stored
+        } else if let legacy = UserDefaults.standard.string(forKey: ProfileNameColor.key) {
+            nameColorRaw = legacy
+            UserDefaults.standard.removeObject(forKey: ProfileNameColor.key)
+        } else {
+            nameColorRaw = ProfileNameColor.plain
+        }
     }
 
     private func ingest() async {

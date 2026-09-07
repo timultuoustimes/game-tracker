@@ -236,8 +236,16 @@ struct Build37HeaderInkTests {
         #expect(ProfileNameColor.resolve("#8B2F63") == Color(hex: "#8B2F63"))
     }
 
-    @Test func theDefaultIsOrdinaryTextNotTheAccent() {
-        #expect(ProfileNameColor.resolve(ProfileNameColor.plain) == .primary)
+    /// **Default is the app's own ink, not body text.** It was `.primary`,
+    /// which on a light ground is black — the least designed option, on the
+    /// one piece of display type on Home, shown before anyone has chosen
+    /// anything. Tim: *"Default profile name still isn't torch."*
+    @Test func theDefaultIsTheAppsOwnInk() {
+        #expect(ProfileNameColor.resolve(ProfileNameColor.plain) == LSTheme.wordmark)
+        #expect(ProfileNameColor.resolve(ProfileNameColor.plain) != .primary)
+        // And it wears the brand's dark orange beneath it, like the wordmark.
+        #expect(ProfileNameColor.step(under: LSTheme.wordmark,
+                                      raw: ProfileNameColor.plain) == LSTheme.torchShadow)
         #expect(ProfileNameColor.mode(of: "") == .plain)
         #expect(ProfileNameColor.mode(of: "accent") == .accent)
         #expect(ProfileNameColor.mode(of: "#8B2F63") == .custom)

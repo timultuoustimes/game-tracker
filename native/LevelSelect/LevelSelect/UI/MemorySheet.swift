@@ -53,6 +53,8 @@ struct MemorySheet: View {
     @State private var vagueDay = 25
 
     @State private var photoItem: PhotosPickerItem?
+    /// The grain to come back to when "Do you know when?" is switched on again.
+    @State private var lastGrain: HowKnown = .day
     @State private var importing = false
     @State private var importError: String?
     /// A memory being written has no record yet, so a photo picked before the
@@ -74,6 +76,10 @@ struct MemorySheet: View {
     /// How well the date is known — and the fourth case is the point.
     enum HowKnown: String, CaseIterable, Identifiable {
         case day, month, season, year, decade, unsure
+
+        /// The five that describe a date. `unsure` is the absence of one, and
+        /// putting it in the same control as its own peers is what made six.
+        static var grains: [HowKnown] { allCases.filter { $0 != .unsure } }
         var id: String { rawValue }
         var label: String {
             switch self {
@@ -119,11 +125,47 @@ struct MemorySheet: View {
                 }
 
                 Section {
-                    Picker("How well do you know it?", selection: $howKnown) {
-                        ForEach(HowKnown.allCases) { Text($0.label).tag($0) }
+                    // **A switch and five segments, not six segments.**
+                    //
+                    // "Not sure" was a peer of "Day" in one segmented control,
+                    // which made six peers — and at the DEFAULT text size the
+                    // last one already truncated to "Not s…" before anyone had
+                    // touched it, worse at every size above. Fable argued the
+                    // restructure when the control had four segments, it was
+                    // declined, Season and Decade then made it six, and the
+                    // truncation is the evidence: *"the last segment truncates
+                    // before anyone has touched it."*
+                    //
+                    // "Not sure" is not a sixth grain. It is the absence of
+                    // one — the state where no precision is stored at all and
+                    // only your own words say when — so it belongs where every
+                    // other absence in this app lives: an off state. Same data
+                    // model, one fewer segment, no truncation, and the copy
+                    // below already said as much.
+                    Toggle("Do you know when?", isOn: Binding(
+                        get: { howKnown != .unsure },
+                        set: { known in
+                            if known {
+                                howKnown = lastGrain
+                            } else {
+                                lastGrain = howKnown
+                                howKnown = .unsure
+                            }
+                        }))
+                    .tint(LSTheme.accent)
+
+                    if howKnown != .unsure {
+                        Picker("How well do you know it?", selection: $howKnown) {
+                            ForEach(HowKnown.grains) { Text($0.label).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        // Remember the grain, so flicking the switch off and
+                        // back on returns you to Season rather than to Day.
+                        .onChange(of: howKnown) { _, new in
+                            if new != .unsure { lastGrain = new }
+                        }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
 
                     switch howKnown {
                     case .day:

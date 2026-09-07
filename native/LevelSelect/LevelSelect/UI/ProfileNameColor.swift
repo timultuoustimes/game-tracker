@@ -17,15 +17,25 @@ enum ProfileNameColor {
 
     /// Follow the accent, whatever it becomes later.
     static let accent = "accent"
-    /// The plain default: ordinary primary text.
+    /// The app's own ink — torch, the same orange the wordmark wears.
+    ///
+    /// This was `.primary`, ordinary body-text ink, which on a light ground is
+    /// black. Tim, twice: *"Yes, torch as default is the right call"* and then
+    /// *"Default profile name still isn't torch."* He is right that plain text
+    /// is the wrong default for the one piece of display type on Home — it is
+    /// the least designed option, and it is what someone sees before they have
+    /// chosen anything.
     static let plain = ""
 
     @MainActor
     static func resolve(_ raw: String) -> Color {
         switch raw {
-        case plain:  .primary
+        // Not `.primary`: see `plain`. `LSTheme.wordmark` is torch and always
+        // has been, which is what makes this the app's ink rather than a
+        // second opinion about it.
+        case plain:  LSTheme.wordmark
         case accent: LSTheme.displayAccent
-        default:     Color(hex: raw) ?? .primary
+        default:     Color(hex: raw) ?? LSTheme.wordmark
         }
     }
 
@@ -39,6 +49,9 @@ enum ProfileNameColor {
     /// shadow."*
     @MainActor
     static func step(under ink: Color, raw: String) -> Color {
+        // The brand's own dark orange under the brand's own orange — which is
+        // both the Default ink and the Accent ink until an accent is picked.
+        if raw == plain { return LSTheme.torchShadow }
         if raw == accent, !ThemePalette.accentIsCustom { return LSTheme.torchShadow }
         return LSTheme.hardStep(under: ink)
     }

@@ -315,13 +315,28 @@ struct CoverThumb: View {
     /// ends cut off, so the picker offered a row of "T FIGHT" and "ET FIGHTE"
     /// with no way to tell which logo you were choosing.
     var contentMode: ContentMode = .fill
+
+    /// **Resolved artwork can be remote too, and that branch was missing.**
+    ///
+    /// `artwork` only ever answered the `.local` question; a `.remote` value
+    /// fell through to `urlString`, which is right for every site that passes
+    /// both and wrong for the one that passes artwork ALONE. `PlayerSummary`
+    /// became `[ResolvedArtwork]` this morning and Home's header started
+    /// handing over `.remote(url)` with a nil string — so the band that had
+    /// just been taught about local covers stopped drawing remote ones, which
+    /// is every cover most people have. Tim saw it the same afternoon.
+    private var remoteURL: URL? {
+        if case .remote(let url) = artwork { return url }
+        return urlString.flatMap(URL.init(string:))
+    }
+
     var body: some View {
         Group {
             // Local first: a picture the user chose beats one the app fetched,
             // which is the same precedence `displayCoverURLString` applies.
             if case .local(let data) = artwork, let image = PlatformImage(data: data) {
                 image.resizable().aspectRatio(contentMode: contentMode)
-            } else if let s = urlString, let url = URL(string: s) {
+            } else if let url = remoteURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().aspectRatio(contentMode: contentMode)

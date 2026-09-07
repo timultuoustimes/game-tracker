@@ -641,13 +641,21 @@ struct ColorEditor: View {
                 // The real thing: the face, the step, the ground it lands on.
                 HStack(spacing: 0) {
                     Text(specimen)
-                        .font(LSTheme.pixel(16))
+                        .font(LSTheme.pixel(13))
                         .fontDesign(nil)
                         .foregroundStyle(accent)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.4)
+                        // **No `minimumScaleFactor`.** It shrank the glyphs and
+                        // not the step, so the shadow drifted away from the
+                        // letters it belongs to — the offset is one block of
+                        // the face at THIS size, and scaling the face made the
+                        // block a lie. Tim: *"Preview name in color picker has
+                        // the wrong distance for dark shadow."* Truncating a
+                        // long name is the honest trade; the specimen is there
+                        // to show a colour, not to spell a name.
+                        .truncationMode(.tail)
                         .shadow(color: LSTheme.hardStep(under: accent), radius: 0,
-                                y: LSTheme.pixelStep(for: 16))
+                                y: LSTheme.pixelStep(for: 13))
                     Spacer(minLength: 0)
                 }
             } else {

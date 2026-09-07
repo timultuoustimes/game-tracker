@@ -129,3 +129,40 @@ struct SuggestedTagsTests {
         }
     }
 }
+
+/// **The date control is five grains and a switch, not six peers.**
+///
+/// "Not sure" is the absence of a precision — no grain is stored and only the
+/// words say when — so it was never a peer of "Day". As a sixth segment it
+/// truncated to "Not s…" at the DEFAULT text size before anyone touched it.
+@MainActor
+struct Build37PrecisionControlTests {
+
+    @Test func fiveGrainsAreOfferedAndUnsureIsNotOneOfThem() {
+        #expect(MemorySheet.HowKnown.grains.count == 5)
+        #expect(!MemorySheet.HowKnown.grains.contains(.unsure))
+        #expect(MemorySheet.HowKnown.grains == [.day, .month, .season, .year, .decade])
+    }
+
+    /// The data model is unchanged — that was the whole argument for the
+    /// restructure being cheap.
+    @Test func everyGrainStillStoresItsOwnPrecision() {
+        #expect(MemorySheet.HowKnown.day.precision == "day")
+        #expect(MemorySheet.HowKnown.month.precision == "month")
+        #expect(MemorySheet.HowKnown.season.precision == "season")
+        #expect(MemorySheet.HowKnown.year.precision == "year")
+        #expect(MemorySheet.HowKnown.decade.precision == "decade")
+        // Still nil, still the point: "1995 or 1996" is two years and no
+        // single grain describes it.
+        #expect(MemorySheet.HowKnown.unsure.precision == nil)
+    }
+
+    /// Every grain that can be picked has a label short enough to be a
+    /// segment. "Not sure" was the long one, and it is no longer a segment.
+    @Test func noGrainLabelIsAsLongAsTheOneThatTruncated() {
+        for grain in MemorySheet.HowKnown.grains {
+            #expect(grain.label.count <= "Not sure".count - 1,
+                    Comment(rawValue: "\(grain.label) is as wide as the label that truncated"))
+        }
+    }
+}
