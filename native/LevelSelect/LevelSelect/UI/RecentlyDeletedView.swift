@@ -104,6 +104,19 @@ struct RecentlyDeletedView: View {
                 } description: {
                     Text("Anything you delete lands here first and stays for 30 days, unless you restore it or delete it forever sooner.")
                 }
+            } else {
+                // **The clock is running on THIS screen, so it says so here.**
+                //
+                // The thirty days were promised on the delete confirmation and
+                // then never mentioned again. Someone who arrives from
+                // Settings a week later — which is the whole reason this
+                // screen exists — had no way to know anything was counting
+                // down, or how to end it early. Fable, 2026-09-07.
+                Section {
+                    EmptyView()
+                } footer: {
+                    Text("Everything here is kept for 30 days from when you deleted it, then goes on its own. Swipe a row or press and hold to restore it, or to delete it forever now.")
+                }
             }
 
             if !games.isEmpty {
@@ -234,6 +247,11 @@ struct RecentlyDeletedView: View {
             Button(role: .destructive) { confirmingForever = .image(image) } label: {
                 Label("Delete Forever", systemImage: "trash.slash")
             }
+            // The row tints its Restore button with the accent, and the swipe
+            // action inherited it — so the app's only hard delete arrived in
+            // the same colour as the button that puts things back. Fable saw
+            // it as "tinted in the accent blue rather than red".
+            .tint(.red)
         }
         .contextMenu {
             Button {
@@ -290,6 +308,7 @@ struct RecentlyDeletedView: View {
             Button(role: .destructive) { forever() } label: {
                 Label("Delete Forever", systemImage: "trash.slash")
             }
+            .tint(.red)
         }
         .contextMenu {
             Button { restore() } label: { Label("Restore", systemImage: "arrow.uturn.backward") }

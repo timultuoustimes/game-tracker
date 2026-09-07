@@ -93,6 +93,11 @@
     { "id": "couch-co-op", "name": "Couch Co-op", "category": "Together",
       "aliases": ["Local Co-op", "Same Screen Co-op", "Split Screen"] },
 
+    { "id": "dating-sim", "name": "Dating Sim", "category": "Life",
+      "aliases": ["Romance Sim", "Otome"] },
+    { "id": "idle", "name": "Idle", "category": "Structure",
+      "aliases": ["Clicker", "Incremental", "Idle Game"] },
+
     { "id": "walking-simulator", "name": "Walking Simulator", "category": "Story",
       "aliases": ["Walking Sim", "Environmental Narrative"] },
     { "id": "narrative-adventure", "name": "Narrative Adventure", "category": "Story",
