@@ -1950,6 +1950,10 @@ struct GameDetailView: View {
     // MARK: Tags
 
     @State private var newTag = ""
+    /// Whether the whole bundled vocabulary is on screen, rather than the
+    /// first handful. Off by default: forty chips under a text field is a
+    /// catalogue, and this is meant to be a shortcut.
+    @State private var showingAllSuggestedTags = false
 
     private var tagsEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1980,7 +1984,75 @@ struct GameDetailView: View {
                     }
                 }
             }
+            suggestedVocabulary
         }
+    }
+
+    /// **The bundled vocabulary — Stage 2.**
+    ///
+    /// An empty text field is the moment this exists for: IGDB has already
+    /// told you Hollow Knight is "Platform / Adventure / Indie", and the word
+    /// you actually want is Metroidvania. Nothing here is applied for you —
+    /// tapping one adds an ordinary tag, and free text still works exactly as
+    /// it did.
+    @ViewBuilder
+    private var suggestedVocabulary: some View {
+        let offered = suggestedTagNames
+        if !offered.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(newTag.isEmpty ? "Suggested" : "From the vocabulary")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    // Only when there is more to see, and only when the field
+                    // is empty — while typing, the list is already a filter.
+                    if newTag.isEmpty, suggestedPool.count > Self.suggestedTagPreview {
+                        Button(showingAllSuggestedTags ? "Fewer" : "All \(suggestedPool.count)") {
+                            withAnimation(.snappy(duration: 0.2)) {
+                                showingAllSuggestedTags.toggle()
+                            }
+                        }
+                        .font(.caption)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(LSTheme.accent)
+                        .lsTapTargetTall()
+                    }
+                }
+                FlowLayout(spacing: 6) {
+                    ForEach(offered, id: \.self) { name in
+                        Button { addTag(name) } label: {
+                            Chip(text: "+ \(name)", tint: .gray)
+                        }
+                        .buttonStyle(.plain)
+                        .lsTapTargetTall()
+                        .accessibilityLabel("Add tag \(name)")
+                    }
+                }
+            }
+        }
+    }
+
+    /// How many of the vocabulary to show before asking.
+    private static let suggestedTagPreview = 8
+
+    /// Everything the vocabulary could offer this game: not already on it, and
+    /// not already offered by the library's own words just above.
+    private var suggestedPool: [String] {
+        let typed = newTag.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "#", with: "")
+        let source = typed.isEmpty ? SuggestedTags.all : SuggestedTags.matching(typed)
+        let alreadyShown = Set(tagSuggestions.map { $0.lowercased() })
+        let onGame = Set(game.userTags.map { $0.lowercased() })
+        return source.map(\.name).filter {
+            !onGame.contains($0.lowercased()) && !alreadyShown.contains($0.lowercased())
+        }
+    }
+
+    private var suggestedTagNames: [String] {
+        newTag.isEmpty && !showingAllSuggestedTags
+            ? Array(suggestedPool.prefix(Self.suggestedTagPreview))
+            : suggestedPool
     }
 
     private var tagSuggestions: [String] {
