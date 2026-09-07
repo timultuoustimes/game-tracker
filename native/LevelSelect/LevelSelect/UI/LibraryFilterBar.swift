@@ -182,6 +182,9 @@ struct FilterChip: View {
                 style: StrokeStyle(lineWidth: 1, dash: isGap ? [3, 3] : [])))
         }
         .buttonStyle(.plain)
+        // A caption inside 10/5 padding is about 25 points — the smallest
+        // repeated target in the app, on the row people use most. Codex A7.
+        .lsTapTargetTall()
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 }

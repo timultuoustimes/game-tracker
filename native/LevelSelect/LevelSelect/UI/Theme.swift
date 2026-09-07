@@ -112,6 +112,22 @@ extension View {
         padding(grow).contentShape(.rect).padding(-grow)
     }
 
+    /// Taller hit area only, for a control in a horizontal row.
+    ///
+    /// `lsTapTargetInline` grows on every side, which is right for a lone
+    /// glyph and wrong for a row of chips: at 8 points of spacing, 11 points
+    /// each side means neighbours overlap and the chip you did not aim at
+    /// wins the tap. `RatingControl` reached the same conclusion about five
+    /// stars in a row and solved it the same way — a tap landing on the wrong
+    /// control is worse than a small one.
+    ///
+    /// Vertical is free in these rows, because nothing sits directly above or
+    /// below a chip except the row's own padding. 8 points each side takes a
+    /// 28-point chip to 44 without moving anything.
+    func lsTapTargetTall(_ grow: CGFloat = 8) -> some View {
+        padding(.vertical, grow).contentShape(.rect).padding(.vertical, -grow)
+    }
+
     /// Card surface used across Stats/Home.
     func lsCard() -> some View {
         padding(14)

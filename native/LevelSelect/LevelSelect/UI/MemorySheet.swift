@@ -335,6 +335,10 @@ struct MemorySheet: View {
         }
         .buttonStyle(.plain)
         .padding(3)
+        // A `.body` glyph in 3 points of padding is about 23. It sits alone
+        // in the corner of a thumbnail, so unlike the chips it can grow on
+        // every side without stealing a neighbour's tap. Codex A7.
+        .lsTapTargetInline()
         .accessibilityLabel(label)
     }
 

@@ -192,6 +192,9 @@ private struct YearStrip: View {
                     ForEach(years, id: \.self) { year in
                         Button { onSelect(year) } label: { chip(year) }
                             .buttonStyle(.plain)
+                            // ~30 points tall on its own; scrubbing back
+                            // thirty years is a lot of small taps. Codex A7.
+                            .lsTapTargetTall()
                             .id(year)
                     }
                 }
