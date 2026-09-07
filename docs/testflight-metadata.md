@@ -50,11 +50,33 @@ made for them, or the ask reads as a contradiction.
 Plain text — App Store Connect renders no markdown (no `**`, no `-` bullets
 that need styling; hyphens are fine as literal characters).
 
-**"What to Test" is capped at 4,000 characters**, and this header costs about
-490 of them. Build 33's notes came in at 5,098 and had to be cut back on the
-spot — write to the budget rather than trimming afterwards. Roughly: header
-490, framing 500, what's new 1,600, fixes 350, what to poke at 500, known
-150.
+**⚠️ SUPERSEDED 2026-09-07 (build 37) — write SHORT, not to the budget.**
+
+The cap is still 4,000 characters and the old advice was to fill it. Build 37
+was drafted at 3,744 and cut to **1,182**. Tim, after looking at other
+TestFlight apps: *"their 'what to test' sections are so minimum, but we use the
+entire field almost to the last character."* He is right, and two things
+changed that make the long version obsolete:
+
+1. **What's New is in the app now.** A feature-by-feature inventory in the
+   release notes is the same list a tester can read in Settings, so the notes
+   were spending 1,600 characters duplicating a screen.
+2. **So is feedback.** The notes used to be the only place to say how to reply.
+   Now the answer is one line: Settings > Send feedback.
+
+**The shape that replaced it** — roughly 1,200 characters, in this order:
+
+| | |
+|---|---|
+| One paragraph | What this build is, in plain words. Not a list. |
+| One line | "Plenty more besides" pointing at Settings > What's New for the rest. |
+| One line | How to reply: Settings > Send feedback. |
+| Two questions | The two things most likely to be WRONG, not the two most impressive. Specific enough to answer in a sentence. |
+| The analytics ask | Last, compressed. It stays because in-app feedback does not replace it — somebody whose app just crashed cannot file feedback from it. |
+
+**The old budget table, for reference if a build ever needs the long form:**
+header 490, framing 500, what's new 1,600, fixes 350, what to poke at 500,
+known 150.
 
 Shortened 2026-08-30 (build 33). The long version was around 150 words and
 sat above the thing testers actually opened the notes to read. Every
