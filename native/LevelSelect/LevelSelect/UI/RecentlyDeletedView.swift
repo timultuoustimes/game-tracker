@@ -111,7 +111,8 @@ struct RecentlyDeletedView: View {
                     ForEach(games) { game in
                         row(name: game.name,
                             detail: deletedLine(game.deletedAt),
-                            cover: game.displayCoverURLString) {
+                            cover: game.displayCoverURLString,
+                            artwork: game.resolvedArtwork(.cover)) {
                             repo.restore(game)
                             reload()
                         } forever: {
@@ -125,7 +126,8 @@ struct RecentlyDeletedView: View {
                     ForEach(playthroughs) { pt in
                         row(name: pt.name,
                             detail: "\(pt.game?.name ?? "?") · \(deletedLine(pt.deletedAt))",
-                            cover: pt.game?.displayCoverURLString) {
+                            cover: pt.game?.displayCoverURLString,
+                            artwork: pt.game?.resolvedArtwork(.cover)) {
                             repo.restore(pt)
                             reload()
                         } forever: {
@@ -260,10 +262,14 @@ struct RecentlyDeletedView: View {
     }
 
     private func row(name: String, detail: String, cover: String?,
+                     artwork: ResolvedArtwork? = nil,
                      restore: @escaping () -> Void,
                      forever: @escaping () -> Void) -> some View {
         HStack(spacing: 11) {
-            CoverThumb(urlString: cover)
+            // A cover you picked from Photos has no URL by design, so this
+            // drew a generic controller for a game every shelf was drawing
+            // properly. Fable, 2026-09-07.
+            CoverThumb(urlString: cover, artwork: artwork)
                 .frame(width: 34, height: 46)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)

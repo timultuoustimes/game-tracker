@@ -117,7 +117,9 @@ enum StatsCard: String, CaseIterable, Identifiable {
         case .tags:        "Tags"
         case .years:       "By Release Year"
         case .completions:    "Completions"
-        case .latestFinishes: "Latest Finishes"
+        // Beaten names the EVENT, Completed names the status. The card's own
+        // label was fixed and this section title was missed.
+        case .latestFinishes: "Latest Beaten"
         case .raWall:         "RA Masteries"
         }
     }

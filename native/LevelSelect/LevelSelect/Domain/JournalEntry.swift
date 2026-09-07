@@ -389,7 +389,23 @@ enum JournalBuilder {
             // day it was where you were sitting.
             let entryCalendar = entry.kind == .memory ? Memory.calendar : calendar
             let start = entry.grain.start(of: entry.date, calendar: entryCalendar)
-            let key = "\(entry.grain.rawValue)@\(start.timeIntervalSince1970)@\(entry.headingOverride ?? "")"
+            // **Key on the DAY, not on the instant.**
+            //
+            // The two calendars above are deliberate — a memory's dates are
+            // UTC calendar facts, a day of play is the day it was where you
+            // were sitting — but keying on `timeIntervalSince1970` made that
+            // difference structural: in EDT, midnight UTC is 8pm the previous
+            // day, so a session and a memory on the SAME day produced two
+            // starts four hours apart, two buckets, and two sections that both
+            // said "Today". Fable saw it on 2026-09-07: "Today — Hades · 1 run"
+            // with the memory under its own second "Today" header.
+            //
+            // The components answer the question the reader is asking — which
+            // day is this — and each is still computed in its own calendar, so
+            // neither entry moves off the day it belongs to.
+            let parts = entryCalendar.dateComponents([.year, .month, .day], from: start)
+            let day = "\(parts.year ?? 0)-\(parts.month ?? 0)-\(parts.day ?? 0)"
+            let key = "\(entry.grain.rawValue)@\(day)@\(entry.headingOverride ?? "")"
             buckets[key, default: (start, entry.grain, entryCalendar, [])].items.append(entry)
         }
 

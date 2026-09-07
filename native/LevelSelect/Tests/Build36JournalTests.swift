@@ -1249,3 +1249,69 @@ struct Build37JournalPeriodOrderTests {
         #expect(periods.first?.start ?? .distantPast > periods.last?.start ?? .distantFuture)
     }
 }
+
+/// **One day is one section, even when it holds both kinds of entry.**
+///
+/// A memory's dates are UTC calendar facts and a day of play is the day it was
+/// where you were sitting — both deliberate — but the bucket key used the
+/// absolute start instant, so those two calendars put the same day four hours
+/// apart in EDT. Fable saw the result on 2026-09-07: "Today — Hades · 1 run"
+/// and, under a second "Today" header, the memory written the same afternoon.
+@MainActor
+struct Build37OneDayOneSectionTests {
+
+    private func store() -> Repository {
+        Repository(ModelContext(LevelSelectStore.makeContainer(inMemory: true)))
+    }
+
+    /// The failing shape: a session and a memory, same day, one section.
+    @Test func aSessionAndAMemoryOnOneDayShareASection() {
+        let repo = store()
+        let game = repo.addGame(name: "Hades", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        let today = Date.now
+        repo.logManualSession(on: pt, duration: 1800, date: today)
+
+        let memory = Memory()
+        memory.title = "Finally beat Hades"
+        memory.game = game
+        // `precision: "day"` is what makes it a memory ABOUT a day — with
+        // nil it is dayless and correctly never reaches a day square at all.
+        _ = repo.saveMemory(memory, on: today, precision: "day", words: nil, span: nil)
+
+        let periods = JournalBuilder.periods(from: [game])
+        let dayPeriods = periods.filter { $0.grain == .day }
+        #expect(dayPeriods.count == 1,
+                "one day produced \(dayPeriods.count) sections: \(dayPeriods.map(\.id))")
+        #expect(dayPeriods.first?.entries.count == 2)
+    }
+
+    /// …and it must not over-merge. Two different days stay two sections,
+    /// which is the thing a day-shaped key could plausibly have broken.
+    @Test func twoDaysAreStillTwoSections() {
+        let repo = store()
+        let game = repo.addGame(name: "Celeste", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        let today = Date.now
+        repo.logManualSession(on: pt, duration: 600, date: today)
+        repo.logManualSession(on: pt, duration: 600,
+                              date: today.addingTimeInterval(-3 * 24 * 60 * 60))
+
+        let dayPeriods = JournalBuilder.periods(from: [game]).filter { $0.grain == .day }
+        #expect(dayPeriods.count == 2)
+    }
+
+    /// Newest first still holds across the merge.
+    @Test func sectionsStayNewestFirst() {
+        let repo = store()
+        let game = repo.addGame(name: "Spelunky", status: .playing)
+        let pt = repo.ensureDefaultPlaythrough(for: game)
+        let now = Date.now
+        for days in [0, 2, 5] {
+            repo.logManualSession(on: pt, duration: 600,
+                                  date: now.addingTimeInterval(Double(-days) * 86_400))
+        }
+        let starts = JournalBuilder.periods(from: [game]).filter { $0.grain == .day }.map(\.start)
+        #expect(starts == starts.sorted(by: >))
+    }
+}

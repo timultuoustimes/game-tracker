@@ -43,13 +43,38 @@ struct Build37PromiseAndThemeReachTests {
         #expect(claimed.count == Set(claimed).count)
     }
 
-    /// The captions ARE the promises, not a paraphrase of them. This is the
-    /// test that fails if someone edits one screen and forgets the other.
-    @Test func shelfCaptionIsThePromiseVerbatim() {
+    /// **One home, not one sentence.** This asserted the caption was the
+    /// promise verbatim, which was the wrong invariant: it made Paused say
+    /// "Start from the app, a widget, your watch, or the Lock Screen" and Up
+    /// Next say "Import real achievements…", neither of which is about pausing
+    /// or queueing. Fable caught it on 2026-09-07.
+    ///
+    /// What actually has to hold is that both surfaces read from the same
+    /// file, so editing one screen cannot leave the other behind — and that
+    /// every shelf with a promise says something.
+    @Test func everyPromisedShelfSpeaksFromTheSameFile() {
         for promise in AppPromise.allCases {
             guard let shelf = promise.shelf else { continue }
-            #expect(shelf.emptyShelfCaption == promise.body)
+            #expect(shelf.emptyShelfCaption == promise.shelfCaption)
+            #expect(!(promise.shelfCaption ?? "").isEmpty)
         }
+    }
+
+    /// The one promise that IS about its shelf still says it unchanged — the
+    /// welcome and Home really are the same sentence there.
+    @Test func theShelfPromiseIsStillVerbatim() {
+        #expect(AppPromise.shelf.shelfCaption == AppPromise.shelf.body)
+        #expect(GameStatus.playing.emptyShelfCaption == AppPromise.shelf.body)
+    }
+
+    /// And the two that are not must not silently drift BACK to the welcome's
+    /// wording — that is the regression this whole change exists to prevent.
+    @Test func theOtherTwoSayTheirOwnShelf() {
+        #expect(AppPromise.sessions.shelfCaption != AppPromise.sessions.body)
+        #expect(AppPromise.checklist.shelfCaption != AppPromise.checklist.body)
+        // Each names what its shelf is for.
+        #expect(GameStatus.paused.emptyShelfCaption?.contains("stepped away") == true)
+        #expect(GameStatus.queued.emptyShelfCaption?.contains("next") == true)
     }
 
     /// Every shelf Home draws has something to say while it is empty. A silent

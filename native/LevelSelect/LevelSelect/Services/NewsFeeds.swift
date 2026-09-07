@@ -161,7 +161,31 @@ enum NewsFeeds {
                let value = try? decoder.decode(T.self, from: data) {
                 return .cached(value, fetched: fetched)
             }
-            return .failed(error.localizedDescription)
+            return .failed(Self.readable(error))
+        }
+    }
+
+    /// A sentence, not a code.
+    ///
+    /// This returned `error.localizedDescription`, which for a URLSession
+    /// failure is "The operation couldn't be completed. (NSURLErrorDomain
+    /// error -1011.)" — printed above an otherwise good fallback line. Fable
+    /// saw it on 2026-09-07 with both feeds returning 404. A number nobody can
+    /// act on is worse than no second line, and the diagnosis still goes to
+    /// the log above, where it belongs.
+    static func readable(_ error: Error) -> String {
+        guard let url = error as? URLError else {
+            return "Something went wrong fetching it."
+        }
+        switch url.code {
+        case .notConnectedToInternet, .networkConnectionLost:
+            return "You're offline."
+        case .timedOut:
+            return "It took too long to answer."
+        case .badServerResponse, .cannotFindHost, .fileDoesNotExist, .resourceUnavailable:
+            return "The page isn't published yet."
+        default:
+            return "Couldn't fetch it just now."
         }
     }
 

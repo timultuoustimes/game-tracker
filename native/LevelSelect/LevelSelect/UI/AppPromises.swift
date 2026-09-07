@@ -52,6 +52,32 @@ enum AppPromise: CaseIterable {
         }
     }
 
+    /// The same promise, said about the shelf that keeps it.
+    ///
+    /// **Word-for-word was the wrong reading of "one product".** The welcome's
+    /// bodies were used verbatim as shelf captions, which works for the first
+    /// promise and fails for the other two: Paused got "Start from the app, a
+    /// widget, your watch, or the Lock Screen" and Up Next got "Import real
+    /// achievements, paste a guide you trust…". Neither says anything about
+    /// pausing or queueing. Fable, 2026-09-07: *"a reader who has just seen
+    /// the welcome will look for the connection and not find one."*
+    ///
+    /// The goal was never identical sentences — it was ONE HOME, so there is
+    /// no second copy to forget. That survives: both surfaces still read from
+    /// this file, and each says the true thing for where it is standing. The
+    /// captions keep the promises' subjects — your time, a real checklist — so
+    /// the connection is still legible from the welcome.
+    var shelfCaption: String? {
+        switch self {
+        // This one genuinely is the same sentence: the promise is about the
+        // shelf, so the shelf can say it unchanged.
+        case .shelf:     body
+        case .sessions:  "Games you stepped away from. Your time and your place are kept."
+        case .checklist: "What you'll play next. Bring its real checklist before you start."
+        case .privacy:   nil
+        }
+    }
+
     /// The Home shelf that keeps this promise.
     ///
     /// `privacy` returns nil on purpose. It is the one promise that isn't
@@ -90,12 +116,13 @@ enum AppPromise: CaseIterable {
 extension GameStatus {
     /// What this Home shelf says while it is empty and the library is new.
     ///
-    /// Three of the four shelves carry a welcome promise word for word. Always
-    /// Around gets its own line because no promise fits it, and a shelf left
-    /// silent beside three captioned ones reads as a rendering bug rather than
-    /// as restraint.
+    /// Three of the four shelves carry a welcome promise, said about THAT
+    /// shelf — see `AppPromise.shelfCaption` for why that is not the same
+    /// sentence in two of the three. Always Around gets its own line because
+    /// no promise fits it, and a shelf left silent beside three captioned ones
+    /// reads as a rendering bug rather than as restraint.
     var emptyShelfCaption: String? {
-        if let promise = AppPromise.promise(for: self) { return promise.body }
+        if let promise = AppPromise.promise(for: self) { return promise.shelfCaption }
         switch self {
         // The status exists because some games have no finish line. Saying so
         // is more use here than any promise would be.

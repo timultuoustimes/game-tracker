@@ -580,7 +580,10 @@ private struct MonthSummary: View {
             // and nothing beaten should say so.
             if finishes > 0 || memories == 0 {
                 LSStatTile(icon: "flag.checkered", number: "\(finishes)",
-                           label: finishes == 1 ? "Finish" : "Finishes")
+                           // One word for a beating, everywhere — the last
+                           // place the Journal still said Finish. It needs no
+                           // plural: "1 Beaten", "3 Beaten".
+                           label: "Beaten")
             } else {
                 LSStatTile(icon: JournalEntry.Kind.memory.icon, number: "\(memories)",
                            label: memories == 1 ? "Memory" : "Memories")
