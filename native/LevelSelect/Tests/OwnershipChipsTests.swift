@@ -257,4 +257,49 @@ struct Build37BorrowedAndSharedTests {
         let stored = "order=custom,borrowed,shared,digital"
         #expect(ThemePalette.chips(from: stored) == [.borrowed, .shared, .digital])
     }
+
+    // MARK: No chip left behind
+
+    /// **Every case has to be reachable, not just the ones we remembered.**
+    ///
+    /// The risk this pins is a hardcoded subset appearing somewhere later —
+    /// a settings list that enumerates five chips by hand, a filter that
+    /// forgets the newest one. Turning each case on by itself must resolve to
+    /// exactly that case, in all three orders.
+    @Test func everyChipCanBeTheOnlyChip() {
+        for kind in Ownership.allCases {
+            for order in OwnershipChipOrder.allCases {
+                let stored = ([order.storedToken].compactMap { $0 } + [kind.rawValue])
+                    .joined(separator: ",")
+                #expect(ThemePalette.chips(from: stored) == [kind],
+                        Comment(rawValue: "\(kind.rawValue) in \(order.rawValue) order"))
+            }
+        }
+    }
+
+    /// And every case has to survive a custom order that names all of them —
+    /// the drag-to-arrange list is built from exactly this.
+    @Test func aCustomOrderCanHoldTheWholeVocabulary() {
+        let reversed = Array(Ownership.allCases.reversed())
+        let stored = (["order=custom"] + reversed.map(\.rawValue)).joined(separator: ",")
+        #expect(ThemePalette.chips(from: stored) == reversed)
+        #expect(ThemePalette.chips(from: stored).count == Ownership.allCases.count)
+    }
+
+    /// The Library filter counts by `allCases`, so a game marked with the
+    /// newest chip is findable the moment it is marked.
+    @Test func theLibraryFilterCountsEveryKind() {
+        var library: [Game] = []
+        for kind in Ownership.allCases {
+            let game = Game(name: kind.rawValue)
+            game.ownership = [kind.rawValue]
+            library.append(game)
+        }
+        let counts = OwnershipFacet.counts(library)
+        for kind in Ownership.allCases {
+            #expect(counts.byKind[kind] == 1,
+                    Comment(rawValue: "\(kind.rawValue) missing from the filter counts"))
+        }
+        #expect(counts.unset == 0)
+    }
 }
