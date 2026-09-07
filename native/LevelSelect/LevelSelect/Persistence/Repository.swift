@@ -2760,12 +2760,29 @@ struct Repository {
         let rows = ordered(PlayerProfile.self, { $0.createdAt }, { _ in UUID() })
         guard rows.count > 1, let winner = rows.first else { return 0 }
         for loser in rows.dropFirst() {
-            let loserIsNewer = loser.updatedAt > winner.updatedAt
+            // **Fill blanks. Never overwrite. Identity is not a setting.**
+            //
+            // This matched `foldThemeSettings` and took the loser's value
+            // whenever the loser's RECORD was newer. For a theme that is the
+            // honest tiebreak — see `aRealConflictGoesToTheNewerEdit` — and
+            // for a profile it is a data-loss bug, because the loser is
+            // deleted on the next line and the winner's original is gone.
+            //
+            // It happened, on 2026-09-07. A schema-seed profile written on
+            // 2 September was newer than Tim's own from 30 August, so the fold
+            // replaced his display name, his five handles and his Memoji with
+            // "__ls_schema_seed__", a junk handle and a 161-byte purple
+            // square, then deleted the row that held the real ones.
+            //
+            // The rule is different here because the consequence is: a colour
+            // reverting is a tap to fix and you notice immediately, while a
+            // name and an avatar can be wrong for weeks and are unrecoverable
+            // once the other row is gone. It also made the damage permanent —
+            // restoring a backup could not repair it, because the fold ran
+            // again on launch and destroyed the restored values a second time.
             func take<V>(_ path: ReferenceWritableKeyPath<PlayerProfile, V?>) {
                 guard let value = loser[keyPath: path] else { return }
-                if winner[keyPath: path] == nil || loserIsNewer {
-                    winner[keyPath: path] = value
-                }
+                if winner[keyPath: path] == nil { winner[keyPath: path] = value }
             }
             take(\.displayName); take(\.avatarData); take(\.handlesData)
             context.delete(loser)
