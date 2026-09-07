@@ -35,7 +35,8 @@ struct AvatarArtworkPicker: View {
             List(matches) { game in
                 Button { chosen = game } label: {
                     HStack(spacing: 12) {
-                        CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+                        CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                             .frame(width: 34, height: 45)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         Text(game.name).foregroundStyle(.primary)

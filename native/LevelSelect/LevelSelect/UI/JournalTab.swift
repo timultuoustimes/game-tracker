@@ -314,7 +314,8 @@ private struct JournalRow: View {
                             .foregroundStyle(LSTheme.accent)
                     }
             } else if let game = entry.game {
-                CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+                CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                     .frame(width: 44, height: 59)
                     .clipShape(.rect(cornerRadius: 6))
                     .coverGloss()

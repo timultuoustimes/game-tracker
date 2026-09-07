@@ -337,7 +337,8 @@ struct CollectionMembersPicker: View {
     /// in the same look.
     private func cell(_ game: Game, selected: Bool) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+            CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                 .aspectRatio(3 / 4, contentMode: .fit)
                 .frame(maxWidth: .infinity)
                 .clipShape(.rect(cornerRadius: 10))

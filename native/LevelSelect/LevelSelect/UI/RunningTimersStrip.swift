@@ -61,7 +61,8 @@ struct RunningTimersStrip: View {
                     onOpen(game)
                 } label: {
                     HStack(spacing: 10) {
-                        CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+                        CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                             .frame(width: 30, height: 40)
                             .clipShape(.rect(cornerRadius: 5))
                         VStack(alignment: .leading, spacing: 1) {

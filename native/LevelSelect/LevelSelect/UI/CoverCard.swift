@@ -8,7 +8,8 @@ struct CoverCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+            CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                 .frame(width: 108, height: 144)
                 .clipShape(.rect(cornerRadius: 12))
                 .overlay(alignment: .topTrailing) {
@@ -189,7 +190,8 @@ struct ContinueHeroCard: View {
     }
 
     private func cover(width: CGFloat, height: CGFloat) -> some View {
-        CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+        CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
             .frame(width: width, height: height)
             .overlay { CoverShine() }
             .clipShape(.rect(cornerRadius: 10))

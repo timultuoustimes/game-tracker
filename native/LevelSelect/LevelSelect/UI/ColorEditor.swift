@@ -508,6 +508,15 @@ struct ColorEditor: View {
                 loading = true
                 setFromColor(target.binding.wrappedValue)
                 loading = false
+                // The typed hex belongs to the target it was typed for.
+                //
+                // Fable 2.4: type 8A5CF6 on Accent, switch to Background, and
+                // the field still reads 8A5CF6 — one tap of Use away from
+                // setting the wrong color deliberately. Typing appended to the
+                // stale text instead of replacing it, so the only way to clear
+                // it was Cancel and reopen.
+                hexDraft = ""
+                hexBad = false
             }
             .onChange(of: hue) { _, _ in push() }
             .onChange(of: saturation) { _, _ in push() }

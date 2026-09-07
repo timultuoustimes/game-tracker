@@ -417,7 +417,8 @@ struct StatsCards: View {
             ForEach(top, id: \.0.id) { game, time in
                 NavigationLink(value: game) {
                     HStack(spacing: 10) {
-                        CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+                        CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                             .frame(width: 30, height: 40)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(game.name).font(.subheadline)

@@ -123,7 +123,8 @@ struct ReleaseCalendarView: View {
             }
             .frame(width: 38)
 
-            CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+            CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
                 .frame(width: 40, height: 53)
                 .coverGloss(cornerRadius: 6)
 

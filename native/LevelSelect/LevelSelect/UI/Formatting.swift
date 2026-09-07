@@ -283,6 +283,26 @@ enum PlatformPreference {
 /// Async cover art with a themed placeholder. Box-art aspect ratio.
 struct CoverThumb: View {
     let urlString: String?
+    /// The game's own resolved artwork, when the call site has a game.
+    ///
+    /// **Without this, a cover you chose yourself did not appear on any
+    /// shelf.** `ArtworkPointer` stores a picked photo as
+    /// `levelselect-image:<id>`, and `Game.displayCoverURLString` returns nil
+    /// for that on purpose — it will not substitute the fetched cover for the
+    /// one you actually picked. But this view only ever knew how to load a
+    /// URL, so nil meant the placeholder: the game page showed your picture
+    /// (it goes through `ArtworkView`) while Home, Library, the shelves, the
+    /// running-timer strip and Continue Playing all showed a grey controller.
+    ///
+    /// That is the shape behind Fable 2.7 and 2.17, both filed as
+    /// "placeholder instead of the game's cover, cause unknown". Their stated
+    /// cause — that the shelf resolves artwork and the strip does not — was
+    /// not it: every one of these sites was URL-only. The difference was
+    /// whose cover it was.
+    ///
+    /// Optional because six call sites have no game in scope (the artwork
+    /// picker, the profile backdrop, Recently Deleted) and are unchanged.
+    var artwork: ResolvedArtwork? = nil
     /// The game's title, for the placeholder when there is no art. Nil at the
     /// six call sites with no game in scope — the artwork picker, the profile
     /// backdrop, recently deleted — which keep the old glyph.
@@ -297,7 +317,11 @@ struct CoverThumb: View {
     var contentMode: ContentMode = .fill
     var body: some View {
         Group {
-            if let s = urlString, let url = URL(string: s) {
+            // Local first: a picture the user chose beats one the app fetched,
+            // which is the same precedence `displayCoverURLString` applies.
+            if case .local(let data) = artwork, let image = PlatformImage(data: data) {
+                image.resizable().aspectRatio(contentMode: contentMode)
+            } else if let s = urlString, let url = URL(string: s) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().aspectRatio(contentMode: contentMode)

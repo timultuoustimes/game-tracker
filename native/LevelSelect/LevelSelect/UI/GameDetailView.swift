@@ -1536,7 +1536,8 @@ struct GameDetailView: View {
     }
 
     private func coverThumb(width: CGFloat) -> some View {
-        CoverThumb(urlString: game.displayCoverURLString, name: game.name, status: game.status)
+        CoverThumb(urlString: game.displayCoverURLString,
+                           artwork: game.resolvedArtwork(.cover), name: game.name, status: game.status)
             .frame(width: width, height: width * 4 / 3)
             .overlay { CoverShine(delay: 0.25) }
             .clipShape(.rect(cornerRadius: 10))
