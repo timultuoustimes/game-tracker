@@ -520,6 +520,7 @@ struct HomeTab: View {
         // King Kai lost it, which is exactly the kind of bug that looks like
         // "works on my machine". Deriving it in `body` means the toolbar and
         // the scroll view cannot disagree.
+        // Home already holds every game, so the counts behind the "Most used"
         let summary = PlayerSummary.make(from: games)
         let bleeds = ProfileHeader.drawsArt(profile: profiles.first, summary: summary)
 
@@ -535,6 +536,14 @@ struct HomeTab: View {
                 home(summary, bleeds)
             }
             .lsBackground()
+            // Home already holds every game, so the counts behind the
+            // "Most used" chip order are free here and a fetch anywhere else.
+            // In a `task` rather than in the body: it writes a static, which
+            // invalidates nothing, but a body that has side effects is a body
+            // that will eventually have a surprising one.
+            .task(id: games.count) {
+                ThemePalette.refreshOwnershipUsage(from: games)
+            }
             #if os(macOS)
             .navigationTitle("LevelSelect")
             // Same reason as iOS below: the window toolbar draws an opaque

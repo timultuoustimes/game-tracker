@@ -74,6 +74,60 @@ enum SessionState: String, Codable, Sendable {
 /// before this case the only honest options were pretending you still owned
 /// it or deleting the history. New case in a String-raw enum = no schema
 /// version, the same free path `wishlist` and `ongoing` took.
+/// The order the ownership chips stand in, everywhere at once.
+///
+/// **Stored inside `ownershipChipsRaw`, so this costs no schema deploy.**
+/// That field is an app-owned comma list, and an entry that is not a valid
+/// `Ownership` raw value has always been dropped on the way in — so a build
+/// that predates this reads `order=custom,digital,physical` as the set
+/// {digital, physical} in its own order and behaves exactly as it did before.
+/// A new field on `ThemeSettings` would have meant seeding, a Console diff and
+/// a deploy to Production for what is a sentence about presentation.
+///
+/// `standard` writes no token at all, so a library that never touches this
+/// stores the same string it stores today.
+enum OwnershipChipOrder: String, CaseIterable, Identifiable, Sendable {
+    /// The app's own order. Selections land differently on every game, which
+    /// is the variety Tim wanted kept as the default.
+    case standard
+    /// Commonest in YOUR library first, counted across the games you have.
+    case mostUsed
+    /// Whatever you dragged it to.
+    case custom
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .standard: "Standard"
+        case .mostUsed: "Most used"
+        case .custom:   "Custom"
+        }
+    }
+
+    var blurb: String {
+        switch self {
+        case .standard: "The app's own order."
+        case .mostUsed: "Commonest in your library first. Changes as the library does."
+        case .custom:   "Drag them into the order you want."
+        }
+    }
+
+    static let token = "order="
+
+    init(token raw: String?) {
+        guard let raw, raw.hasPrefix(Self.token),
+              let parsed = OwnershipChipOrder(
+                rawValue: String(raw.dropFirst(Self.token.count)))
+        else { self = .standard; return }
+        self = parsed
+    }
+
+    /// Nil for `standard`, so the stored string stays byte-identical to what
+    /// every existing library already holds.
+    var storedToken: String? { self == .standard ? nil : "\(Self.token)\(rawValue)" }
+}
+
 enum Ownership: String, Codable, CaseIterable, Sendable {
     // `previouslyOwned` keeps its raw value forever — it is what is stored in
     // every library already. Only the LABEL changed.

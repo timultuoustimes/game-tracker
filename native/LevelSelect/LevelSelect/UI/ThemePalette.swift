@@ -330,6 +330,7 @@ enum ThemePalette {
         gamePageLayout = settings?.gamePageLayoutRaw
             .flatMap(GamePageLayout.init(rawValue:)) ?? .showcase
         showGameLogos = settings?.showGameLogos ?? true
+        Self.chipsRawCache = settings?.ownershipChipsRaw
         ownershipChips = Self.chips(from: settings?.ownershipChipsRaw)
     }
 
@@ -338,10 +339,68 @@ enum ThemePalette {
     /// were toggled in.
     static func chips(from raw: String?) -> [Ownership] {
         guard let raw else { return Ownership.shownByDefault }
-        let chosen = Set(raw.split(separator: ",").map(String.init))
-        let resolved = Ownership.allCases.filter { chosen.contains($0.rawValue) }
-        return resolved.isEmpty ? Ownership.shownByDefault : resolved
+        let parts = raw.split(separator: ",").map(String.init)
+        let names = parts.filter { !$0.hasPrefix(OwnershipChipOrder.token) }
+        let chosen = Set(names)
+        let present = Ownership.allCases.filter { chosen.contains($0.rawValue) }
+        guard !present.isEmpty else { return Ownership.shownByDefault }
+
+        switch chipOrder(from: raw) {
+        case .standard:
+            return present
+        case .mostUsed:
+            // Ties fall back to the app's order, so a library where nothing is
+            // used twice still looks like the default rather than like noise.
+            let rank = Dictionary(uniqueKeysWithValues:
+                Ownership.allCases.enumerated().map { ($1, $0) })
+            return present.sorted {
+                let a = ownershipUsage[$0.rawValue] ?? 0
+                let b = ownershipUsage[$1.rawValue] ?? 0
+                return a == b ? rank[$0]! < rank[$1]! : a > b
+            }
+        case .custom:
+            // Stored order first, then anything the string does not mention —
+            // a chip turned on by an older build, or a case added since.
+            var seen: Set<Ownership> = []
+            var ordered: [Ownership] = []
+            for name in names {
+                guard let kind = Ownership(rawValue: name), !seen.contains(kind) else { continue }
+                ordered.append(kind); seen.insert(kind)
+            }
+            return ordered + present.filter { !seen.contains($0) }
+        }
     }
+
+    static func chipOrder(from raw: String?) -> OwnershipChipOrder {
+        OwnershipChipOrder(token: raw?.split(separator: ",").map(String.init)
+            .first { $0.hasPrefix(OwnershipChipOrder.token) })
+    }
+
+    /// How many games carry each ownership kind, for `OwnershipChipOrder.mostUsed`.
+    ///
+    /// Pushed in from Home, which already holds every game, rather than
+    /// fetched here — the same shape as `PlatformShort.displayOverrides`. An
+    /// empty map is not a failure state: `mostUsed` simply falls back to the
+    /// app's own order until the library has been seen once.
+    private(set) static var ownershipUsage: [String: Int] = [:]
+
+    static func refreshOwnershipUsage(from games: [Game]) {
+        var counts: [String: Int] = [:]
+        for game in games where game.deletedAt == nil {
+            for raw in game.ownership { counts[raw, default: 0] += 1 }
+        }
+        ownershipUsage = counts
+        // `mostUsed` is the one order that depends on something outside the
+        // settings record, so the resolved list has to be rebuilt when the
+        // counts move — otherwise it is fixed at whatever launch saw.
+        if chipOrder(from: chipsRawCache) == .mostUsed {
+            ownershipChips = chips(from: chipsRawCache)
+        }
+    }
+
+    /// The stored string, kept so `mostUsed` can be re-resolved without a
+    /// second trip to the settings record.
+    private static var chipsRawCache: String?
 
     /// The single settings record (created on first use). Duplicates from a
     /// sync race resolve to the oldest.

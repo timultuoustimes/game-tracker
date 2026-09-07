@@ -12,6 +12,7 @@ struct OwnershipControl: View {
     /// labels reads as a mistake.
     var centered = false
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         content
@@ -41,7 +42,34 @@ struct OwnershipControl: View {
                 HStack(spacing: 6) { chips(font: .caption,  hPad: 8) }
                 HStack(spacing: 5) { chips(font: .caption2, hPad: 7) }
                 HStack(spacing: 4) { chips(font: .caption2, hPad: 5) }
+                balanced(font: .caption, hPad: 8)
                 FlowLayout(spacing: 6) { chips(font: .caption, hPad: 8) }
+            }
+        }
+    }
+
+    /// **Two rows of nearly equal width, rather than a full row and a stub.**
+    ///
+    /// `FlowLayout` fills each line until the next chip will not fit, which is
+    /// right for a paragraph and wrong for six known items: the four widest
+    /// run about 360pt on a 393pt screen and the remaining two about 160, so
+    /// six chips break 4 + 2 and the second row reads as leftovers. Centering
+    /// that does not help — it moves the orphan to the middle. Splitting the
+    /// same chips down the middle gives rows within about 8% of each other.
+    ///
+    /// It stays inside `ViewThatFits`, so if three chips genuinely do not fit
+    /// a line — a narrow screen, a long localized label — this candidate is
+    /// measured, rejected, and `FlowLayout` still catches it.
+    @ViewBuilder
+    private func balanced(font: Font, hPad: CGFloat) -> some View {
+        let kinds = visibleKinds
+        let split = (kinds.count + 1) / 2
+        VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                ForEach(kinds.prefix(split), id: \.self) { chip($0, font: font, hPad: hPad) }
+            }
+            HStack(spacing: 6) {
+                ForEach(kinds.dropFirst(split), id: \.self) { chip($0, font: font, hPad: hPad) }
             }
         }
     }
@@ -85,21 +113,39 @@ struct OwnershipControl: View {
             .font(font.weight(.medium))
             .padding(.horizontal, hPad)
             .padding(.vertical, 5)
+            // **A theme surface, not a hardcoded white.**
+            //
+            // The off state was `.white.opacity(0.06)`, which reads as a faint
+            // capsule on the near-black ground and is invisible on a light one
+            // — so in light mode the row was one chip and five loose labels,
+            // which is most of why its wrap looked ragged. Same bypass as the
+            // fixed blue in the platform editor, and the same fix: ask the
+            // theme. Tim keeps the unselected chips visible on purpose —
+            // *"it visually adds a bit of interest under the game name"* —
+            // and this is what makes that true in both appearances.
             .background(on ? AnyShapeStyle(LSTheme.accent.opacity(0.20))
-                           : AnyShapeStyle(.white.opacity(0.06)),
+                           : AnyShapeStyle(LSTheme.cardFill),
                         in: .capsule)
             .overlay {
-                Capsule().strokeBorder(on ? LSTheme.accent.opacity(0.55) : .clear, lineWidth: 1)
+                Capsule().strokeBorder(
+                    on ? LSTheme.accent.opacity(0.55) : LSTheme.hairline, lineWidth: 1)
             }
             .foregroundStyle(on ? AnyShapeStyle(LSTheme.accent) : AnyShapeStyle(.secondary))
-            .scaleEffect(on ? 1 : 0.98)
+            // A size difference between on and off is decoration, and it is the
+            // kind Reduce Motion turns off everywhere else in the app. These
+            // chips were written after that sweep and missed it.
+            .scaleEffect(reduceMotion ? 1 : (on ? 1 : 0.98))
         }
         .buttonStyle(.plain)
+        // Caption text and 5pt of padding is about 28pt — the hit area grows,
+        // the layout does not. Vertical only, like every other chip row: a
+        // wider target would let neighbours overlap and the wrong one win.
+        .lsTapTargetTall()
         .sensoryFeedback(.selection, trigger: on)
     }
 
     private func toggle(_ kind: Ownership) {
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.6)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.28, dampingFraction: 0.6)) {
             if let idx = ownership.firstIndex(of: kind.rawValue) {
                 ownership.remove(at: idx)
             } else {
