@@ -525,7 +525,14 @@ struct HomeTab: View {
 
         return NavigationStack(path: $path) {
             Group {
-                if games.isEmpty { emptyState } else { home(summary, bleeds) }
+                // Home draws its shelves even with nothing on them. F1 —
+                // and Tim, on the first build of it: *"you opened an empty app
+                // before loading the demo library, and it wasn't showing the
+                // new empty state."* He was right. Sending a zero-game library
+                // down a different branch meant the one moment the promises
+                // were written for — the screen straight after the welcome —
+                // was the one screen that never showed them.
+                home(summary, bleeds)
             }
             .lsBackground()
             #if os(macOS)
@@ -733,6 +740,12 @@ struct HomeTab: View {
                               topOverscan: headerBleeds ? outer.safeAreaInsets.top : 0) {
                     editingProfile = true
                 }
+
+                // Nothing to continue and nothing on any shelf: the call to
+                // action takes the hero's place, and the promise shelves carry
+                // on underneath it. Both, not either — the buttons are the
+                // only way to add a game, and the shelves are what the app is.
+                if games.isEmpty { emptyState }
 
                 if let cp = continueGame {
                     VStack(alignment: .leading, spacing: 10) {

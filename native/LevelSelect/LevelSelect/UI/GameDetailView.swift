@@ -1352,23 +1352,40 @@ struct GameDetailView: View {
             // Wrapping them inside one row hyphenated "Now Play-ing" and
             // pushed the platform past the edge; the separator dot also stops
             // making sense once the pair is stacked.
-            let statusLayout: AnyLayout = typeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(alignment: alignment, spacing: 4))
-                : AnyLayout(HStackLayout(spacing: 6))
-            statusLayout {
-                HStack(spacing: 6) {
-                    Image(systemName: game.status.systemImage)
-                        .foregroundStyle(game.status.color)
-                    Text(game.status.label)
-                }
-                if let platform = game.primaryOwnedPlatform {
+            // **Side by side if it fits, stacked if it doesn't — never cut.**
+            //
+            // This used to be one line with `lineLimit(1)`, and on Hollow
+            // Knight at default size it rendered "Now Playi… · Switch". Tim,
+            // looking at that: *"the … takes up basically as much space as
+            // 'ng' would."* Which is the whole case against truncating here —
+            // it bought no width, it only cost the word. Scaling harder has
+            // the same problem in a quieter way: the row gets smaller than
+            // everything around it to save a couple of points.
+            //
+            // So the give is a line break, not a smaller word and not an
+            // ellipsis. `ViewThatFits` proposes the horizontal pair first and
+            // falls back to the stack, which is the layout accessibility sizes
+            // already use — one rule, reached two ways.
+            //
+            // Both children stay `lineLimit(1)`, which is what keeps the old
+            // fix intact: a wrapping Text answers a narrow proposal by growing
+            // taller instead of asking for room, and that is how "Now Playing"
+            // once ended up on two lines inside a panel with space to spare.
+            // Neither of these wraps, so the panel's ideal width is still the
+            // honest one-line width that `layoutPriority` acts on.
+            ViewThatFits(in: .horizontal) {
+                if !typeSize.isAccessibilitySize {
                     HStack(spacing: 6) {
-                        if !typeSize.isAccessibilitySize {
+                        statusPair
+                        if game.primaryOwnedPlatform != nil {
                             Text("·").foregroundStyle(.tertiary)
+                            platformPair
                         }
-                        PlatformIconView(platform: platform, size: 20)
-                        Text(PlatformShort.name(platform)).foregroundStyle(.secondary)
                     }
+                }
+                VStack(alignment: alignment, spacing: 4) {
+                    statusPair
+                    if game.primaryOwnedPlatform != nil { platformPair }
                 }
             }
             .font(.subheadline)
@@ -1390,9 +1407,8 @@ struct GameDetailView: View {
             // rendered the status as "Now…" instead of "Now Playing", and a
             // panel measured correctly around a truncated word is the wrong
             // trade. Wrapping is what accessibility sizes are for.
-            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-            .minimumScaleFactor(typeSize.isAccessibilitySize ? 1 : 0.85)
-            .fixedSize(horizontal: false, vertical: typeSize.isAccessibilitySize)
+            .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
             // The glyphs repeat what the words already say, and were being
             // announced as separate elements ahead of them.
             .accessibilityElement(children: .combine)
@@ -1473,6 +1489,28 @@ struct GameDetailView: View {
             return ThemePalette.backdropIntensity != .off && !backdropArtwork.isEmpty
         case .plain, .accent, .status:
             return false
+        }
+    }
+
+    /// The status glyph and its word, as one unbreakable unit.
+    private var statusPair: some View {
+        HStack(spacing: 6) {
+            Image(systemName: game.status.systemImage)
+                .foregroundStyle(game.status.color)
+            Text(game.status.label)
+        }
+    }
+
+    /// The console icon and its short name, likewise. `PlatformShort` already
+    /// shortens these, but "Sega Mega Drive/Genesis" is still a mouthful next
+    /// to a status — which is the case the stack exists for.
+    @ViewBuilder
+    private var platformPair: some View {
+        if let platform = game.primaryOwnedPlatform {
+            HStack(spacing: 6) {
+                PlatformIconView(platform: platform, size: 20)
+                Text(PlatformShort.name(platform)).foregroundStyle(.secondary)
+            }
         }
     }
 
