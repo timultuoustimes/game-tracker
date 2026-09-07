@@ -38,7 +38,7 @@ struct OwnershipChipsView: View {
     private var page: some View {
         SettingsPage(title: "Ownership chips",
                      icon: "shippingbox",
-                     blurb: "The ways you can say a game is yours. Turn off the ones your library never uses.") {
+                     blurb: "How you have each game. Turn off the ones your library never uses.") {
             Section {
                 ForEach(Ownership.allCases, id: \.self) { kind in
                     Toggle(isOn: binding(for: kind)) {

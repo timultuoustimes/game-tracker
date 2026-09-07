@@ -131,7 +131,7 @@ enum OwnershipChipOrder: String, CaseIterable, Identifiable, Sendable {
 enum Ownership: String, Codable, CaseIterable, Sendable {
     // `previouslyOwned` keeps its raw value forever — it is what is stored in
     // every library already. Only the LABEL changed.
-    case physical, digital, emulated, subscription, rented, previouslyOwned
+    case physical, digital, emulated, subscription, rented, borrowed, shared, arcade, previouslyOwned
 
     /// **Six chips, six single words, and they all finish the same sentence.**
     ///
@@ -156,6 +156,38 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
     /// an app that also tracks whether you beat something. Over "Sold", which
     /// is only one of the ways a game leaves. Over "Gone", which is true but
     /// sounds like a loss rather than a record.
+    ///
+    /// **Borrowed and Shared complete a 2x2, which is why they belong.**
+    /// Four of these describe having a copy that is not yours, and they differ
+    /// on exactly two axes — how long, and from whom:
+    ///
+    /// |            | one copy, for a while | ongoing access |
+    /// |------------|-----------------------|----------------|
+    /// | commercial | Rented                | Subscription   |
+    /// | personal   | **Borrowed**          | **Shared**     |
+    ///
+    /// Borrowed is a friend's cartridge, a sibling's disc, a library loan —
+    /// the Halo 2 you played for a fortnight and gave back. Shared is a
+    /// household: Steam Family Sharing, a home console, a family plan. Codex
+    /// warned that some people will treat Shared as Borrowed, and they might;
+    /// the grid is the answer to why both exist, and both are off by default
+    /// so nobody has to hold the distinction who does not want it.
+    ///
+    /// **Arcade is the cell where the copy never comes to you.** Every other
+    /// chip describes something in your house; this one describes going to it,
+    /// paying per play, and leaving it there. I argued against it first — a
+    /// place, not a copy, and Memories already hold "played, never owned" —
+    /// and Tim's own use answered that: *"tracking the fact that i've even
+    /// played some of the game, or if I ever beat a game in an arcade, I would
+    /// absolutely want to track that."* A Memory is a story you write; this is
+    /// a game in the library with a status and a Beaten record, which is a
+    /// different thing and the library is where it goes.
+    ///
+    /// **Not added, and why.** Streamed is a play method like Emulated rather
+    /// than a relationship to a copy, and a cloud-played game is almost always
+    /// Subscription already, so the chip would mostly repeat one that is
+    /// there. Gifted, Bundled, Used, Free and Imported all describe how a copy
+    /// was ACQUIRED, which is a different field and not this one.
     var label: String {
         switch self {
         case .physical: "Physical"
@@ -163,14 +195,20 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
         case .emulated: "Emulated"
         case .subscription: "Subscription"
         case .rented: "Rented"
+        case .borrowed: "Borrowed"
+        case .shared: "Shared"
+        case .arcade: "Arcade"
         case .previouslyOwned: "Former"
         }
     }
 
-    /// Shown unless someone turns them off. Rented is the exception — a
-    /// weekend rental is a real thing that happened to a lot of libraries and
-    /// a thing most libraries will never record, so it is opt-in rather than a
-    /// sixth chip everyone has to look past.
+    /// Shown unless someone turns them off. Rented, Borrowed, Shared and
+    /// Arcade are the exceptions — each is a real thing that happened to a lot
+    /// of libraries and a thing most libraries will never record, so they are
+    /// opt-in rather than four more chips everyone has to look past.
+    ///
+    /// This is what keeps the row from growing as the vocabulary does: nine
+    /// available, five on by default, and the default row still splits 3 + 2.
     static let shownByDefault: [Ownership] =
         [.physical, .digital, .emulated, .subscription, .previouslyOwned]
 
@@ -185,6 +223,13 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
         case .subscription: "arrow.triangle.2.circlepath"
         // A ticket: you had it for a while and it went back.
         case .rented: "ticket"
+        // A shelf you took it off and will put it back on. Deliberately not
+        // another arrow: digital, subscription and a returns-arrow would be
+        // three arrows in an eight-chip row.
+        case .borrowed: "books.vertical"
+        // People, not a platform — the household is the point.
+        case .shared: "person.2"
+        case .arcade: "arcade.stick"
         case .previouslyOwned: "shippingbox"
         }
     }

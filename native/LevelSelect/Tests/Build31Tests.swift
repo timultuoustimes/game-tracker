@@ -114,11 +114,14 @@ struct Build31Tests {
         for o in Ownership.allCases {
             #expect(!o.label.contains(" "), Comment(rawValue: "\(o.rawValue) → \"\(o.label)\""))
         }
-        // Six since build 37: Rented joined, because a weekend rental from a
+        // Nine since build 37. Rented joined first — a weekend rental from a
         // shop that no longer exists is not a subscription. Tim: *"that's not
         // the same as having walked into a Blockbuster and picking a game off
-        // the shelf."*
-        #expect(Ownership.allCases.count == 6)
+        // the shelf."* Borrowed and Shared followed, completing the grid of
+        // copies that are not yours: commercial or personal, for a while or
+        // ongoing. Arcade is the one where the copy never comes to you at all.
+        // Four of the nine are opt-in, so the default row is still five.
+        #expect(Ownership.allCases.count == 9)
     }
 
     /// Adding a case must never renumber or rename the existing ones — an old
@@ -126,7 +129,8 @@ struct Build31Tests {
     @Test func theStoredOwnershipNamesAreStable() {
         let raw = Set(Ownership.allCases.map(\.rawValue))
         #expect(raw == ["physical", "digital", "emulated", "subscription",
-                        "rented", "previouslyOwned"])
+                        "rented", "borrowed", "shared", "arcade",
+                        "previouslyOwned"])
     }
 
     // MARK: Game page sections

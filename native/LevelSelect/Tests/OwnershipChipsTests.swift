@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftData
 @testable import LevelSelect
 
 /// Which ownership chips a library uses, and the promise that hiding one is
@@ -39,13 +40,18 @@ struct OwnershipChipsTests {
 
     /// A raw value this build has never heard of — written by a later one and
     /// arriving over CloudKit — is ignored rather than breaking the row.
+    ///
+    /// This used to use "borrowed" as its example of a word that is not a
+    /// chip, which stopped being true in build 37. "leased" is the stand-in
+    /// now — and if it ever becomes a chip, this test will say so.
     @Test func anUnknownChipIsIgnored() {
-        #expect(ThemePalette.chips(from: "physical,borrowed") == [.physical])
+        #expect(Ownership(rawValue: "leased") == nil)
+        #expect(ThemePalette.chips(from: "physical,leased") == [.physical])
     }
 
     /// The whole set decoding to nothing known is the same as nothing stored.
     @Test func aWhollyUnknownSetFallsBack() {
-        #expect(ThemePalette.chips(from: "borrowed,leased") == Ownership.shownByDefault)
+        #expect(ThemePalette.chips(from: "leased,bartered") == Ownership.shownByDefault)
     }
 
     @Test func everyChipIsStillASingleWord() {
@@ -160,5 +166,95 @@ struct Build37ChipOrderTests {
     /// Turning everything off still leaves a usable row.
     @Test func anEmptySetFallsBackToTheDefaults() {
         #expect(ThemePalette.chips(from: "order=custom") == Ownership.shownByDefault)
+    }
+}
+
+/// **Borrowed and Shared, and the grid they complete.**
+///
+/// Four chips describe having a copy that is not yours, differing on two
+/// axes — how long, and from whom. Rented and Subscription were the
+/// commercial pair; Borrowed and Shared are the personal one.
+@MainActor
+struct Build37BorrowedAndSharedTests {
+
+    @Test func theVocabularyHasNineChips() {
+        #expect(Ownership.allCases.count == 9)
+        #expect(Ownership.allCases.contains(.borrowed))
+        #expect(Ownership.allCases.contains(.shared))
+        #expect(Ownership.allCases.contains(.arcade))
+    }
+
+    /// Raw values are what every library already stores, so the new cases must
+    /// be additions and nothing else may have moved.
+    @Test func theExistingRawValuesAreUntouched() {
+        #expect(Ownership.physical.rawValue == "physical")
+        #expect(Ownership.digital.rawValue == "digital")
+        #expect(Ownership.emulated.rawValue == "emulated")
+        #expect(Ownership.subscription.rawValue == "subscription")
+        #expect(Ownership.rented.rawValue == "rented")
+        // Kept forever: it is what is in every library that ever used it.
+        #expect(Ownership.previouslyOwned.rawValue == "previouslyOwned")
+        #expect(Ownership.borrowed.rawValue == "borrowed")
+        #expect(Ownership.shared.rawValue == "shared")
+        #expect(Ownership.arcade.rawValue == "arcade")
+    }
+
+    /// Both are opt-in, so a row nobody configures stays five chips and still
+    /// splits evenly.
+    @Test func noneOfThemIsOnByDefault() {
+        #expect(!Ownership.shownByDefault.contains(.borrowed))
+        #expect(!Ownership.shownByDefault.contains(.shared))
+        #expect(!Ownership.shownByDefault.contains(.arcade))
+        #expect(Ownership.shownByDefault.count == 5)
+    }
+
+    /// An arcade game is one you can beat without ever logging a second of
+    /// play — `addCompletion` hangs off the GAME, not off a session. That is
+    /// the whole reason this belongs in the library rather than in Memories.
+    @Test func anArcadeGameCanBeBeatenWithNoSessions() throws {
+        let context = ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+        let repo = Repository(context)
+        let game = repo.addGame(name: "Time Crisis", status: .completed)
+        game.ownership = [Ownership.arcade.rawValue]
+        repo.addCompletion(to: game, label: .cleared)
+
+        let events = (try? context.fetch(FetchDescriptor<CompletionEvent>())) ?? []
+        #expect(events.count == 1)
+        #expect(game.livePlaythroughs.allSatisfy { ($0.sessions ?? []).isEmpty })
+    }
+
+    /// Former stays last: every other chip describes the copy now, and that
+    /// one describes it in the past.
+    @Test func formerIsStillTheLastWord() {
+        #expect(Ownership.allCases.last == .previouslyOwned)
+    }
+
+    @Test func eachHasItsOwnLabelAndIcon() {
+        let labels = Set(Ownership.allCases.map(\.label))
+        let icons = Set(Ownership.allCases.map(\.systemImage))
+        #expect(labels.count == Ownership.allCases.count)
+        #expect(icons.count == Ownership.allCases.count)
+        #expect(Ownership.borrowed.label == "Borrowed")
+        #expect(Ownership.shared.label == "Shared")
+    }
+
+    /// A game can carry the pair that actually co-occurs — a household copy
+    /// you also play through an emulator — because this was always
+    /// multi-select.
+    @Test func theyCombineWithTheRest() {
+        let game = Game(name: "GoldenEye 007")
+        game.ownership = [Ownership.borrowed.rawValue, Ownership.emulated.rawValue]
+        #expect(game.ownership.count == 2)
+        ThemePalette.refreshOwnershipUsage(from: [game])
+        #expect(ThemePalette.ownershipUsage["borrowed"] == 1)
+        #expect(ThemePalette.ownershipUsage["emulated"] == 1)
+        ThemePalette.refreshOwnershipUsage(from: [])
+    }
+
+    /// Turning one on is a vocabulary choice and survives the round trip
+    /// through the stored string, token and all.
+    @Test func theySurviveTheStoredString() {
+        let stored = "order=custom,borrowed,shared,digital"
+        #expect(ThemePalette.chips(from: stored) == [.borrowed, .shared, .digital])
     }
 }
