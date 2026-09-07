@@ -308,3 +308,101 @@ struct Build36ImportVersionTests {
         }
     }
 }
+
+/// Build 37 — the one record you cannot re-type is the one the importer
+/// would not hand back.
+///
+/// `applyProfile` has always rebuilt a missing identity from a backup, but
+/// the preview's walk never counted the profile, and `LibraryImportView`
+/// hides its Restore button behind `totalCreates > 0`. So a file whose only
+/// missing record was the profile previewed as "everything in this file is
+/// already in your library" and offered no way to proceed — a name, five
+/// handles and an avatar, unreachable, in the exact disaster the importer
+/// exists for.
+@MainActor
+struct Build37ProfileRestoreTests {
+
+    private func makeContext() -> ModelContext {
+        ModelContext(LevelSelectStore.makeContainer(inMemory: true))
+    }
+
+    /// A 1×1 PNG standing in for the avatar bytes.
+    private var pixel: Data {
+        Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")!
+    }
+
+    private func profileOnlyFile(id: UUID = UUID()) -> Data {
+        Data("""
+        {"manifest":{"formatVersion":3,"totalRecords":1},
+         "profile":{"id":"\(id.uuidString)",
+                    "displayName":"timultuoustimes",
+                    "nameColor":"accent",
+                    "useHandleAsName":true,
+                    "avatar":"\(pixel.base64EncodedString())",
+                    "handles":{"steam":"timultuoustimes","xbox":"timultuoustimes"}}}
+        """.utf8)
+    }
+
+    @Test("A backup holding only the profile offers to restore it")
+    func aProfileOnlyBackupPreviewsAsARestore() throws {
+        let preview = try LibraryImport.preview(data: profileOnlyFile(), context: makeContext())
+        #expect(preview.creates["profile"] == 1)
+        // The gate `LibraryImportView` reads before it draws the button.
+        #expect(preview.totalCreates == 1)
+    }
+
+    @Test("A live identity previews as a skip, never as an overwrite")
+    func aPresentProfileIsSkipped() throws {
+        let context = makeContext()
+        let mine = PlayerProfile()
+        mine.displayName = "someone already here"
+        context.insert(mine)
+
+        let preview = try LibraryImport.preview(data: profileOnlyFile(), context: context)
+        #expect(preview.creates["profile"] == nil)
+        #expect(preview.skips["profile"] == 1)
+        #expect(preview.totalCreates == 0)
+
+        // And applying it leaves the live one alone — the rule `applyProfile`
+        // has always followed, now visible in the preview that precedes it.
+        _ = try LibraryImport.apply(data: profileOnlyFile(), context: context)
+        let all = try context.fetch(FetchDescriptor<PlayerProfile>())
+        #expect(all.count == 1)
+        #expect(all.first?.displayName == "someone already here")
+    }
+
+    @Test("The name, the handles and the avatar all come back")
+    func theIdentityRoundTrips() throws {
+        let context = makeContext()
+        let id = UUID()
+        let outcome = try LibraryImport.apply(data: profileOnlyFile(id: id), context: context)
+        #expect(outcome.created["profile"] == 1)
+
+        let restored = try #require(try context.fetch(FetchDescriptor<PlayerProfile>()).first)
+        #expect(restored.id == id)
+        #expect(restored.displayName == "timultuoustimes")
+        #expect(restored.nameColorRaw == "accent")
+        #expect(restored.useHandleAsName == true)
+        #expect(restored.avatarData == pixel)
+        #expect(restored.handles["steam"] == "timultuoustimes")
+        #expect(restored.handles.count == 2)
+    }
+
+    /// The preview and the import must agree, or the confirmation screen is
+    /// lying about what the button does.
+    @Test("The count the preview promises is the count the import creates")
+    func thePreviewAgreesWithTheImport() throws {
+        let context = makeContext()
+        let file = profileOnlyFile()
+        let preview = try LibraryImport.preview(data: file, context: context)
+        let outcome = try LibraryImport.apply(data: file, context: context)
+        #expect(preview.totalCreates == outcome.totalCreated)
+    }
+
+    /// The manifest's honesty check must not fire on a legitimate file.
+    @Test("A profile-only file raises no manifest complaint")
+    func theManifestCountAgrees() throws {
+        let preview = try LibraryImport.preview(data: profileOnlyFile(), context: makeContext())
+        #expect(preview.problems.isEmpty)
+    }
+}

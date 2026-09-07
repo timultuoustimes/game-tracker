@@ -136,6 +136,9 @@ enum LibraryImport {
         var images = Set<UUID>()
         var memories = Set<UUID>()
         var trackerItemDetails = Set<UUID>()
+        /// The profile is a singleton, so it is present-or-absent rather than
+        /// matched by id — but the preview still has to say which.
+        var hasProfile = false
 
         init(context: ModelContext) throws {
             games = Set(try context.fetch(FetchDescriptor<Game>()).map(\.id))
@@ -152,6 +155,7 @@ enum LibraryImport {
             images = Set(try context.fetch(FetchDescriptor<GameImage>()).map(\.id))
             memories = Set(try context.fetch(FetchDescriptor<Memory>()).map(\.id))
             trackerItemDetails = Set(try context.fetch(FetchDescriptor<TrackerItemDetail>()).map(\.id))
+            hasProfile = !(try context.fetch(FetchDescriptor<PlayerProfile>()).isEmpty)
         }
     }
 
@@ -206,6 +210,23 @@ enum LibraryImport {
             for i in (m["images"] as? [[String: Any]]) ?? [] {
                 visit("images", i, in: existing.images)
             }
+        }
+
+        // **The profile counts, or it cannot be restored at all.**
+        //
+        // `applyProfile` has always known how to rebuild a missing identity
+        // from a backup, but the walk never counted it — so a file whose only
+        // missing record was the profile previewed as "everything is already
+        // in your library" and `LibraryImportView` hid the Restore button
+        // behind `totalCreates > 0`. The one record you cannot re-type from
+        // memory (a name, five handles and an avatar) was the one the
+        // importer silently refused to hand back.
+        //
+        // Not matched by id like the rest: there is only ever one, and
+        // `applyProfile` fills a blank rather than overwriting a live
+        // identity, so present means skip.
+        if root["profile"] != nil {
+            existing.hasProfile ? onSkip("profile") : onCreate("profile")
         }
     }
 
