@@ -719,7 +719,12 @@ struct ColorEditor: View {
         HStack(spacing: 10) {
             Text("#")
                 .foregroundStyle(.tertiary)
-            TextField("F5A34D", text: $hexDraft)
+            // The CURRENT color, not the app's default forever.
+            //
+            // This read "F5A34D" whatever was on screen, so there was no way
+            // to read a color back out of the editor — you could type one in
+            // and never see what you had. Fable, 2026-09-07.
+            TextField(String(currentHex.dropFirst()), text: $hexDraft)
                 .autocorrectionDisabled()
                 .font(.body.monospaced())
                 #if !os(macOS)

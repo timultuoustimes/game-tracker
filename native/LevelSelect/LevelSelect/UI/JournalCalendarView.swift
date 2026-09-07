@@ -712,6 +712,28 @@ private struct DayCell: View {
         entries.contains { $0.memory?.isUncertain == true }
     }
 
+    /// A dark tag behind a glyph that has to be read on top of cover art.
+    ///
+    /// **White text does not survive a white cover.** The day number was white
+    /// over artwork, which works on a photograph and fails on a title block —
+    /// Animal Well's "17" disappeared into its own white logo while Stardew
+    /// Valley's numbers read fine two rows above. Fable, 2026-09-07.
+    ///
+    /// A tag does not depend on what is underneath it, which is the whole
+    /// point: any treatment that reacts to the art can only be tuned for the
+    /// art it was tested against.
+    @ViewBuilder
+    private func onArtTag(_ overArt: Bool, @ViewBuilder _ content: () -> some View) -> some View {
+        if overArt {
+            content()
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(.black.opacity(0.45), in: .capsule)
+        } else {
+            content()
+        }
+    }
+
     private var isToday: Bool { calendar.isDateInToday(day) }
     private var isFuture: Bool { day > calendar.startOfDay(for: .now) }
 
@@ -860,28 +882,34 @@ private struct DayCell: View {
                 }
             }
             .overlay(alignment: .topLeading) {
-                Text("\(calendar.component(.day, from: day))")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(art == nil ? AnyShapeStyle(.secondary)
-                                                : AnyShapeStyle(Color.white))
-                    .padding(5)
+                onArtTag(art != nil) {
+                    Text("\(calendar.component(.day, from: day))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(art == nil ? AnyShapeStyle(.secondary)
+                                                    : AnyShapeStyle(Color.white))
+                }
+                .padding(5)
             }
             .overlay(alignment: .bottomTrailing) {
                 if entries.count > 1 {
-                    Text("\(entries.count)")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(art == nil ? AnyShapeStyle(.secondary)
-                                                    : AnyShapeStyle(Color.white))
-                        .padding(4)
+                    onArtTag(art != nil) {
+                        Text("\(entries.count)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(art == nil ? AnyShapeStyle(.secondary)
+                                                        : AnyShapeStyle(Color.white))
+                    }
+                    .padding(4)
                 }
             }
             .overlay(alignment: .topTrailing) {
                 if isUncertain {
-                    Image(systemName: "questionmark.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(art == nil ? AnyShapeStyle(.tertiary)
-                                                    : AnyShapeStyle(Color.white))
-                        .padding(4)
+                    onArtTag(art != nil) {
+                        Image(systemName: "questionmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(art == nil ? AnyShapeStyle(.tertiary)
+                                                        : AnyShapeStyle(Color.white))
+                    }
+                    .padding(4)
                 }
             }
             .clipShape(.rect(cornerRadius: 10))
