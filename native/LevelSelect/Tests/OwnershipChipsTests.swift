@@ -223,10 +223,22 @@ struct Build37BorrowedAndSharedTests {
         #expect(game.livePlaythroughs.allSatisfy { ($0.sessions ?? []).isEmpty })
     }
 
-    /// Former stays last: every other chip describes the copy now, and that
-    /// one describes it in the past.
-    @Test func formerIsStillTheLastWord() {
-        #expect(Ownership.allCases.last == .previouslyOwned)
+    /// **The declaration order is the grouping**, because it is what Standard
+    /// order and the settings list both show: the four you have, then the five
+    /// you only reach. Former belongs with the first group — past ownership is
+    /// still ownership — which is why it is fourth and not last.
+    @Test func theDeclarationOrderIsTheGrouping() {
+        #expect(Ownership.allCases == [.physical, .digital, .emulated, .previouslyOwned,
+                                       .subscription, .rented, .borrowed, .shared, .arcade])
+    }
+
+    /// And the five-chip default lands the whole ownership group on row one.
+    @Test func theDefaultRowSplitsOnTheGroupBoundary() {
+        let shown = Ownership.shownByDefault
+        #expect(shown.count == 5)
+        // `balanced` splits at (count + 1) / 2 — three and two.
+        #expect(Array(shown.prefix(3)) == [.physical, .digital, .emulated])
+        #expect(Array(shown.dropFirst(3)) == [.previouslyOwned, .subscription])
     }
 
     @Test func eachHasItsOwnLabelAndIcon() {

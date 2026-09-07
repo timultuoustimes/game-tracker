@@ -131,7 +131,20 @@ enum OwnershipChipOrder: String, CaseIterable, Identifiable, Sendable {
 enum Ownership: String, Codable, CaseIterable, Sendable {
     // `previouslyOwned` keeps its raw value forever — it is what is stored in
     // every library already. Only the LABEL changed.
-    case physical, digital, emulated, subscription, rented, borrowed, shared, arcade, previouslyOwned
+    // **Declared in its groups, because this order IS the default layout.**
+    //
+    // `allCases` is what the Standard chip order shows, what the settings list
+    // shows, and the canonical order the stored string is written in. So the
+    // grouping Tim settled on lives here rather than only in a comment: the
+    // four you have, then the five you only reach.
+    //
+    // Former sits fourth rather than last. It used to be last on the reasoning
+    // that it was the end of a scale; it is the end of the OWNERSHIP scale,
+    // and putting it after Arcade separated it from the three chips it belongs
+    // with. In the five-chip default this lands the whole ownership group on
+    // the first row on its own.
+    case physical, digital, emulated, previouslyOwned      // yours
+    case subscription, rented, borrowed, shared, arcade    // only reached
 
     /// **Six chips, six single words, and they all finish the same sentence.**
     ///
@@ -202,6 +215,30 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
     /// A streamed game you possess nothing of at all. Filing them as one
     /// dimension hides the single most important difference between them.
     ///
+    /// **Former is the same correction again.** Filing it under "the past"
+    /// treats having stopped owning something as a different kind of fact from
+    /// owning it. Tim: *"Former is also a state of ownership. Just because
+    /// it's past ownership, that doesn't make it not so or require it to
+    /// stand on its own."* It is an answer to the same question the others
+    /// answer — how do you have this game — given at the far end of the scale:
+    /// you did, and you don't now. It needs no dimension of its own, and it
+    /// sits with the other three things you have rather than after the five
+    /// you do not.
+    ///
+    /// What is left, once both corrections land, is two groups rather than
+    /// four, and it is the grouping Tim settled on:
+    ///
+    /// 1. **Ownership** — Physical, Digital, Emulated, Former
+    /// 2. **Access** — Subscription, Rented, Borrowed, Shared, Arcade
+    ///
+    /// That is a real four-and-five split, and `allCases` is declared in it, so
+    /// the default row reads in its groups without anything being labeled.
+    /// Drawing it as two headed rows is still the wrong move, because Physical
+    /// and Digital cut ACROSS the access chips: a borrowed cartridge is
+    /// Physical and Borrowed, and so is a rented one. Headings would put one
+    /// game's two true chips in two different boxes on the most ordinary
+    /// combinations rather than the exotic ones.
+    ///
     /// So the row asks ONE question — how do you have this game — and Emulated
     /// is a straight answer to it. It is not doing double duty by accident.
     /// "Digital" carries a bought-from-a-store connotation that a dumped
@@ -238,8 +275,10 @@ enum Ownership: String, Codable, CaseIterable, Sendable {
     ///
     /// This is what keeps the row from growing as the vocabulary does: nine
     /// available, five on by default, and the default row still splits 3 + 2.
+    /// In the grouped order, like `allCases` — this list is returned verbatim
+    /// when nothing is stored, so its order IS the default row.
     static let shownByDefault: [Ownership] =
-        [.physical, .digital, .emulated, .subscription, .previouslyOwned]
+        [.physical, .digital, .emulated, .previouslyOwned, .subscription]
 
     var systemImage: String {
         switch self {
