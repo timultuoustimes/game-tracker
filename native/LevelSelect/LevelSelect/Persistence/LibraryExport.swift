@@ -516,6 +516,7 @@ enum LibraryExport {
                 "appearance": theme.appearanceRaw as Any,
                 "statusColors": theme.statusColors,
                 "statusNames": theme.statusNames.isEmpty ? nil : theme.statusNames as Any,
+                "platformNames": theme.platformNames.isEmpty ? nil : theme.platformNames as Any,
                 "pageBackground": theme.pageBackgroundRaw,
                 "gamePageLayout": theme.gamePageLayoutRaw as Any,
                 "defaultTrackerDisplay": theme.defaultTrackerDisplayRaw,

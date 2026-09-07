@@ -114,6 +114,12 @@ struct SettingsView: View {
                     }
                     SettingsRow(title: "Statuses",
                                 icon: "circle.grid.2x1.left.filled") { StatusSettingsPage() }
+                    // Beside Statuses, because it is the same idea: the app's
+                    // word for something, and yours if you disagree.
+                    SettingsRow(title: "System names",
+                                icon: "textformat") {
+                        SystemNamesSettingsPage()
+                    }
                     SettingsRow(title: "Game pages",
                                 icon: "rectangle.topthird.inset.filled") { GamePagesSettingsPage() }
                     SettingsRow(title: "Trackers", icon: "checklist") { TrackerSettingsPage() }

@@ -2736,6 +2736,7 @@ struct Repository {
             take(\.backgroundHex); take(\.backgroundHexLight); take(\.backgroundHexDark)
             take(\.statusColorsData); take(\.starNamesData); take(\.statusNamesData)
             take(\.savedSwatchesData); take(\.platformIconVariantsData)
+            take(\.platformNamesData)
             take(\.appearanceRaw); take(\.backdropIntensityRaw); take(\.gamePageLayoutRaw)
             take(\.homeLayoutRaw); take(\.homeSystemsRaw); take(\.expandedSectionsRaw)
             take(\.ownershipChipsRaw); take(\.defaultMergeModeRaw)

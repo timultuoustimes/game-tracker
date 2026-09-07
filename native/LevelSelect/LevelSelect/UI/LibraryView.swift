@@ -803,7 +803,30 @@ enum PlatformShort {
     /// are the names people actually use. Anything unmapped falls through
     /// unchanged, which is why the retro half of this list matters: without
     /// it every console older than the Wii printed its full legal name.
+    /// The name to show for a stored platform string.
+    ///
+    /// Two steps, deliberately separate: `builtinName` folds IGDB's spellings
+    /// to one short name per machine, and then the user's own choice applies
+    /// for the machines that go by more than one name (see `PlatformNaming`).
+    ///
+    /// The override is read from a cache rather than threaded through, so all
+    /// twenty-one call sites — shelves, chips, menus, the systems row, the
+    /// widget snapshot — pick it up without knowing it exists. That is the
+    /// same reason `GameStatus.sectionTitle` routes through `ThemePalette`:
+    /// renaming should reach every surface, or it reaches none of them
+    /// convincingly.
     static func name(_ p: String) -> String {
+        PlatformNaming.resolved(builtinName(p), overrides: displayOverrides)
+    }
+
+    /// Written once by `ThemePalette.refresh(from:)` on the main actor, read
+    /// from the same places every other theme value is. Same shape as the
+    /// widget palette's caches.
+    nonisolated(unsafe) static var displayOverrides: [String: String] = [:]
+
+    /// The app's own short name, before the user has a say. Pure, so the
+    /// folding can be tested without a store or a running app.
+    static func builtinName(_ p: String) -> String {
         switch p {
         case "PC (Microsoft Windows)": "PC"
         case "Nintendo Switch": "Switch"
@@ -837,7 +860,11 @@ enum PlatformShort {
         case "Sega Dreamcast", "Dreamcast": "Dreamcast"
         case "Sega Saturn": "Saturn"
         case "Sega Game Gear", "Game Gear": "Game Gear"
-        case "Sega 32X", "Sega Mega-CD", "Sega CD": p
+        // Folded together so the Sega CD / Mega-CD choice has one console to
+        // apply to rather than two half-shelves. The 32X stays on its own —
+        // it is a different device, not another word for this one.
+        case "Sega Mega-CD", "Sega CD", "Mega-CD": "Sega CD"
+        case "Sega 32X": p
         case "TurboGrafx-16/PC Engine", "TurboGrafx-16": "TurboGrafx-16"
         case "Other", "": "Other"
         default: p

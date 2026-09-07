@@ -289,6 +289,12 @@ enum ThemePalette {
         statusOverrides = overrides
         starNames = settings?.starNames ?? []
         statusNameOverrides = settings?.statusNames ?? [:]
+        // Pushed into `PlatformShort` rather than held here, because that is
+        // where every caller already asks. Sanitized on the way in: the value
+        // arrives from CloudKit and a name this build does not offer must not
+        // reach a shelf heading.
+        PlatformShort.displayOverrides =
+            PlatformNaming.sanitized(settings?.platformNames ?? [:])
         appearance = LSAppearance(raw: settings?.appearanceRaw)
         backdropIntensity = settings?.backdropIntensityRaw
             .flatMap(BackdropIntensity.init(rawValue:)) ?? .standard

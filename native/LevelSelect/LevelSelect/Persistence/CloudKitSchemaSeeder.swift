@@ -530,6 +530,7 @@ enum CloudKitSchemaSeeder {
             // build 37 — game-page section defaults and the composable Home.
             if existingTheme.expandedSectionsRaw == nil { existingTheme.expandedSectionsRaw = marker }
             if existingTheme.ownershipChipsRaw == nil { existingTheme.ownershipChipsRaw = marker }
+            if existingTheme.platformNamesData == nil { existingTheme.platformNamesData = stamp }
             if existingTheme.homeLayoutRaw == nil { existingTheme.homeLayoutRaw = marker }
             if existingTheme.homeSystemsRaw == nil { existingTheme.homeSystemsRaw = marker }
         // ⚠️ A NEW ThemeSettings FIELD MUST BE ADDED TO BOTH BRANCHES.
@@ -556,6 +557,7 @@ enum CloudKitSchemaSeeder {
             theme.backgroundHex = marker                  // build 36 (V5)
             theme.expandedSectionsRaw = marker            // build 37
             theme.ownershipChipsRaw = marker              // build 37
+            theme.platformNamesData = stamp               // build 37 — system names
             theme.homeLayoutRaw = marker                  // build 37
             theme.homeSystemsRaw = marker                 // build 37
             theme.accentHexLight = marker                 // build 37
@@ -630,6 +632,7 @@ enum CloudKitSchemaSeeder {
             if theme.backgroundHexDark == marker { theme.backgroundHexDark = nil }
             if theme.expandedSectionsRaw == marker { theme.expandedSectionsRaw = nil }
             if theme.ownershipChipsRaw == marker { theme.ownershipChipsRaw = nil }
+            if theme.platformNamesData == Data("{}".utf8) { theme.platformNamesData = nil }
             if theme.homeLayoutRaw == marker { theme.homeLayoutRaw = nil }
             if theme.homeSystemsRaw == marker { theme.homeSystemsRaw = nil }
             if theme.backgroundHex == marker { theme.backgroundHex = nil }

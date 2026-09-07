@@ -196,6 +196,26 @@ final class ThemeSettings {
     /// you between devices.
     var statusNamesData: Data?
 
+    /// Which name a console goes by, for the ones that have more than one.
+    ///
+    /// `PlatformShort` collapses IGDB's spellings to one short name per
+    /// machine, and for most consoles there is nothing to argue about. For
+    /// some there is: "Sega Mega Drive/Genesis" is one machine with two names
+    /// depending on where you grew up, and the app picked Genesis for
+    /// everybody. Tim: *"the user should be able to choose which one they want
+    /// displayed, not forced to see Genesis if they don't call it that."* The
+    /// same goes for the ones that are a matter of habit rather than region —
+    /// he calls the NES "Nintendo" and the SNES "Super Nintendo".
+    ///
+    /// Keyed by the app's own default short name, valued with the chosen
+    /// alternative. Absent means the default, so this stays empty for anyone
+    /// who never opens the screen. See `PlatformNaming` for the choices and
+    /// why it is a fixed pair rather than a free field.
+    ///
+    /// Synced, like `statusNames`, for the same reason: your words for your
+    /// own shelves should follow you between devices.
+    var platformNamesData: Data?
+
     // MARK: Build 36 — appearance (fields ahead of the feature, on purpose)
 
     /// `system` | `light` | `dark`. Schema V5.
@@ -257,6 +277,18 @@ final class ThemeSettings {
         }
         set {
             statusNamesData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    var platformNames: [String: String] {
+        get {
+            guard let data = platformNamesData,
+                  let map = try? JSONDecoder().decode([String: String].self, from: data)
+            else { return [:] }
+            return map
+        }
+        set {
+            platformNamesData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
         }
     }
 

@@ -535,6 +535,11 @@ enum LibraryImport {
         if let v = d["appearance"] as? String { theme.appearanceRaw = v }
         if let v = d["statusColors"] as? [String: String] { theme.statusColors = v }
         if let v = d["statusNames"] as? [String: String] { theme.statusNames = v }
+        // Sanitized on the way in: a backup can be older or newer than this
+        // build, and a name it no longer offers must not reach a shelf.
+        if let v = d["platformNames"] as? [String: String] {
+            theme.platformNames = PlatformNaming.sanitized(v)
+        }
         if let v = d["pageBackground"] as? String { theme.pageBackgroundRaw = v }
         if let v = d["gamePageLayout"] as? String { theme.gamePageLayoutRaw = v }
         if let v = d["defaultTrackerDisplay"] as? String { theme.defaultTrackerDisplayRaw = v }
